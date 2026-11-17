@@ -38,3 +38,6 @@ server.token
 # and stay on disk. MESSER.md is a published file — it records the canon adoption, not the host.
 actions/
 docs/SKILL.template.md
+
+# The built index (a publish artifact, never source).
+.lineup-index/

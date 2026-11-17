@@ -26,12 +26,14 @@ instead of one document.
 
 | Path | What |
 |---|---|
-| `cmd/lineup/` | the entry point: `mine`, `publish`, `verify`, `doctor`, `serve`, `findings` |
+| `cmd/lineup/` | the entry point: `verify`, `doctor`, and the commands the plan has not reached yet |
 | `internal/model/` | `Show` (full fidelity), `Row` (the published nine keys), identity keys |
-| `internal/fetch/` | the HTTP client: browser header profile, gzip, per-host limiter, robots cache |
-| `internal/sources/` | one adapter per platform, plus the registry loader |
-| `internal/index/` | the shard writer, manifest and verifier |
-| `internal/board/` | the board selector: one pure function, the clock injected |
+| `internal/clock/` | the only place the wall clock is read; every selection path takes the time as a parameter |
+| `internal/index/` | the read side of the published format: manifest, picker, shards, the row contract |
+| `internal/doctor/` | one report on the state of an install, without changing anything |
+| `internal/fetch/` | the HTTP client: browser header profile, gzip, per-host limiter, robots cache (P0.6) |
+| `internal/sources/` | one adapter per platform, plus the registry loader (P0.7+) |
+| `internal/board/` | the board selector: one pure function, the clock injected (P5) |
 | `sources/` | the registry, data only — `countries/*.toml`, `aliases/*.toml` |
 | `web/` | the board; built to `web/dist` and served as static assets |
 | `wrangler.jsonc` | the one deployment: assets first, script only for `/api/v1/*` and `/calendar/*` |
@@ -40,12 +42,13 @@ instead of one document.
 
 ```bash
 make build     # bin/lineup
-make dev       # the local pair (lands in P0.5 with `lineup serve`)
+make verify    # check a built index; ARGS="--index <dir>" to point it elsewhere
+make doctor    # report the install: version, go, clock, index state, registry
+make dev       # the local pair (lands in P3 with `lineup serve`)
 make test      # unit + integration
 make race      # the same under -race
 make lint      # golangci-lint
-make check     # the full local gate: fmt-check, vet, test, race, public-scan
-make doctor    # diagnose the local install (lands in P0.5)
+make check     # the full local gate: fmt-check, vet, test, race, public-scan, clock-check
 ```
 
 Every command is non-interactive and exits non-zero on failure. A command that only works on one
@@ -57,7 +60,8 @@ machine is a bug.
   keys and no content fields, and a test marshals a full show through it and asserts `p`, `cur`,
   `desc`, `img`, `lineUp` and `seats` are absent.
 - **No selection path reads the clock.** `internal/board` and `web/src/lib/board.ts` take the time as
-  a parameter, because every user-input scenario asserts a date window.
+  a parameter, because every user-input scenario asserts a date window. `make clock-check` fails the
+  build if the wall clock is read anywhere outside `internal/clock`.
 - **The identity vector file is canonical.** `internal/model/testdata/keys.json` is never edited to
   make an implementation pass, and Go and TypeScript agree on every vector.
 - **Assets are served before the Worker.** `run_worker_first` is never set in `wrangler.jsonc`; a
