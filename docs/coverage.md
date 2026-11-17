@@ -54,6 +54,24 @@ platform. One request per town for the candidate list, then one detail fetch eac
 **G0-global is met**: one keyless adapter, Berlin / London / Austin each ≥ 20, from this egress. A city page
 is a page of the list rather than the whole city, so 30 is a floor and never a total.
 
+## The last measured run
+
+Rewritten by `lineup mine --coverage docs/coverage.md`. The prose around it is hand-written on purpose; the
+block below is a command's output, so the numbers cannot drift from what was actually run.
+
+<!-- mine:begin -->
+_dice · dry run — measured, nothing written · 2026-11-17T22:21:48Z_
+
+| Town | Candidates | Rows | Filtered | Failures | Seconds |
+|---|---:|---:|---:|---:|---:|
+| austin | 30 | 30 | 0 | 0 | 31 |
+| berlin | 30 | 30 | 0 | 0 | 31 |
+| london | 30 | 30 | 0 | 0 | 32 |
+| **total** | **90** | **90** | **0** | **0** | |
+
+Towns discovered: **3**.
+<!-- mine:end -->
+
 ## What a sweep costs, measured
 
 | | |
@@ -81,6 +99,17 @@ lesson is in the adapter's own comments: JSON-LD is a shape, not a schema.
 a mined show belongs to one, its position is the mean of the venues seen in it, and its `tz` is left empty
 because no event page carries a trustworthy zone name. That is §5.7's "towns are derived from each platform's
 city list" applied to the data, and it means a country can be added without a hand-written town file.
+
+## What this means for the gates
+
+- **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is **met by DICE**, measured town by
+  town: 30/30/30 rows, each in the right town. Eventim DE and AXS cannot do it from this egress.
+- **G0** (Copenhagen: two keyless sources ≥ 20 each, merged ≥ 150, duplicates < 8 %) loses its second source,
+  because Billetto answers a challenge page. Billetlugen alone is one source. Tickster DK is reachable (314
+  URLs, date in the URL, no structured data) and is the only candidate found, so the second source is a
+  bespoke HTML adapter — or the gate becomes a one-source promise and says so.
+- **Stockholm** is unmeasured: Eventim SE shares its `.de` sibling's verdict until someone tries an `ESE` event
+  page, and Tickster SE / `/se/sv` is the other candidate (10 313 URLs, date in the URL).
 
 ## Sources that are not a gate
 

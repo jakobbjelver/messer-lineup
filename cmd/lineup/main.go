@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/doctor"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
+	"github.com/jakobbjelver/messer-lineup/internal/mine"
 	"github.com/jakobbjelver/messer-lineup/internal/version"
 )
 
@@ -50,7 +52,7 @@ func commands() []command {
 	return []command{
 		{"verify", "check a built index against the published contract", runVerify},
 		{"doctor", "report the state of this install", runDoctor},
-		{"mine", "walk the sources and write an index (P0.7)", notWired("P0.7", "the first adapter")},
+		{"mine", "sweep a platform and write the report a publish is based on", runMine},
 		{"publish", "copy a verified index to object storage (P3)", notWired("P3", "the object-storage publisher")},
 		{"serve", "serve the index and the board locally (P3)", notWired("P3", "the API and the board")},
 		{"findings", "emit the parser findings an agent acts on (P8)", notWired("P8", "the autonomous warden")},
@@ -276,6 +278,122 @@ func runVersion(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, "lineup "+version.String())
 	return exitOK
+}
+
+// stringList is a repeatable flag: --town berlin --town london, and --town berlin,london.
+type stringList []string
+
+func (s *stringList) String() string { return strings.Join(*s, ",") }
+
+func (s *stringList) Set(value string) error {
+	for _, part := range strings.Split(value, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			*s = append(*s, part)
+		}
+	}
+	return nil
+}
+
+func runMine(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("lineup mine", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	source := fs.String("source", mine.SourceDice, "platform to read")
+	var towns stringList
+	fs.Var(&towns, "town", "platform city slug; repeatable, or comma-separated")
+	countries := fs.String("country", "", "keep only towns in these countries (de,gb,us)")
+	dryRun := fs.Bool("dry-run", false, "measure and report; write no index")
+	reportPath := fs.String("report", "", "write the run report (JSON) here")
+	coveragePath := fs.String("coverage", "", "rewrite the measured block of this coverage file")
+	maxPerTown := fs.Int("max-per-town", 0, "cap candidates per town (0 = everything the town page shows)")
+	interval := fs.Duration("interval", 0, "per-request gap (0 = the client default)")
+	asJSON := fs.Bool("json", false, "print the report as JSON")
+	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+	if fs.NArg() > 0 {
+		fmt.Fprintf(stderr, "lineup mine: unexpected argument %q\n", fs.Arg(0))
+		return exitUsage
+	}
+	if len(towns) == 0 {
+		fmt.Fprintln(stderr, "lineup mine: name at least one town: --town berlin")
+		return exitUsage
+	}
+	clk, ok := (&flags{now: nowFlag}).clock(stderr)
+	if !ok {
+		return exitUsage
+	}
+
+	report, err := mine.Run(context.Background(), mine.Options{
+		Source:     *source,
+		Towns:      towns,
+		Countries:  []string{*countries},
+		DryRun:     *dryRun,
+		Interval:   *interval,
+		MaxPerTown: *maxPerTown,
+		Now:        clk.Now(),
+		Log:        stderr,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+		return exitRefused
+	}
+
+	if *reportPath != "" {
+		if err := report.WriteFile(*reportPath); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: writing %s: %v\n", *reportPath, err)
+			return exitRefused
+		}
+	}
+	if *coveragePath != "" {
+		if err := mine.UpdateCoverageFile(*coveragePath, report); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+	}
+	if *asJSON {
+		if err := writeJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+	} else {
+		writeMineText(stdout, report)
+	}
+
+	if report.Totals.Rows == 0 {
+		fmt.Fprintln(stderr, "lineup mine: the run produced no rows")
+		return exitRefused
+	}
+	return exitOK
+}
+
+func writeMineText(out io.Writer, rep mine.Report) {
+	mode := "measured"
+	if rep.DryRun {
+		mode = "dry run"
+	}
+	fmt.Fprintf(out, "%s · %s · %s\n", rep.Source, mode, rep.StartedAt.Format(time.RFC3339))
+	for _, t := range rep.Towns {
+		if t.Error != "" {
+			fmt.Fprintf(out, "  %-10s could not be read: %s\n", t.Slug, t.Error)
+			continue
+		}
+		fmt.Fprintf(out, "  %-10s %2d candidates · %2d rows · %2d filtered · %d failures · %.0fs\n",
+			t.Slug, t.Candidates, t.Rows, t.Filtered, sumFailures(t.Failures), t.Seconds)
+	}
+	fmt.Fprintf(out, "  total      %d candidates · %d rows · %d towns discovered\n",
+		rep.Totals.Candidates, rep.Totals.Rows, rep.TownCount)
+	if rep.Note != "" {
+		fmt.Fprintf(out, "  note       %s\n", rep.Note)
+	}
+}
+
+func sumFailures(m map[string]int) int {
+	n := 0
+	for _, count := range m {
+		n += count
+	}
+	return n
 }
 
 func writeJSON(out io.Writer, value any) error {

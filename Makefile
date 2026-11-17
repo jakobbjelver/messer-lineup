@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify smoke probe
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine smoke probe
 
 all: build
 
@@ -26,6 +26,10 @@ doctor: build
 
 verify: build
 	@./bin/$(BINARY) verify $(ARGS)
+
+# A sweep. ARGS names the towns: make mine ARGS="--town berlin,london --dry-run --report r.json"
+mine: build
+	@./bin/$(BINARY) mine $(ARGS)
 
 # The header-profile canary. It touches the network, so it is not in check; run it before believing any
 # report that a source has started blocking us (UA-only evidence is a known false "blocked").
