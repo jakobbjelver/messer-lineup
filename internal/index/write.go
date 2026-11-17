@@ -33,7 +33,7 @@ const ShardDir = "towns"
 
 // WriteOptions is one build.
 type WriteOptions struct {
-	BuiltAt time.Time   // the clock, injected; it is the only non-deterministic input
+	BuiltAt time.Time    // the clock, injected; it is the only non-deterministic input
 	Window  model.Window // the published date range
 	Sources []model.Source
 	Towns   []model.Town // from TownSet; the entries whose towns ended up with rows are published

@@ -2,7 +2,7 @@
 
 This file is the honesty record. It is written from a measurement, not from an intention: a source is
 listed as reachable only if a request from the machine that will run the miner returned its content.
-Regenerate it from `lineup mine --report` once the miner writes one (P0.13).
+The measured block below is written by `lineup mine --coverage docs/coverage.md`; the prose is hand-written.
 
 **Measured 2026-11-17 from the Mac mini, through `internal/fetch`** (full browser header profile, cookies
 carried, `Referer` on click-through, robots honoured). Reproduce with `make probe`.
@@ -17,8 +17,8 @@ a status code and never a size.
 | Eventim (`www.eventim.de`, code `EVE`) | DE | **200** — index 5 100 B, 30 children; `events1…18`; shard 1 = 10 000 URLs, 188 071 B gzipped | **403** on 5 of 5 event pages (609–682 B, `Access Denied`, `errors.edgesuite.net`) | **Index only.** No date is reachable, so no row can be built. |
 | AXS (`www.axs.com`) | UK, US, DE, FR, SE, AU, NZ, JP, SG | **200** — index 10 103 B, 81 children; `sitemap_event_uk` 11 784 043 B, 50 000 URLs | **403** on 3 of 3 event pages (≈107 KB bot wall) | **Index only.** |
 | DICE (`dice.fm`) | UK, US, DE, FR, SE, AU, NL… | **200** — index 1 100 B, 7 shards; `sitemap1.xml` 4 999 082 B, 3 480 URLs of which **3 471 are `/event/`** | **200**, 369–443 KB; four `application/ld+json` blocks, the first a full `MusicEvent` | **Usable spine.** Town, venue, start, geo, price and line-up are all on the page. |
-| Billetlugen (`www.billetlugen.dk`) | DK | n/a (city pages, no sitemap) | **200**, 308 510 B of HTML | **Reachable**; adapter is P1's work and it is bespoke (no JSON-LD). |
-| Tickster (`www.tickster.com`) | SE, NO, DK | **200** — 2 320 311 B, 11 325 URLs (`/se/sv` 10 313, `/no/nb` 648, **`/dk/da` 314**) | **200**, ~20 KB pages, **no JSON-LD**; the date is in the URL (`/dk/da/events/<id>/2026-11-20/<slug>`) | Reachable. DK volume is small and several of those 313 are gift cards and subscriptions, so it is a candidate for Copenhagen's second source with a bespoke HTML adapter, not a spine. |
+| Billetlugen (`www.billetlugen.dk`) | DK | sitemap index 200 (258 B, 9 children); city/category listings 200 | **403** on every event page (431 B) — same edge as Eventim, whose `DK-eventim` assets it serves | **Links only.** Its listings render 16–22 event links with **no date and no venue** in the HTML (the cards hydrate client-side), so it cannot produce a row. |
+| Tickster (`www.tickster.com`) | SE, NO, DK | **200** — 2 320 311 B, 11 325 URLs (`/se/sv` 10 313, `/no/nb` 648, **`/dk/da` 314**), date in every event URL; city pages `/dk/da/events/in/<city>?skip=N` at 16 a page | **200**, ~20 KB pages, no JSON-LD — but **schema.org microdata** (`itemprop="startDate"`, `location` with a `PostalAddress`) | **Copenhagen's only source, and now an adapter.** 51 candidates → 37 rows in one run. |
 | Eventfrog (`www.eventfrog.de`) | DE, CH | city pages | **200**, 176 050 B, 71 event links, no JSON-LD | Reachable, but every field would come from parsing markup. |
 | Billetto (`billetto.dk`, `billetto.co.uk`) | DK, UK | — | **202**, 2 040 B challenge page, including `/api/v3/*` | Not reachable as a plain client. |
 | Resident Advisor (`ra.co`) | UK | — | **403**, 768 B | Not reachable from here. |
@@ -36,8 +36,10 @@ listed in the file (`/sitemaps/sitemap{1..7}.xml`), so the shard list is the pub
 The cost is structural: **a DICE event URL is `/event/<id>` — no date and no town.** Every candidate is one
 detail fetch, which is why mining is country-first and why the sweep is the expensive part of a run.
 
-DICE has no Copenhagen listing (`/browse/copenhagen` → 404), so it does not replace Billetlugen for DK, and
-it cannot stand in for Billetto's half of the Copenhagen gate.
+DICE has **no Nordic town at all**: `/browse/copenhagen`, `/browse/stockholm`, `/browse/oslo`, `/browse/malmö`
+and `/browse/gothenburg` all answer **404**. DICE covers Berlin, London and the US; Tickster covers DK, NO and SE.
+The two town lists do not intersect — which is why no town we can mine has two sources, and why the duplicate
+rate is asserted by fixtures rather than measured live (ADR-003).
 
 ## G0-global, measured town by town (2026-11-17)
 
@@ -106,12 +108,16 @@ city list" applied to the data, and it means a country can be added without a ha
 
 - **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is **met by DICE**, measured town by
   town: 30/30/30 rows, each in the right town. Eventim DE and AXS cannot do it from this egress.
-- **G0** (Copenhagen: two keyless sources ≥ 20 each, merged ≥ 150, duplicates < 8 %) loses its second source,
-  because Billetto answers a challenge page. Billetlugen alone is one source. Tickster DK is reachable (314
-  URLs, date in the URL, no structured data) and is the only candidate found, so the second source is a
-  bespoke HTML adapter — or the gate becomes a one-source promise and says so.
-- **Stockholm** is unmeasured: Eventim SE shares its `.de` sibling's verdict until someone tries an `ESE` event
-  page, and Tickster SE / `/se/sv` is the other candidate (10 313 URLs, date in the URL).
+- **G0-local** is re-cut to a one-source promise (ADR-003): **Copenhagen clears ≥ 20 rows from Tickster alone** —
+  51 candidates → 37 rows, 14 outside the window, zero failures, one shard of 2 375 bytes, `lineup verify`
+  green. The two-source clause is unreachable: Billetto answers a challenge page, and Billetlugen's event pages
+  answer 403.
+- **The duplicate rate is a fixture, not a live number.** No town we mine has two sources (DICE: DE/GB/US;
+  Tickster: DK/NO/SE), so `internal/match` proves the merge — same gig from two sources merges, two gigs in one
+  room on one night do not, a venue spelling difference merges only on position — and `lineup mine --source a,b`
+  will report a live rate the day two sources share a town.
+- **Stockholm is next and cheap**: Tickster `/se/sv` is 10 313 URLs and the adapter already reads `/se/` pages
+  (town, zone and locale come from the URL). Eventim SE stays index-only, sharing its `.de` sibling's verdict.
 
 ## Sources that are not a gate
 

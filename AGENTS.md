@@ -31,7 +31,9 @@ instead of one document.
 | `internal/clock/` | the only place the wall clock is read; every selection path takes the time as a parameter |
 | `internal/index/` | the read side of the published format: manifest, picker, shards, the row contract |
 | `internal/doctor/` | one report on the state of an install, without changing anything |
-| `internal/mine/` | a sweep: towns → candidates → details → rows, plus the report and the coverage block |
+| `internal/mine/` | a sweep: towns → candidates → details → rows → merge, plus the report and the coverage block |
+| `internal/match/` | the merge: `artistKey\|venueKey\|date`, with a position fallback for one room spelled two ways |
+| `internal/sources/<platform>/` | one adapter per platform: `Tickster` is microdata, `dice` is JSON-LD; both expose `TownCandidates` + `Detail` |
 | `internal/fetch/` | the HTTP client: browser header profile, explicit gzip, per-host limiter, robots cache |
 | `internal/sources/` | one adapter per platform, plus the registry loader (P0.7+) |
 | `internal/board/` | the board selector: one pure function, the clock injected (P5) |
@@ -44,7 +46,8 @@ instead of one document.
 ```bash
 make build     # bin/lineup
 make verify    # check a built index; ARGS="--index <dir>" to point it elsewhere
-make mine      # sweep a platform; ARGS="--town berlin,london --dry-run --report r.json"
+make mine      # sweep platforms and write an index; ARGS="--source dice,tickster --town copenhagen --interval 2s"
+make mine ARGS="--source tickster --town copenhagen --dry-run --report r.json"   # measure only
 make doctor    # report the install: version, go, clock, index state, registry
 make dev       # the local pair (lands in P3 with `lineup serve`)
 make test      # unit + integration
