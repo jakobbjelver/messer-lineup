@@ -9,13 +9,12 @@ package dice
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
@@ -29,12 +28,19 @@ const DefaultSitemap = "https://dice.fm/sitemaps/sitemap.xml"
 
 // Source fetches DICE. It is a reader: it never writes, and it holds no state beyond its client.
 type Source struct {
-	client *fetch.Client
+	client  *fetch.Client
+	baseURL string
 }
 
 // New returns a DICE source over an existing client, so the rate limit, the robots cache and the browser
 // profile are the miner's, not a second set of rules.
-func New(client *fetch.Client) *Source { return &Source{client: client} }
+func New(client *fetch.Client) *Source { return &Source{client: client, baseURL: "https://dice.fm"} }
+
+// WithBase points the source at another origin, which is how the tests serve fixtures without the network.
+func (s *Source) WithBase(base string) *Source {
+	s.baseURL = strings.TrimSuffix(base, "/")
+	return s
+}
 
 // Sitemaps lists the event sitemap shards. Walking the index beats guessing `sitemap{n}.xml` until a 404:
 // the index is the publisher's own statement of what exists.
@@ -87,6 +93,34 @@ func (s *Source) Candidates(ctx context.Context, sitemapURL string) ([]model.Can
 	return out, nil
 }
 
+// eventHref matches the event links a city browse page server-renders. The page is a React app, but the
+// first screen of events is in the HTML, which is what makes a town enumerable without running JavaScript.
+var eventHref = regexp.MustCompile(`href="(/event/[0-9a-f]{16,})"`)
+
+// TownCandidates lists the events a city's browse page shows.
+//
+// This is the platform's own city list — the design's "towns are derived from each platform's city sitemap"
+// — and it is the cheap half of a sweep: one request per town instead of one per event in the whole index.
+// It sees the page DICE renders, not the whole city, so it is a floor and never a total.
+func (s *Source) TownCandidates(ctx context.Context, citySlug string) ([]model.Candidate, error) {
+	pageURL := s.baseURL + "/browse/" + url.PathEscape(citySlug)
+	resp, err := s.client.Get(ctx, pageURL)
+	if err != nil {
+		return nil, fmt.Errorf("dice: %s: %w", pageURL, err)
+	}
+	seen := map[string]bool{}
+	out := make([]model.Candidate, 0, 32)
+	for _, m := range eventHref.FindAllSubmatch(resp.Body, -1) {
+		link := string(m[1])
+		if seen[link] {
+			continue
+		}
+		seen[link] = true
+		out = append(out, model.Candidate{URL: s.baseURL + link, Source: Name})
+	}
+	return out, nil
+}
+
 func isEventURL(raw string) bool {
 	u, err := url.Parse(raw)
 	if err != nil {
@@ -108,180 +142,4 @@ func (s *Source) Detail(ctx context.Context, candidate model.Candidate) (model.S
 		return model.Show{}, fmt.Errorf("dice: %s: %w", candidate.URL, err)
 	}
 	return toShow(event, candidate.URL)
-}
-
-// event is the subset of schema.org/MusicEvent this adapter reads.
-type event struct {
-	Type        string `json:"@type"`
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	StartDate   string `json:"startDate"`
-	DoorTime    string `json:"doorTime"`
-	EventStatus string `json:"eventStatus"`
-	Description string `json:"description"`
-	Image       any    `json:"image"`
-	Location    struct {
-		Name    string `json:"name"`
-		URL     string `json:"url"`
-		Address struct {
-			Country  string `json:"addressCountry"`
-			Locality string `json:"addressLocality"`
-			Street   string `json:"streetAddress"`
-		} `json:"address"`
-		Geo struct {
-			Latitude  float64 `json:"latitude"`
-			Longitude float64 `json:"longitude"`
-		} `json:"geo"`
-	} `json:"location"`
-	Offers struct {
-		LowPrice      json.Number `json:"lowPrice"`
-		HighPrice     json.Number `json:"highPrice"`
-		PriceCurrency string      `json:"priceCurrency"`
-		Availability  string      `json:"availability"`
-	} `json:"offers"`
-	Performer []struct {
-		Name string `json:"name"`
-	} `json:"performer"`
-}
-
-// toShow maps one JSON-LD event onto the domain, filling the identity keys here because this is the point
-// where the names are known and no venue canonicalisation has happened yet.
-func toShow(e event, pageURL string) (model.Show, error) {
-	start, err := parseTime(e.StartDate)
-	if err != nil {
-		return model.Show{}, fmt.Errorf("no usable startDate (%q)", e.StartDate)
-	}
-	venue := strings.TrimSpace(e.Location.Name)
-	town := strings.TrimSpace(e.Location.Address.Locality)
-	country := strings.ToLower(strings.TrimSpace(e.Location.Address.Country))
-	if venue == "" {
-		return model.Show{}, fmt.Errorf("no venue name")
-	}
-	if town == "" || len(country) != 2 {
-		return model.Show{}, fmt.Errorf("no town address (%q, %q)", town, country)
-	}
-
-	show := model.Show{
-		Artist:  strings.TrimSpace(e.Name),
-		Venue:   venue,
-		Town:    model.Key(town) + "-" + country,
-		Start:   start,
-		Status:  status(e.EventStatus, e.Offers.Availability),
-		URL:     firstNonEmpty(e.URL, pageURL),
-		Sources: []string{Name},
-
-		Description: e.Description,
-		Image:       firstImage(e.Image),
-		LineUp:      performerNames(e),
-	}
-	show.ArtistKey = model.Key(show.Artist)
-	show.VenueKey = model.Key(venue)
-	if e.Location.Geo.Latitude != 0 || e.Location.Geo.Longitude != 0 {
-		show.Geo = &model.Geo{Lat: e.Location.Geo.Latitude, Lon: e.Location.Geo.Longitude}
-	}
-	if e.DoorTime != "" {
-		if doors, err := parseTime(e.DoorTime); err == nil {
-			show.Doors = doors
-		}
-	}
-	// Offers are strings on DICE ("55.55"), so they are parsed as amounts rather than integers.
-	if low, err := e.Offers.LowPrice.Float64(); err == nil && low > 0 {
-		price := model.Price{Min: low, Max: low, Currency: e.Offers.PriceCurrency}
-		if high, err := e.Offers.HighPrice.Float64(); err == nil && high > low {
-			price.Max = high
-		}
-		show.Price = &price
-	}
-	return show, nil
-}
-
-// status maps schema.org's event status onto the board's one letter. Sold out is an offer fact, not an
-// event fact, so it is read from the offer when the event itself is still scheduled.
-func status(eventStatus, availability string) model.Status {
-	switch {
-	case strings.HasSuffix(eventStatus, "EventCancelled"):
-		return model.Cancelled
-	case strings.HasSuffix(eventStatus, "EventPostponed"):
-		return model.Postponed
-	case strings.HasSuffix(availability, "SoldOut"):
-		return model.SoldOut
-	default:
-		return model.OnSale
-	}
-}
-
-func performerNames(e event) []string {
-	out := make([]string, 0, len(e.Performer))
-	for _, p := range e.Performer {
-		if name := strings.TrimSpace(p.Name); name != "" {
-			out = append(out, name)
-		}
-	}
-	return out
-}
-
-func firstImage(v any) string {
-	switch img := v.(type) {
-	case string:
-		return img
-	case []any:
-		for _, item := range img {
-			if s, ok := item.(string); ok && s != "" {
-				return s
-			}
-		}
-	}
-	return ""
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-// parseTime accepts the offsets DICE publishes (it uses "+00:00", which RFC 3339 reads) and refuses
-// anything it cannot place.
-func parseTime(s string) (time.Time, error) {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return time.Time{}, fmt.Errorf("empty")
-	}
-	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05Z0700", "2006-01-02T15:04:05"} {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t, nil
-		}
-	}
-	return time.Time{}, fmt.Errorf("unparseable %q", s)
-}
-
-// findEvent locates the schema.org event inside a page, whichever of the several shapes a publisher
-// uses: a single object, a list, or a list of lists.
-func findEvent(body []byte) (event, error) {
-	blocks, err := jsonLDBlocks(body)
-	if err != nil {
-		return event{}, err
-	}
-	for _, block := range blocks {
-		var single event
-		if err := json.Unmarshal(block, &single); err == nil && isEventType(single.Type) {
-			return single, nil
-		}
-		var list []event
-		if err := json.Unmarshal(block, &list); err == nil {
-			for _, e := range list {
-				if isEventType(e.Type) {
-					return e, nil
-				}
-			}
-		}
-	}
-	return event{}, fmt.Errorf("no schema.org MusicEvent block on the page")
-}
-
-func isEventType(t string) bool {
-	return t == "MusicEvent" || t == "Event" || t == "Festival" || t == "TheaterEvent"
 }

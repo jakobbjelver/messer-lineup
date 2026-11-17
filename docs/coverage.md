@@ -38,38 +38,41 @@ detail fetch, which is why mining is country-first and why the sweep is the expe
 DICE has no Copenhagen listing (`/browse/copenhagen` → 404), so it does not replace Billetlugen for DK, and
 it cannot stand in for Billetto's half of the Copenhagen gate.
 
-## What a DICE sweep costs, measured
+## G0-global, measured town by town (2026-11-17)
 
-300 candidates from `sitemap1.xml`, one detail fetch each, 1 s apart:
+DICE's city page is the platform's own town list, which is what §5.7 means by deriving towns from a
+platform. One request per town for the candidate list, then one detail fetch each:
+
+| Town | Candidates | Rows in that town | Elsewhere | Failures | ≥ 20 |
+|---|---|---|---|---|---|
+| Berlin | 30 | **30 berlin-de** | 0 | 0 | **yes** |
+| London | 30 | **30 london-gb** | 0 | 0 | **yes** |
+| Austin | 30 | **30 austin-us** | 0 | 0 | **yes** |
+| New York | 30 | 29 new-york-us | 0 | 1 | yes |
+
+**G0-global is met**: one keyless adapter, Berlin / London / Austin each ≥ 20, from this egress. A city page
+is a page of the list rather than the whole city, so 30 is a floor and never a total.
+
+## What a sweep costs, measured
 
 | | |
 |---|---|
-| rows built | **295 of 300** (98.3 %); 5 pages did not yield a placeable event |
-| wall time | 313 s — about **1.04 s per candidate** including the fetch |
-| distinct towns | 56 |
-| distribution | london-gb **100**, chelmsford-gb 55, paris-fr 16, manchester-gb 12, southampton-gb 9, brighton-gb 8, nottingham-gb 7, bristol-gb 5, madrid-es 5, liverpool-gb 4, cardiff-gb 3, birmingham-gb 3, glasgow-gb 3, bordeaux-fr 3, worthing-gb 3 |
-| the gate's towns in that shard | london-gb **100**, berlin-de **2**, austin-us **0**, new-york-us 2 |
+| per candidate | **≈ 1.03 s** (one detail fetch, 1 s apart) |
+| one shard | `sitemap1.xml`, 3 471 candidates — a full shard is ~1 hour |
+| whole index | 7 shards, ~24 000 candidates — **≈ 7 hours**, an overnight job |
+| distinct towns in one 300-candidate sample of one shard | 56, dominated by London (100) — a single shard is not the world |
 
-Two things that follow, and one that does not:
+With a rolling 120-day window a partial sweep is usable and shards can rotate across nights. There is no
+version of this that mines the world in ten minutes, and speeding it up by hitting the host harder is not a
+trade worth making.
 
-- **Parsing is not the risk.** 98.3 % of pages produce a complete row, well past the 95 % the plan asks for.
-- **`sitemap1.xml` is almost entirely the UK.** A sample from one shard cannot answer a three-town gate; the
-  per-town numbers have to come from across the index, which is why the sweep samples every shard.
-- **A full sweep is an overnight job.** Seven shards of ~3 500 candidates each is ~24 000 detail fetches, so
-  roughly **7 hours at 1 s per request**. With a rolling 120-day window a partial sweep is usable — shards can
-  rotate across nights — but a "mine the world in ten minutes" expectation is not available from this design,
-  and no amount of parallelism is polite.
+## The parser lesson this record exists for
 
-## What this means for the gates
-
-- **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is reachable through DICE, which
-  covers all three towns. Eventim DE and AXS cannot do it from this egress.
-- **G0** (Copenhagen: two keyless sources ≥ 20 each, merged ≥ 150, duplicates < 8 %) loses its second source,
-  because Billetto answers a challenge page. Billetlugen alone is one source; a second DK source has to be
-  found (Tickster DK, or DICE if it ever opens Copenhagen) or the gate has to become a one-source promise
-  and say so.
-- **Stockholm** is unmeasured: Eventim SE shares its `.de` sibling's verdict until someone tries an `ESE`
-  event page, and Tickster has not been probed yet.
+The first wide sample produced 656 rows from 720 candidates (91 %) and looked like a source limitation. It was
+not: those pages carry `"@type": "Event"` rather than `MusicEvent`, and `offers` as a **list** rather than an
+object, so a strict Go struct refused a block that had every field the row needed. The reader now walks the
+document by key and type-switches each value; re-measured after the change, **80 of 80 pages parse**. The
+lesson is in the adapter's own comments: JSON-LD is a shape, not a schema.
 
 ## Sources that are not a gate
 

@@ -198,3 +198,45 @@ func TestDetailRejectsAPageItCannotPlace(t *testing.T) {
 		t.Fatal("an event with no start date was accepted")
 	}
 }
+
+// TestTolerantShapes is the shape that cost ten percent of DICE's pages: an `Event` (not `MusicEvent`), an
+// offers list, a single performer object, and a field type a strict struct would refuse.
+func TestTolerantShapes(t *testing.T) {
+	page := []byte(`<script type="application/ld+json">{
+	  "@context": "https://schema.org",
+	  "@type": "Event",
+	  "name": "Thursday Night Comedy",
+	  "startDate": "2026-12-31T20:00:00+00:00",
+	  "endDate": "2026-12-31T21:30:00+00:00",
+	  "image": {"@type": "ImageObject", "url": "https://example/x.jpg"},
+	  "location": {"@type": "Place", "name": "JK Comedy Club",
+	    "address": {"@type": "PostalAddress", "addressLocality": "London", "addressCountry": "GB"},
+	    "geo": {"@type": "GeoCoordinates", "latitude": 51.5127, "longitude": -0.1236}},
+	  "offers": [{"@type": "Offer", "lowPrice": 12.5, "priceCurrency": "GBP"}],
+	  "performer": {"@type": "PerformingGroup", "name": "Various"},
+	  "unexpectedField": {"nested": [1, 2, 3]}
+	}</script>`)
+	doc, err := findEvent(page)
+	if err != nil {
+		t.Fatalf("find: %v", err)
+	}
+	show, err := toShow(doc, "https://dice.fm/event/x")
+	if err != nil {
+		t.Fatalf("toShow: %v", err)
+	}
+	if show.Artist != "Thursday Night Comedy" || show.Town != "london-gb" {
+		t.Fatalf("show = %+v", show)
+	}
+	if show.Price == nil || show.Price.Min != 12.5 || show.Price.Currency != "GBP" {
+		t.Fatalf("price from an offers list = %+v", show.Price)
+	}
+	if len(show.LineUp) != 1 || show.LineUp[0] != "Various" {
+		t.Fatalf("single performer = %v", show.LineUp)
+	}
+	if show.Image != "" {
+		t.Fatalf("an image object must not become a URL string: %q", show.Image)
+	}
+	if show.Geo == nil || show.Geo.Lon > 0 {
+		t.Fatalf("geo = %+v", show.Geo)
+	}
+}
