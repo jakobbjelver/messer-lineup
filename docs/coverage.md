@@ -58,23 +58,37 @@ is a page of the list rather than the whole city, so 30 is a floor and never a t
 
 ## The last measured run
 
-Rewritten by `lineup mine --coverage docs/coverage.md`. The prose around it is hand-written on purpose; the
-block below is a command's output, so the numbers cannot drift from what was actually run.
+Rewritten by `lineup mine --coverage docs/coverage.md` — or re-rendered from a saved report with
+`lineup mine --from <report.json> --coverage docs/coverage.md`, which is how this block was written (the sweep
+itself ran for ~11 minutes and its table should not be a second measurement). The prose around the block is
+hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_dice, tickster · measured · 2026-11-17T22:42:02Z_
+_tickster · measured · 2026-11-17T22:53:42Z_
 
 | Town | Source | Candidates | Rows | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|
-| copenhagen | dice | — | — | — | — | — |
-| copenhagen | tickster | 51 | 37 | 0 | 0 | 110 |
-| **total** | | **51** | **37** | **0** | **0** | |
+| copenhagen | tickster | 51 | 37 | 0 | 0 | 108 |
+| stockholm | tickster | 200 | 200 | 0 | 0 | 521 |
+| **total** | | **251** | **237** | **0** | **0** | |
 
-Merged: **37** rows → **37** shows, duplicate rate **0.0 %**. Towns discovered: **1**.
-Index: **1** shard(s), 37 rows published, 0 outside the window, 0 refused, 2 375 bytes.
-
-`copenhagen` on `dice` could not be read: dice: https://dice.fm/browse/copenhagen: https://dice.fm/browse/copenhagen answered 404
+Merged: **237** rows → **226** shows, duplicate rate **4.6 %**. Towns discovered: **2**.
+Index: **2** shard(s), 226 rows published, 0 outside the window, 0 refused, 13 423 bytes.
 <!-- mine:end -->
+
+## Two towns, one platform, and what the merge actually found
+
+The run above is `--town copenhagen,stockholm --max-per-town 200` at a 2 s interval (robots asks for
+`Crawl-delay: 2`): 251 candidates, 237 rows, 226 published, two shards, 13 423 bytes. Stockholm lists **928
+events** on its city page (58 pages of 16); the 200 fetched here are a sample, and the town's full sweep is a
+nightly job rather than a test.
+
+**The merge found 11 duplicates (4.6 %) with only one source.** They are not cross-platform matches — every row
+came from Tickster — they are the same artist, venue and date listed twice on the platform itself (a series with
+separate ticket types, or a duplicated listing). That is a different and smaller claim than the plan's gate
+made: a single source can prove the merge *runs* and that duplicates exist under the 8 % cap, but only a second
+source covering the same town can prove the merge *finds* the same gig twice. Which is why the merge is also
+asserted by fixtures (ADR-003), and why Copenhagen's published source count is one.
 
 ## What a sweep costs, measured
 

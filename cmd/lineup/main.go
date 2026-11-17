@@ -316,12 +316,24 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	interval := fs.Duration("interval", 0, "per-request gap (0 = the client default)")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
+	fromReport := fs.String("from", "", "render a saved report (JSON) instead of sweeping")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
 	if fs.NArg() > 0 {
 		fmt.Fprintf(stderr, "lineup mine: unexpected argument %q\n", fs.Arg(0))
 		return exitUsage
+	}
+	// A saved report can be re-rendered without touching the network: the coverage record is written from a
+	// measurement, and re-running a sweep to rewrite its own table would be a second measurement, not the same
+	// one.
+	if *fromReport != "" {
+		report, err := readReport(*fromReport)
+		if err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+		return writeMineOutputs(stdout, stderr, report, *reportPath, *coveragePath, *asJSON)
 	}
 	if len(towns) == 0 {
 		fmt.Fprintln(stderr, "lineup mine: name at least one town: --town copenhagen")
@@ -364,31 +376,52 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		return exitRefused
 	}
 
-	if *reportPath != "" {
-		if err := report.WriteFile(*reportPath); err != nil {
-			fmt.Fprintf(stderr, "lineup mine: writing %s: %v\n", *reportPath, err)
-			return exitRefused
-		}
-	}
-	if *coveragePath != "" {
-		if err := mine.UpdateCoverageFile(*coveragePath, report); err != nil {
-			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
-			return exitRefused
-		}
-	}
-	if *asJSON {
-		if err := writeJSON(stdout, report); err != nil {
-			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
-			return exitRefused
-		}
-	} else {
-		writeMineText(stdout, report)
+	if code := writeMineOutputs(stdout, stderr, report, *reportPath, *coveragePath, *asJSON); code != exitOK {
+		return code
 	}
 
 	if report.Totals.Rows == 0 {
 		fmt.Fprintln(stderr, "lineup mine: the run produced no rows")
 		return exitRefused
 	}
+	return exitOK
+}
+
+// readReport loads a report written by an earlier run.
+func readReport(path string) (mine.Report, error) {
+	var report mine.Report
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return report, err
+	}
+	if err := json.Unmarshal(raw, &report); err != nil {
+		return report, fmt.Errorf("%s: %w", path, err)
+	}
+	return report, nil
+}
+
+// writeMineOutputs is everything a run does with its report: the file, the coverage block, stdout.
+func writeMineOutputs(stdout, stderr io.Writer, report mine.Report, reportPath, coveragePath string, asJSON bool) int {
+	if reportPath != "" {
+		if err := report.WriteFile(reportPath); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: writing %s: %v\n", reportPath, err)
+			return exitRefused
+		}
+	}
+	if coveragePath != "" {
+		if err := mine.UpdateCoverageFile(coveragePath, report); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+	}
+	if asJSON {
+		if err := writeJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+		return exitOK
+	}
+	writeMineText(stdout, report)
 	return exitOK
 }
 

@@ -45,7 +45,7 @@ or the copy implies a second opinion that does not exist.
 |---|---|
 | two keyless sources ≥ 20 Copenhagen shows | **one** source (Tickster) ≥ 20 Copenhagen shows in the window |
 | merged ≥ 150 | merged = raw − duplicates, reported; no absolute floor invented for a single source |
-| duplicates < 8 % | **a capability, not a live gate**: asserted by `internal/match` fixtures (same gig from two sources merges; two gigs at one room in one night do not; a venue spelling difference merges only on position) |
+| duplicates < 8 % | **measured where it can be, asserted where it cannot**: a one-source run still reports a duplicate rate — the 2026-11-17 run found 4.6 % (11 shows listed twice on Tickster itself) — but a *cross-source* duplicate needs two sources over one town, so the capability is also held by `internal/match` fixtures |
 | one shard < 300 KB gzipped | unchanged — a cap, not a test |
 
 **d. A district resolves to its city.** Tickster states `København V`, `København Ø`, `Frederiksberg` where DICE
