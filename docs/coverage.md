@@ -18,6 +18,7 @@ a status code and never a size.
 | AXS (`www.axs.com`) | UK, US, DE, FR, SE, AU, NZ, JP, SG | **200** — index 10 103 B, 81 children; `sitemap_event_uk` 11 784 043 B, 50 000 URLs | **403** on 3 of 3 event pages (≈107 KB bot wall) | **Index only.** |
 | DICE (`dice.fm`) | UK, US, DE, FR, SE, AU, NL… | **200** — index 1 100 B, 7 shards; `sitemap1.xml` 4 999 082 B, 3 480 URLs of which **3 471 are `/event/`** | **200**, 369–443 KB; four `application/ld+json` blocks, the first a full `MusicEvent` | **Usable spine.** Town, venue, start, geo, price and line-up are all on the page. |
 | Billetlugen (`www.billetlugen.dk`) | DK | n/a (city pages, no sitemap) | **200**, 308 510 B of HTML | **Reachable**; adapter is P1's work and it is bespoke (no JSON-LD). |
+| Tickster (`www.tickster.com`) | SE, NO, DK | **200** — 2 320 311 B, 11 325 URLs (`/se/sv` 10 313, `/no/nb` 648, **`/dk/da` 314**) | **200**, ~20 KB pages, **no JSON-LD**; the date is in the URL (`/dk/da/events/<id>/2026-11-20/<slug>`) | Reachable. DK volume is small and several of those 313 are gift cards and subscriptions, so it is a candidate for Copenhagen's second source with a bespoke HTML adapter, not a spine. |
 | Eventfrog (`www.eventfrog.de`) | DE, CH | city pages | **200**, 176 050 B, 71 event links, no JSON-LD | Reachable, but every field would come from parsing markup. |
 | Billetto (`billetto.dk`, `billetto.co.uk`) | DK, UK | — | **202**, 2 040 B challenge page, including `/api/v3/*` | Not reachable as a plain client. |
 | Resident Advisor (`ra.co`) | UK | — | **403**, 768 B | Not reachable from here. |
@@ -73,6 +74,13 @@ not: those pages carry `"@type": "Event"` rather than `MusicEvent`, and `offers`
 object, so a strict Go struct refused a block that had every field the row needed. The reader now walks the
 document by key and type-switches each value; re-measured after the change, **80 of 80 pages parse**. The
 lesson is in the adapter's own comments: JSON-LD is a shape, not a schema.
+
+## Towns are discovered, not declared
+
+`towns.json` is built from the shows a run produced (`internal/index.TownSet`): a town appears the first time
+a mined show belongs to one, its position is the mean of the venues seen in it, and its `tz` is left empty
+because no event page carries a trustworthy zone name. That is §5.7's "towns are derived from each platform's
+city list" applied to the data, and it means a country can be added without a hand-written town file.
 
 ## Sources that are not a gate
 

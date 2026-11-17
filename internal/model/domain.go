@@ -123,6 +123,7 @@ type Show struct {
 	Venue     string
 	VenueKey  string
 	Town      string // town id, <slug>-<cc>
+	TownName  string // the town as the source spells it; the id is derived from it
 
 	// What is published, in the row's terms.
 	Start   time.Time // carries the venue's offset
