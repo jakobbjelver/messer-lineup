@@ -38,6 +38,28 @@ detail fetch, which is why mining is country-first and why the sweep is the expe
 DICE has no Copenhagen listing (`/browse/copenhagen` → 404), so it does not replace Billetlugen for DK, and
 it cannot stand in for Billetto's half of the Copenhagen gate.
 
+## What a DICE sweep costs, measured
+
+300 candidates from `sitemap1.xml`, one detail fetch each, 1 s apart:
+
+| | |
+|---|---|
+| rows built | **295 of 300** (98.3 %); 5 pages did not yield a placeable event |
+| wall time | 313 s — about **1.04 s per candidate** including the fetch |
+| distinct towns | 56 |
+| distribution | london-gb **100**, chelmsford-gb 55, paris-fr 16, manchester-gb 12, southampton-gb 9, brighton-gb 8, nottingham-gb 7, bristol-gb 5, madrid-es 5, liverpool-gb 4, cardiff-gb 3, birmingham-gb 3, glasgow-gb 3, bordeaux-fr 3, worthing-gb 3 |
+| the gate's towns in that shard | london-gb **100**, berlin-de **2**, austin-us **0**, new-york-us 2 |
+
+Two things that follow, and one that does not:
+
+- **Parsing is not the risk.** 98.3 % of pages produce a complete row, well past the 95 % the plan asks for.
+- **`sitemap1.xml` is almost entirely the UK.** A sample from one shard cannot answer a three-town gate; the
+  per-town numbers have to come from across the index, which is why the sweep samples every shard.
+- **A full sweep is an overnight job.** Seven shards of ~3 500 candidates each is ~24 000 detail fetches, so
+  roughly **7 hours at 1 s per request**. With a rolling 120-day window a partial sweep is usable — shards can
+  rotate across nights — but a "mine the world in ten minutes" expectation is not available from this design,
+  and no amount of parallelism is polite.
+
 ## What this means for the gates
 
 - **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is reachable through DICE, which
