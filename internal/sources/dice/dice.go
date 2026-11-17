@@ -34,6 +34,9 @@ type Source struct {
 
 // New returns a DICE source over an existing client, so the rate limit, the robots cache and the browser
 // profile are the miner's, not a second set of rules.
+// ID names the source: it is what lands in a row's `src` and in the report.
+func (s *Source) ID() string { return Name }
+
 func New(client *fetch.Client) *Source { return &Source{client: client, baseURL: "https://dice.fm"} }
 
 // WithBase points the source at another origin, which is how the tests serve fixtures without the network.

@@ -18,8 +18,11 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/doctor"
+	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
+	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
+	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
 	"github.com/jakobbjelver/messer-lineup/internal/version"
 )
 
@@ -297,14 +300,16 @@ func (s *stringList) Set(value string) error {
 func runMine(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("lineup mine", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	source := fs.String("source", mine.SourceDice, "platform to read")
+	sources := fs.String("source", "dice", "platforms to read: dice, tickster (comma-separated)")
 	var towns stringList
-	fs.Var(&towns, "town", "platform city slug; repeatable, or comma-separated")
-	countries := fs.String("country", "", "keep only towns in these countries (de,gb,us)")
+	fs.Var(&towns, "town", "town slug; repeatable, or comma-separated")
+	countries := fs.String("country", "", "keep only towns in these countries (dk,se)")
 	dryRun := fs.Bool("dry-run", false, "measure and report; write no index")
+	indexDir := fs.String("index", ".lineup-index", "where to write the index (unless --dry-run)")
+	prune := fs.Bool("prune", true, "delete shards the new manifest does not name")
 	reportPath := fs.String("report", "", "write the run report (JSON) here")
 	coveragePath := fs.String("coverage", "", "rewrite the measured block of this coverage file")
-	maxPerTown := fs.Int("max-per-town", 0, "cap candidates per town (0 = everything the town page shows)")
+	maxPerTown := fs.Int("max-per-town", 0, "cap candidates per town and source (0 = everything listed)")
 	interval := fs.Duration("interval", 0, "per-request gap (0 = the client default)")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
@@ -316,25 +321,35 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	if len(towns) == 0 {
-		fmt.Fprintln(stderr, "lineup mine: name at least one town: --town berlin")
+		fmt.Fprintln(stderr, "lineup mine: name at least one town: --town copenhagen")
 		return exitUsage
 	}
 	clk, ok := (&flags{now: nowFlag}).clock(stderr)
 	if !ok {
 		return exitUsage
 	}
+	client := fetch.New(fetch.Options{Interval: *interval})
+	adapters, err := buildAdapters(client, *sources)
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+		return exitUsage
+	}
 
 	report, err := mine.Run(context.Background(), mine.Options{
-		Source:     *source,
+		Adapters:   adapters,
 		Towns:      towns,
 		Countries:  []string{*countries},
 		DryRun:     *dryRun,
+		IndexDir:   *indexDir,
+		Prune:      *prune,
 		Interval:   *interval,
 		MaxPerTown: *maxPerTown,
 		Now:        clk.Now(),
 		Log:        stderr,
 	})
 	if err != nil {
+		// A run that died still measured something; the report is written before the complaint.
+		_ = report.WriteFile(*reportPath)
 		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
 		return exitRefused
 	}
@@ -367,24 +382,55 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
+// buildAdapters turns source ids into readers. A name that is not here is a usage error, not a silent skip.
+func buildAdapters(client *fetch.Client, list string) ([]mine.Adapter, error) {
+	var out []mine.Adapter
+	for _, raw := range strings.Split(list, ",") {
+		switch id := strings.ToLower(strings.TrimSpace(raw)); id {
+		case "":
+			continue
+		case "dice":
+			out = append(out, dice.New(client))
+		case "tickster":
+			out = append(out, tickster.New(client))
+		default:
+			return nil, fmt.Errorf("unknown source %q (known: dice, tickster)", id)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no source named")
+	}
+	return out, nil
+}
+
 func writeMineText(out io.Writer, rep mine.Report) {
 	mode := "measured"
 	if rep.DryRun {
 		mode = "dry run"
 	}
-	fmt.Fprintf(out, "%s · %s · %s\n", rep.Source, mode, rep.StartedAt.Format(time.RFC3339))
-	for _, t := range rep.Towns {
-		if t.Error != "" {
-			fmt.Fprintf(out, "  %-10s could not be read: %s\n", t.Slug, t.Error)
-			continue
+	fmt.Fprintf(out, "%s · %s · %s\n", strings.Join(rep.Sources, ", "), mode, rep.StartedAt.Format(time.RFC3339))
+	for _, town := range rep.Towns {
+		for _, src := range town.Sources {
+			if src.Error != "" {
+				fmt.Fprintf(out, "  %-12s %-9s could not be read: %s\n", town.Slug, src.ID, src.Error)
+				continue
+			}
+			fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %2d filtered · %d failures · %.0fs\n",
+				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, sumFailures(src.Failures), src.Seconds)
 		}
-		fmt.Fprintf(out, "  %-10s %2d candidates · %2d rows · %2d filtered · %d failures · %.0fs\n",
-			t.Slug, t.Candidates, t.Rows, t.Filtered, sumFailures(t.Failures), t.Seconds)
 	}
-	fmt.Fprintf(out, "  total      %d candidates · %d rows · %d towns discovered\n",
-		rep.Totals.Candidates, rep.Totals.Rows, rep.TownCount)
+	fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %3d towns discovered\n",
+		"total", "", rep.Totals.Candidates, rep.Totals.Rows, rep.TownCount)
+	if rep.Merge.Raw > 0 {
+		fmt.Fprintf(out, "  merged %d → %d shows, duplicate rate %.1f %%\n",
+			rep.Merge.Raw, rep.Merge.Out, 100*rep.Merge.DuplicateRate)
+	}
+	if rep.Build != nil {
+		fmt.Fprintf(out, "  wrote %s: %d shard(s), %d rows, %d bytes\n",
+			rep.Build.Dir, rep.Build.Shards, rep.Build.Published, rep.Build.Bytes)
+	}
 	if rep.Note != "" {
-		fmt.Fprintf(out, "  note       %s\n", rep.Note)
+		fmt.Fprintf(out, "  note  %s\n", rep.Note)
 	}
 }
 

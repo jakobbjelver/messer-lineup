@@ -60,16 +60,18 @@ Rewritten by `lineup mine --coverage docs/coverage.md`. The prose around it is h
 block below is a command's output, so the numbers cannot drift from what was actually run.
 
 <!-- mine:begin -->
-_dice · dry run — measured, nothing written · 2026-11-17T22:21:48Z_
+_dice, tickster · measured · 2026-11-17T22:42:02Z_
 
-| Town | Candidates | Rows | Filtered | Failures | Seconds |
-|---|---:|---:|---:|---:|---:|
-| austin | 30 | 30 | 0 | 0 | 31 |
-| berlin | 30 | 30 | 0 | 0 | 31 |
-| london | 30 | 30 | 0 | 0 | 32 |
-| **total** | **90** | **90** | **0** | **0** | |
+| Town | Source | Candidates | Rows | Filtered | Failures | Seconds |
+|---|---|---:|---:|---:|---:|---:|
+| copenhagen | dice | — | — | — | — | — |
+| copenhagen | tickster | 51 | 37 | 0 | 0 | 110 |
+| **total** | | **51** | **37** | **0** | **0** | |
 
-Towns discovered: **3**.
+Merged: **37** rows → **37** shows, duplicate rate **0.0 %**. Towns discovered: **1**.
+Index: **1** shard(s), 37 rows published, 0 outside the window, 0 refused, 2 375 bytes.
+
+`copenhagen` on `dice` could not be read: dice: https://dice.fm/browse/copenhagen: https://dice.fm/browse/copenhagen answered 404
 <!-- mine:end -->
 
 ## What a sweep costs, measured

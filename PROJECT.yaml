@@ -3,7 +3,7 @@
 # ~/Server/services.yaml. A false manifest is worse than no manifest: keep it true.
 
 schema: 1
-standard: "1.2"
+standard: "1.3"
 name: "messer-lineup"
 display: "Messer Lineup"
 family: "messer"                  # messer | jakob | upstream
@@ -34,6 +34,8 @@ dev:
 
 # Publication and surface. A public repository is a state with a checklist: STANDARD §11.1.
 visibility: "public"
+contributions: "closed"           # closed | open — no pull requests
+channels: "issues"                # takedown requests and data corrections are read
 pwa: false                        # the board is a document, not an installed app
 settings: false                   # no settings page in v1 — the miner's config is files (see exception)
 
@@ -42,6 +44,9 @@ health: "/healthz"
 # Every exception is dated and has a reason. An expired exception is an error.
 # Self-hosting the same index is a second artifact, not a second product (ADR-001 §3).
 exceptions:
+  - id: no-screenshot
+    reason: The board is a P0 skeleton; a capture of real towns and real bills is the milestone that lifts this exception.
+    expires: 2027-02-28
   - id: second-serving-runtime
     reason: "Cloudflare serves the published index and the API; the same Go binary serves the same index on the mini for self-host. One product, two runtimes, one cross-runtime contract (G1)."
     expires: 2027-06-30

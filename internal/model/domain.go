@@ -125,6 +125,10 @@ type Show struct {
 	Town      string // town id, <slug>-<cc>
 	TownName  string // the town as the source spells it; the id is derived from it
 
+	// VenueAliases are the other spellings of the same room that the merge folded in. Kept on the mining
+	// machine only: a published row carries one venue name.
+	VenueAliases []string
+
 	// What is published, in the row's terms.
 	Start   time.Time // carries the venue's offset
 	Status  Status

@@ -24,39 +24,55 @@ func RenderCoverageBlock(r Report) string {
 	if r.DryRun {
 		mode = "dry run — measured, nothing written"
 	}
-	fmt.Fprintf(&b, "_%s · %s · %s_\n\n", r.Source, mode, r.StartedAt.UTC().Format(time.RFC3339))
+	fmt.Fprintf(&b, "_%s · %s · %s_\n\n", strings.Join(r.Sources, ", "), mode, r.StartedAt.UTC().Format(time.RFC3339))
 
-	b.WriteString("| Town | Candidates | Rows | Filtered | Failures | Seconds |\n|---|---:|---:|---:|---:|---:|\n")
-	rows := append([]TownReport(nil), r.Towns...)
-	sort.SliceStable(rows, func(i, j int) bool { return rows[i].Slug < rows[j].Slug })
-	for _, t := range rows {
-		if t.Error != "" {
-			fmt.Fprintf(&b, "| %s | — | — | — | — | — |\n", t.Slug)
-			continue
+	b.WriteString("| Town | Source | Candidates | Rows | Filtered | Failures | Seconds |\n")
+	b.WriteString("|---|---|---:|---:|---:|---:|---:|\n")
+	towns := append([]TownReport(nil), r.Towns...)
+	sort.SliceStable(towns, func(i, j int) bool { return towns[i].Slug < towns[j].Slug })
+	for _, town := range towns {
+		sources := append([]SourceReport(nil), town.Sources...)
+		sort.SliceStable(sources, func(i, j int) bool { return sources[i].ID < sources[j].ID })
+		for _, src := range sources {
+			if src.Error != "" {
+				fmt.Fprintf(&b, "| %s | %s | — | — | — | — | — |\n", town.Slug, src.ID)
+				continue
+			}
+			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d | %d | %.0f |\n",
+				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, failures(src), src.Seconds)
 		}
-		fmt.Fprintf(&b, "| %s | %d | %d | %d | %d | %.0f |\n",
-			t.Slug, t.Candidates, t.Rows, t.Filtered, townFailures(t), t.Seconds)
 	}
-	fmt.Fprintf(&b, "| **total** | **%d** | **%d** | **%d** | **%d** | |\n",
+	fmt.Fprintf(&b, "| **total** | | **%d** | **%d** | **%d** | **%d** | |\n",
 		r.Totals.Candidates, r.Totals.Rows, r.Totals.Filtered, r.Totals.Failures)
 
-	for _, t := range rows {
-		if t.Error != "" {
-			fmt.Fprintf(&b, "\n`%s` could not be read: %s\n", t.Slug, t.Error)
+	if r.Merge.Raw > 0 {
+		fmt.Fprintf(&b, "\nMerged: **%d** rows → **%d** shows, duplicate rate **%.1f %%**. Towns discovered: **%d**.\n",
+			r.Merge.Raw, r.Merge.Out, 100*r.Merge.DuplicateRate, r.TownCount)
+	} else {
+		fmt.Fprintf(&b, "\nTowns discovered: **%d**.\n", r.TownCount)
+	}
+	if r.Build != nil {
+		fmt.Fprintf(&b, "Index: **%d** shard(s), %d rows published, %d outside the window, %d refused, %s bytes.\n",
+			r.Build.Shards, r.Build.Published, r.Build.Outside, r.Build.Refused, thousands(r.Build.Bytes))
+	}
+
+	for _, town := range towns {
+		for _, src := range town.Sources {
+			if src.Error != "" {
+				fmt.Fprintf(&b, "\n`%s` on `%s` could not be read: %s\n", town.Slug, src.ID, src.Error)
+			}
 		}
 	}
-	if reasons := aggregatedFailures(rows); len(reasons) > 0 {
+	if reasons := aggregatedFailures(towns); len(reasons) > 0 {
 		b.WriteString("\nWhy pages were lost:")
 		for _, pair := range reasons {
 			fmt.Fprintf(&b, " %s ×%d;", pair.reason, pair.count)
 		}
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "\nTowns discovered: **%d**.", r.TownCount)
 	if r.Note != "" {
-		fmt.Fprintf(&b, " %s", r.Note)
+		fmt.Fprintf(&b, "\n_%s_\n", r.Note)
 	}
-	b.WriteString("\n")
 	b.WriteString(CoverageEnd)
 	return b.String()
 }
@@ -66,11 +82,13 @@ type reasonCount struct {
 	count  int
 }
 
-func aggregatedFailures(rows []TownReport) []reasonCount {
+func aggregatedFailures(towns []TownReport) []reasonCount {
 	totals := map[string]int{}
-	for _, t := range rows {
-		for reason, count := range t.Failures {
-			totals[reason] += count
+	for _, town := range towns {
+		for _, src := range town.Sources {
+			for reason, count := range src.Failures {
+				totals[reason] += count
+			}
 		}
 	}
 	out := make([]reasonCount, 0, len(totals))
@@ -84,6 +102,19 @@ func aggregatedFailures(rows []TownReport) []reasonCount {
 		return out[i].reason < out[j].reason
 	})
 	return out
+}
+
+// thousands renders a byte count so a table stays readable without a unit library.
+func thousands(n int) string {
+	s := fmt.Sprintf("%d", n)
+	var out []byte
+	for i, c := range []byte(s) {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			out = append(out, ' ')
+		}
+		out = append(out, c)
+	}
+	return string(out)
 }
 
 // UpdateCoverageFile replaces the measured block in path, leaving the prose alone. A file without the markers is

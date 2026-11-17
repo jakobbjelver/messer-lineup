@@ -1,0 +1,47 @@
+# Messer Lineup
+
+> A season board for the artists you actually listen to: the shows near a point you choose, inside a
+> date window, with the distance in kilometres and the ticket link on the row.
+
+Read this before changing anything. `AGENTS.md` is the contract; `docs/coverage.md` is the measured
+state of every source.
+
+## Run
+
+```bash
+make build     # bin/lineup
+make check     # gofmt + vet + tests + the public-tree scan
+./bin/lineup mine    # walk the sources, write index/
+./bin/lineup verify  # the publication rules, before anything leaves the machine
+./bin/lineup serve   # the same index, locally
+```
+
+## Contract
+
+- `internal/model/testdata/keys.json` — the identity vectors. Go and TypeScript must agree with them;
+  an implementation that does not is wrong, and the vectors are never edited to make a test pass.
+- `docs/coverage.md` — per source: what was measured, what it yields, what it refuses.
+- `docs/decisions/` — the row contract and the hosting decision, with dates.
+
+## Invariants
+
+1. **A show's key is `artistKey|venueKey|date`.** Normalisation lives in one function per runtime, held
+   to one vector file.
+2. **Only the thin projection is published.** Nine keys per show: no prices, no descriptions, no images.
+   A test proves a full-fidelity record cannot leak one through.
+3. **The index is an advertisement, never an archive.** 120-day window, every row links out, robots and
+   takedown requests are honoured.
+4. **Two runtimes, one contract.** The edge serves; the miner runs where the crawl runs. Both read the
+   same index files.
+
+## Do not
+
+- Widen the published projection to make a UI feature easier.
+- Add a database to the read path — the index is static files on purpose.
+- Scrape a source that refuses, or ignore a robots directive.
+- Name a host, a home path or a private domain in a shipped file.
+
+## Licence
+
+MIT. Contributions are closed; issues are for takedowns and data corrections. A vulnerability goes to a
+private advisory.
