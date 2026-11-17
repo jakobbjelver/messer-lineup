@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.venv/
+
+# Build output
+dist/
+site/dist/
+build/
+bin/
+.next/
+.astro/
+.dev/
+
+# Local state and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+server.token
+*.db
+*.db-wal
+*.db-shm
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Internal: plans and scratch. Kept on disk, never published.
+.hermes/
+
+# This repository is public (STANDARD §11.1): the adoption record, the Portal actions and the skill
+# source stay on disk and out of the tree. The skill is created from docs/SKILL.template.md.
+MESSER.md
+actions/
+docs/SKILL.template.md

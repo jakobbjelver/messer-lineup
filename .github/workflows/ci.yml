@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The SPA joins this job at P4: npm ci + npm test + npm run build, then vet/test/build,
+      # because the binary embeds web/dist. Nothing in P0 depends on node.
+      - name: Gate
+        run: make check
+
+      - name: Build
+        run: make build

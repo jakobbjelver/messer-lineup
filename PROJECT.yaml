@@ -1,0 +1,53 @@
+# PROJECT.yaml — "Messer Lineup"
+# The machine-readable facts. The audit cross-checks this file against the repo, the skill and
+# ~/Server/services.yaml. A false manifest is worse than no manifest: keep it true.
+
+schema: 1
+standard: "1.2"
+name: "messer-lineup"
+display: "Messer Lineup"
+family: "messer"                  # messer | jakob | upstream
+status: "wip"                     # active | wip | paused | archived
+tier: "edge"                      # service | static | edge | native | tool | design
+kind: "repo"                      # repo | embedded
+skill: "messer-lineup"            # one project skill, frontmatter repo: ~/Repos/messer-lineup
+
+stack:
+  backend: "go"                   # the miner and the local server: one Go binary, SQLite
+  frontend: "react-vite"          # the board; assets served by the Worker, never invoked by it
+  router: "tanstack-router"       # query-parameter routes (ADR-001 §1), so a page view is assets only
+  data: "sqlite"                  # miner-side store; the public index is R2 objects, not a database
+  ui: "messer-ui"
+  brand: "lineup"                 # messer-ui brand id ("stage in neon smoke")
+  port: 1                         # 1 = React + shadcn; 2 = static .m-* atoms; 3 = native
+
+deploy:
+  kind: "cloudflare-worker"       # one Worker: assets.directory + main for /api/v1/* and /calendar/*
+  domain: "lineup.messer.wtf"     # the board
+  data_domain: "data.lineup.messer.wtf"   # R2 bucket behind a custom domain (immutable shards)
+
+dev:
+  command: "make dev"
+  ports: [3016, 8016]
+  pm2: "messer-lineup-dev"
+  action: "actions/actions.json"  # local only: a public repo does not ship Portal actions
+
+# Publication and surface. A public repository is a state with a checklist: STANDARD §11.1.
+visibility: "public"
+pwa: false                        # the board is a document, not an installed app
+settings: false                   # no settings page in v1 — the miner's config is files (see exception)
+
+health: "/healthz"
+
+# Every exception is dated and has a reason. An expired exception is an error.
+# Self-hosting the same index is a second artifact, not a second product (ADR-001 §3).
+exceptions:
+  - id: second-serving-runtime
+    reason: "Cloudflare serves the published index and the API; the same Go binary serves the same index on the mini for self-host. One product, two runtimes, one cross-runtime contract (G1)."
+    expires: 2027-06-30
+  - id: edge-primitive
+    reason: "A global board read by people who are not on this network needs an anycast origin with a free page view. The mini cannot meet that, and the index is static files so the edge holds no state."
+    expires: 2027-06-30
+  - id: no-settings-page
+    reason: "The miner is configured by files in this repo (sources/, config.toml) and the board has no account; there is nothing a settings page would write to."
+    expires: 2027-06-30
