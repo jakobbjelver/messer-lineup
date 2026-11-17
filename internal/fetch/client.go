@@ -15,8 +15,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -40,6 +42,9 @@ type Options struct {
 	RobotsTTL time.Duration
 	MaxBody   int64
 	Token     string
+	// Jar carries cookies, as a browser does. A client that drops Set-Cookie looks like a bot to every
+	// edge that issues one; the zero value gets a jar of its own.
+	Jar       http.CookieJar
 	Now       func() time.Time
 	Sleep     func(time.Duration)
 	Transport http.RoundTripper
@@ -51,6 +56,12 @@ type Client struct {
 	http    *http.Client
 	limiter *Limiter
 	robots  *RobotsCache
+
+	// seen remembers the last URL fetched per host, so the next request carries a Referer and
+	// Sec-Fetch-Site: same-origin — which is what a browser does when you click through a site, and what
+	// an edge's bot manager checks.
+	mu   sync.Mutex
+	seen map[string]string
 }
 
 // Response is what came back. Body is already decompressed.
@@ -108,10 +119,15 @@ func New(opts Options) *Client {
 		t.ForceAttemptHTTP2 = true
 		transport = t
 	}
+	jar := opts.Jar
+	if jar == nil {
+		jar, _ = cookiejar.New(nil)
+	}
 	c := &Client{
 		opts:    opts,
-		http:    &http.Client{Timeout: opts.Timeout, Transport: transport},
+		http:    &http.Client{Timeout: opts.Timeout, Transport: transport, Jar: jar},
 		limiter: NewLimiter(opts.Interval, opts.Now, opts.Sleep),
+		seen:    map[string]string{},
 	}
 	c.robots = NewRobotsCache(opts.RobotsTTL, opts.Token, opts.Now, c.readRobots)
 	return c
@@ -149,11 +165,16 @@ func (c *Client) get(ctx context.Context, rawURL string, skipRobots bool) (*Resp
 		return nil, fmt.Errorf("fetch: %s: %w", rawURL, err)
 	}
 	req.Header = c.opts.Profile.headers()
+	if referer := c.lastFor(u.Host); referer != "" {
+		req.Header.Set("Referer", referer)
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch: %s: %w", rawURL, err)
 	}
+	c.remember(u.Host, u.String())
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, c.opts.MaxBody))
@@ -217,6 +238,19 @@ func decodeBody(body []byte, encoding string, max int64) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unsupported content-encoding %q", encoding)
 	}
+}
+
+// lastFor returns the last URL fetched from host, if any.
+func (c *Client) lastFor(host string) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.seen[host]
+}
+
+func (c *Client) remember(host, u string) {
+	c.mu.Lock()
+	c.seen[host] = u
+	c.mu.Unlock()
 }
 
 func parseTarget(rawURL string) (*url.URL, error) {

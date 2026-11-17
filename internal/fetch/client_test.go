@@ -287,3 +287,50 @@ func TestMissingRobotsAllowsEverything(t *testing.T) {
 		t.Fatalf("get: %v", err)
 	}
 }
+
+// TestSessionCarriesCookiesAndReferer is what every edge's bot manager checks: a browser keeps the
+// server's cookie and sends a Referer when you click through. A client that drops both is a new visitor
+// on every request — which is exactly what a bot looks like.
+func TestSessionCarriesCookiesAndReferer(t *testing.T) {
+	var mu sync.Mutex
+	var secondCookies, secondReferer, secondFetchSite string
+	mux := http.NewServeMux()
+	var srv *httptest.Server
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("")) })
+	mux.HandleFunc("/first", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: "abc123", Path: "/"})
+		_, _ = w.Write([]byte("first"))
+	})
+	mux.HandleFunc("/second", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		if c, err := r.Cookie("session"); err == nil {
+			secondCookies = c.Value
+		}
+		secondReferer = r.Header.Get("Referer")
+		secondFetchSite = r.Header.Get("Sec-Fetch-Site")
+		mu.Unlock()
+		_, _ = w.Write([]byte("second"))
+	})
+	srv = httptest.NewServer(mux)
+	defer srv.Close()
+
+	c := New(Options{Interval: -1})
+	if _, err := c.Get(context.Background(), srv.URL+"/first"); err != nil {
+		t.Fatalf("first: %v", err)
+	}
+	if _, err := c.Get(context.Background(), srv.URL+"/second"); err != nil {
+		t.Fatalf("second: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if secondCookies != "abc123" {
+		t.Fatalf("cookie = %q, want the one /first set", secondCookies)
+	}
+	if want := srv.URL + "/first"; secondReferer != want {
+		t.Fatalf("Referer = %q, want %q", secondReferer, want)
+	}
+	if secondFetchSite != "same-origin" {
+		t.Fatalf("Sec-Fetch-Site = %q, want same-origin on a second request to the same host", secondFetchSite)
+	}
+}

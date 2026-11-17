@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify smoke
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify smoke probe
 
 all: build
 
@@ -31,6 +31,10 @@ verify: build
 # report that a source has started blocking us (UA-only evidence is a known false "blocked").
 smoke:
 	@go test -tags livesmoke -run TestLiveHeaderProfile ./internal/fetch/ -v
+
+# What can this egress reach, and in what form. The numbers in docs/coverage.md come from here.
+probe:
+	@go test -tags livesmoke -run 'TestLive(Reachability|EventimDetail|PlatformSurvey)' ./internal/fetch/ -v
 
 # The frontend joins this Makefile at P4 as `web`, and build/test gain it as a prerequisite
 # (`//go:embed all:app/dist` makes the SPA a build input).
@@ -66,7 +70,7 @@ public-scan:
 # The clock boundary: time.Now() may appear in internal/clock and nowhere else, because every selection
 # path takes the time as a parameter and a function that reads the clock cannot be asserted on.
 clock-check:
-	@hits=$$(git grep -n "time\.Now()" -- '*.go' ':!internal/clock/' || true); \
+	@hits=$$(git grep -nE "time\.Now\b" -- '*.go' ':!internal/clock/' || true); \
 	if [ -n "$$hits" ]; then echo "clock: time.Now() outside internal/clock:"; echo "$$hits"; exit 1; fi
 
 check: fmt-check vet test race public-scan clock-check

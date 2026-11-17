@@ -3,6 +3,8 @@ package fetch
 import (
 	"sync"
 	"time"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // Limiter keeps the crawler polite: one request at a time to a host, with a minimum gap between them.
@@ -27,7 +29,7 @@ type hostSlot struct {
 // NewLimiter returns a limiter with a minimum gap of min between requests to the same host.
 func NewLimiter(min time.Duration, now func() time.Time, sleep func(time.Duration)) *Limiter {
 	if now == nil {
-		now = time.Now
+		now = clock.Now
 	}
 	if sleep == nil {
 		sleep = time.Sleep

@@ -16,7 +16,7 @@ import (
 )
 
 func TestLiveHeaderProfile(t *testing.T) {
-	c := New(Options{Interval: time.Second, Now: func() time.Time { return time.Now() }})
+	c := New(Options{Interval: time.Second})
 	targets := map[string]string{
 		// The one that was recorded as blocked for a week.
 		"billetlugen": "https://www.billetlugen.dk/",

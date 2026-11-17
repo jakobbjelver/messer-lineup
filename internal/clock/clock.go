@@ -23,6 +23,10 @@ type System struct{}
 // Now returns the current time in UTC.
 func (System) Now() time.Time { return time.Now().UTC() }
 
+// Now is the wall clock as a plain function, for code that takes the clock as an argument rather than
+// an interface. It exists so nothing outside this package has to name the standard library's clock.
+func Now() time.Time { return time.Now().UTC() }
+
 // Fixed is a clock stuck at one instant.
 type Fixed struct {
 	T time.Time
