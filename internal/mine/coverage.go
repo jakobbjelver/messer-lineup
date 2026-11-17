@@ -61,6 +61,9 @@ func RenderCoverageBlock(r Report) string {
 			if src.Error != "" {
 				fmt.Fprintf(&b, "\n`%s` on `%s` could not be read: %s\n", town.Slug, src.ID, src.Error)
 			}
+			if src.Warning != "" {
+				fmt.Fprintf(&b, "\n`%s` on `%s`: **%s**\n", town.Slug, src.ID, src.Warning)
+			}
 		}
 	}
 	if reasons := aggregatedFailures(towns); len(reasons) > 0 {

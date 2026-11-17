@@ -25,9 +25,10 @@ const ID = "tickster"
 // pageSize is how many events a city page renders; paging walks in these steps.
 const pageSize = 16
 
-// maxPages bounds a town walk. 20 pages is 320 events: a town with more than that needs a real index, not a
-// deeper page walk, and truncating silently would be a lie told by a report.
-const maxPages = 20
+// maxPages bounds a town walk. 60 pages is 960 events, which is Stockholm's 928 with room to spare: beyond
+// that a town needs a real index rather than a deeper page walk, and truncating silently would be a lie told
+// by a report — so the walk stops with an error instead.
+const maxPages = 60
 
 // cities maps the miner's town slug to the platform's own city path. This table is the one place a platform's
 // spelling is translated into a town id, and it is deliberately explicit: the registry (`sources/aliases`) is

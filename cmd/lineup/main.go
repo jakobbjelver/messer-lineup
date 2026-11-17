@@ -23,6 +23,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
+	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/version"
 )
 
@@ -310,6 +311,8 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	reportPath := fs.String("report", "", "write the run report (JSON) here")
 	coveragePath := fs.String("coverage", "", "rewrite the measured block of this coverage file")
 	maxPerTown := fs.Int("max-per-town", 0, "cap candidates per town and source (0 = everything listed)")
+	statePath := fs.String("state", ".lineup-state/state.json", "the miner's memory: rate budget and yield history")
+	budget := fs.Int("budget", 0, "requests per source per day (0 = no cap)")
 	interval := fs.Duration("interval", 0, "per-request gap (0 = the client default)")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
@@ -334,18 +337,25 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
 		return exitUsage
 	}
+	mem, err := state.Open(*statePath)
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+		return exitRefused
+	}
 
 	report, err := mine.Run(context.Background(), mine.Options{
-		Adapters:   adapters,
-		Towns:      towns,
-		Countries:  []string{*countries},
-		DryRun:     *dryRun,
-		IndexDir:   *indexDir,
-		Prune:      *prune,
-		Interval:   *interval,
-		MaxPerTown: *maxPerTown,
-		Now:        clk.Now(),
-		Log:        stderr,
+		Adapters:     adapters,
+		Towns:        towns,
+		Countries:    []string{*countries},
+		DryRun:       *dryRun,
+		IndexDir:     *indexDir,
+		Prune:        *prune,
+		Interval:     *interval,
+		MaxPerTown:   *maxPerTown,
+		Now:          clk.Now(),
+		Log:          stderr,
+		State:        mem,
+		BudgetPerDay: *budget,
 	})
 	if err != nil {
 		// A run that died still measured something; the report is written before the complaint.
@@ -417,6 +427,9 @@ func writeMineText(out io.Writer, rep mine.Report) {
 			}
 			fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %2d filtered · %d failures · %.0fs\n",
 				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, sumFailures(src.Failures), src.Seconds)
+			if src.Warning != "" {
+				fmt.Fprintf(out, "  %-12s %-9s ⚠ %s\n", "", "", src.Warning)
+			}
 		}
 	}
 	fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %3d towns discovered\n",

@@ -13,6 +13,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+	"github.com/jakobbjelver/messer-lineup/internal/state"
 )
 
 // fakeAdapter is a platform in a map: a town lists candidates, a candidate URL is a show or an error.
@@ -336,5 +337,99 @@ func TestCoverageBlockAndRewrite(t *testing.T) {
 	_ = os.WriteFile(plain, []byte("# nothing marked here\n"), 0o644)
 	if err := UpdateCoverageFile(plain, report); err == nil {
 		t.Fatal("a file with no markers was rewritten")
+	}
+}
+
+func TestBudgetStopsARunAndSaysSo(t *testing.T) {
+	mem, err := state.Open(filepath.Join(t.TempDir(), "state.json"))
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+	// A cap of two: one town page plus one detail, so the second candidate is never fetched.
+	report := run(t, Options{
+		Adapters:     []Adapter{baseAdapter()},
+		Towns:        []string{"berlin"},
+		DryRun:       true,
+		State:        mem,
+		BudgetPerDay: 2,
+	})
+	src := report.Towns[0].Sources[0]
+	if src.Candidates != 2 || src.Rows != 1 {
+		t.Fatalf("source = %+v, want a run cut short after the cap", src)
+	}
+	if !strings.Contains(src.Warning, "stopped after") {
+		t.Fatalf("warning = %q, want the reason the sweep ended early", src.Warning)
+	}
+	// The next run the same day is refused outright rather than silently doing nothing.
+	second := run(t, Options{
+		Adapters:     []Adapter{baseAdapter()},
+		Towns:        []string{"london"},
+		DryRun:       true,
+		State:        mem,
+		BudgetPerDay: 2,
+	})
+	if !strings.Contains(second.Towns[0].Sources[0].Warning, "used its 2 requests") {
+		t.Fatalf("second run = %+v, want a refusal", second.Towns[0].Sources[0])
+	}
+}
+
+func TestYieldGuardFlagsACollapse(t *testing.T) {
+	mem, err := state.Open(filepath.Join(t.TempDir(), "state.json"))
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+	// A baseline the town has earned: three healthy sweeps.
+	for i := 0; i < 3; i++ {
+		if err := mem.Record("dice", "berlin", state.Run{Day: "2026-11-14", Candidates: 2, Rows: 2}); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+	empty := baseAdapter()
+	empty.shows = map[string]model.Show{} // every detail page stops parsing: the shape changed
+	report := run(t, Options{
+		Adapters: []Adapter{empty},
+		Towns:    []string{"berlin"},
+		DryRun:   true,
+		State:    mem,
+	})
+	src := report.Towns[0].Sources[0]
+	if src.Rows != 0 {
+		t.Fatalf("rows = %d", src.Rows)
+	}
+	if !strings.Contains(src.Warning, "parse-yield: 0 rows") {
+		t.Fatalf("warning = %q, want a flagged collapse", src.Warning)
+	}
+}
+
+func TestYieldGuardStaysQuietWithoutABaseline(t *testing.T) {
+	mem, err := state.Open(filepath.Join(t.TempDir(), "state.json"))
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+	// One run is not a baseline: the guard must not cry collapse on a town's first sweep.
+	report := run(t, Options{Adapters: []Adapter{baseAdapter()}, Towns: []string{"berlin"}, DryRun: true, State: mem})
+	if w := report.Towns[0].Sources[0].Warning; w != "" {
+		t.Fatalf("warning on a first run: %q", w)
+	}
+	// A healthy second run against a small baseline is silent too.
+	report = run(t, Options{Adapters: []Adapter{baseAdapter()}, Towns: []string{"berlin"}, DryRun: true, State: mem})
+	if w := report.Towns[0].Sources[0].Warning; w != "" {
+		t.Fatalf("warning on a healthy run: %q", w)
+	}
+}
+
+func TestARunWithHistorySurvivesARestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	mem, err := state.Open(path)
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+	run(t, Options{Adapters: []Adapter{baseAdapter()}, Towns: []string{"berlin"}, DryRun: true, State: mem})
+	reopened, err := state.Open(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if got := len(reopened.History("dice", "berlin")); got != 1 {
+		t.Fatalf("history = %d entries after restart, want 1", got)
 	}
 }

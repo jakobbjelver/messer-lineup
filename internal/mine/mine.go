@@ -18,6 +18,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+	"github.com/jakobbjelver/messer-lineup/internal/state"
 )
 
 // Adapter is the whole contract a platform has to meet. The miner does not care which platform it is talking
@@ -42,6 +43,15 @@ type Options struct {
 	MaxPerTown int           // 0 means every candidate the town page shows
 	Now        time.Time     // the clock, injected
 	Log        io.Writer     // progress; may be nil
+
+	// State is the memory between runs: the day's rate budget and each town's recent yield. Nil means a run
+	// with no memory, which measures but learns nothing and is capped by nothing.
+	State        *state.State
+	BudgetPerDay int // requests per source per day; 0 means no cap
+
+	// YieldFloor is the fraction of a town's median a sweep may fall below before the run is flagged as a
+	// likely parser break (plan 1.7): a quarter is the plan's own line.
+	YieldFloor float64
 }
 
 // Run sweeps, merges and (unless DryRun) writes an index. It always returns a report when it returns at all: a
@@ -92,6 +102,19 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 			started := time.Now()
 			src := SourceReport{ID: adapter.ID(), Failures: map[string]int{}}
 
+			// The yield guard reads the history *before* the sweep: a run compared against a baseline that
+			// the run itself just wrote would never see a collapse.
+			baseline, haveBaseline := 0.0, false
+			if opts.State != nil {
+				baseline, haveBaseline = opts.State.Median(adapter.ID(), slug, state.HistoryDepth)
+			}
+
+			if err := opts.take(adapter.ID()); err != nil {
+				src.Warning = err.Error()
+				town.Sources = append(town.Sources, src)
+				logf("%-14s %-10s %v", slug, src.ID, err)
+				continue
+			}
 			candidates, err := adapter.TownCandidates(ctx, slug)
 			if err != nil {
 				src.Error = err.Error()
@@ -104,7 +127,11 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 			}
 			src.Candidates = len(candidates)
 
-			for _, candidate := range candidates {
+			for i, candidate := range candidates {
+				if err := opts.take(adapter.ID()); err != nil {
+					src.Warning = fmt.Sprintf("%v — stopped after %d of %d candidates", err, i, len(candidates))
+					break
+				}
 				show, derr := adapter.Detail(ctx, candidate)
 				if derr != nil {
 					src.Failures[classify(derr)]++
@@ -136,6 +163,17 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 				townSet.Add(show)
 			}
 			src.Seconds = time.Since(started).Seconds()
+			if warn := yieldWarning(opts.yieldFloor(), baseline, haveBaseline, src); warn != "" && src.Warning == "" {
+				src.Warning = warn
+			}
+			if opts.State != nil {
+				_ = opts.State.Record(adapter.ID(), slug, state.Run{
+					At:         opts.Now.UTC(),
+					Day:        opts.Now.Format("2006-01-02"),
+					Candidates: src.Candidates,
+					Rows:       src.Rows,
+				})
+			}
 			town.Sources = append(town.Sources, src)
 			logf("%-14s %-10s %2d candidates → %2d rows, %2d filtered, %2d failures, %.0fs",
 				slug, src.ID, src.Candidates, src.Rows, src.Filtered, failures(src), src.Seconds)
@@ -216,6 +254,10 @@ type SourceReport struct {
 	Elsewhere  int            `json:"other_town"`
 	Seconds    float64        `json:"seconds"`
 	Error      string         `json:"error,omitempty"`
+	// Warning is a run that completed but should not be trusted: the budget ran out, or the yield collapsed
+	// against this town's own median. A warning is never a reason to publish less than what was mined; it is
+	// the reason to look.
+	Warning string `json:"warning,omitempty"`
 }
 
 // BuildReport is what writing the index did.
@@ -313,6 +355,36 @@ func sourceHealth(towns []TownReport, merged []model.Show) []model.Source {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
+}
+
+// take charges one request against the day's budget. A run with no state has no cap, by definition.
+func (o Options) take(source string) error {
+	if o.State == nil || o.BudgetPerDay <= 0 {
+		return nil
+	}
+	return o.State.Take(source, o.Now, o.BudgetPerDay)
+}
+
+func (o Options) yieldFloor() float64 {
+	if o.YieldFloor <= 0 {
+		return 0.25
+	}
+	return o.YieldFloor
+}
+
+// yieldWarning is the parse-yield guard: zero rows, or a quarter of the town's own median, means the page
+// changed shape or the source is answering something else — the failure mode that looks like success.
+func yieldWarning(floor, baseline float64, haveBaseline bool, src SourceReport) string {
+	if src.Candidates == 0 {
+		return ""
+	}
+	if src.Rows == 0 {
+		return fmt.Sprintf("parse-yield: 0 rows from %d candidates — the page shape may have changed", src.Candidates)
+	}
+	if haveBaseline && baseline > 0 && float64(src.Rows) < floor*baseline {
+		return fmt.Sprintf("parse-yield: %d rows against a median of %.0f (%.0f %%)", src.Rows, baseline, 100*float64(src.Rows)/baseline)
+	}
+	return ""
 }
 
 func failures(s SourceReport) int {
