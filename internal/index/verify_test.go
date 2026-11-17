@@ -24,6 +24,10 @@ type fixture struct {
 
 const testTown = "copenhagen-dk"
 
+// testNow is the clock a verdict is taken at. Fixed, because a verifier that answers differently at
+// different wall times is a verifier nobody can assert on.
+var testNow = time.Date(2026, 11, 17, 19, 0, 0, 0, time.UTC)
+
 func goodTown() model.Town {
 	return model.Town{ID: testTown, Name: "København", Country: "dk", Lat: 55.6761, Lon: 12.5683, TZ: "Europe/Copenhagen"}
 }
@@ -114,8 +118,7 @@ func verify(t *testing.T, f fixture) Report {
 	t.Helper()
 	dir := t.TempDir()
 	f.write(t, dir)
-	now := time.Date(2026, 11, 17, 19, 0, 0, 0, time.UTC)
-	rep, err := Verify(dir, now)
+	rep, err := Verify(dir, testNow)
 	if err != nil {
 		t.Fatalf("verify: %v", err)
 	}
@@ -159,7 +162,7 @@ func TestVerifyRefusesAnEmptyIndex(t *testing.T) {
 }
 
 func TestVerifyRefusesAMissingManifest(t *testing.T) {
-	rep, err := Verify(t.TempDir(), time.Now())
+	rep, err := Verify(t.TempDir(), testNow)
 	if err != nil {
 		t.Fatalf("verify: %v", err)
 	}
@@ -191,7 +194,7 @@ func TestVerifyRefusesAZeroByteShard(t *testing.T) {
 	if err := os.WriteFile(shard, nil, 0o644); err != nil {
 		t.Fatalf("truncate shard: %v", err)
 	}
-	rep, err := Verify(dir, time.Now())
+	rep, err := Verify(dir, testNow)
 	if err != nil {
 		t.Fatalf("verify: %v", err)
 	}
@@ -230,7 +233,7 @@ func TestVerifyRefusesATamperedShard(t *testing.T) {
 	if err := os.WriteFile(shard, raw, 0o644); err != nil {
 		t.Fatalf("write shard: %v", err)
 	}
-	rep, err := Verify(dir, time.Now())
+	rep, err := Verify(dir, testNow)
 	if err != nil {
 		t.Fatalf("verify: %v", err)
 	}

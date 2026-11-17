@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify smoke
 
 all: build
 
@@ -26,6 +26,11 @@ doctor: build
 
 verify: build
 	@./bin/$(BINARY) verify $(ARGS)
+
+# The header-profile canary. It touches the network, so it is not in check; run it before believing any
+# report that a source has started blocking us (UA-only evidence is a known false "blocked").
+smoke:
+	@go test -tags livesmoke -run TestLiveHeaderProfile ./internal/fetch/ -v
 
 # The frontend joins this Makefile at P4 as `web`, and build/test gain it as a prerequisite
 # (`//go:embed all:app/dist` makes the SPA a build input).

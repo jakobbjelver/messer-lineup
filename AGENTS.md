@@ -31,7 +31,7 @@ instead of one document.
 | `internal/clock/` | the only place the wall clock is read; every selection path takes the time as a parameter |
 | `internal/index/` | the read side of the published format: manifest, picker, shards, the row contract |
 | `internal/doctor/` | one report on the state of an install, without changing anything |
-| `internal/fetch/` | the HTTP client: browser header profile, gzip, per-host limiter, robots cache (P0.6) |
+| `internal/fetch/` | the HTTP client: browser header profile, explicit gzip, per-host limiter, robots cache |
 | `internal/sources/` | one adapter per platform, plus the registry loader (P0.7+) |
 | `internal/board/` | the board selector: one pure function, the clock injected (P5) |
 | `sources/` | the registry, data only — `countries/*.toml`, `aliases/*.toml` |
