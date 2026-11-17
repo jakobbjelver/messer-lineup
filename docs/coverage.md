@@ -7,35 +7,47 @@ Regenerate it from `lineup mine --report` once the miner writes one (P0.13).
 **Measured 2026-11-17 from the Mac mini, through `internal/fetch`** (full browser header profile, cookies
 carried, `Referer` on click-through, robots honoured). Reproduce with `make probe`.
 
-Byte sizes below are one sample; a dynamic page varies a little per request, which is why every
-verdict is a status code and never a size.
+Byte sizes below are one sample; a dynamic page varies a little per request, which is why every verdict is
+a status code and never a size.
 
-## Sources
+## Reachability, which is the first thing to measure
 
 | Source | Market | Sitemap | Detail page | Verdict |
 |---|---|---|---|---|
 | Eventim (`www.eventim.de`, code `EVE`) | DE | **200** — index 5 100 B, 30 children; `events1…18`; shard 1 = 10 000 URLs, 188 071 B gzipped | **403** on 5 of 5 event pages (609–682 B, `Access Denied`, `errors.edgesuite.net`) | **Index only.** No date is reachable, so no row can be built. |
 | AXS (`www.axs.com`) | UK, US, DE, FR, SE, AU, NZ, JP, SG | **200** — index 10 103 B, 81 children; `sitemap_event_uk` 11 784 043 B, 50 000 URLs | **403** on 3 of 3 event pages (≈107 KB bot wall) | **Index only.** |
-| Billetlugen (`www.billetlugen.dk`) | DK | n/a (city pages, no sitemap) | **200**, 308 510 B of HTML | **Reachable.** |
-| DICE (`dice.fm`) | UK, US, DE, … | per-city browse pages | **200**, 441 394 B, 3 `application/ld+json` blocks incl. `Event` | **Reachable**, structured data present. |
-| Eventfrog (`www.eventfrog.de`) | DE, CH | city pages | **200**, 176 081 B, 71 `/event` links | **Reachable**, no JSON-LD — links must be parsed. |
-| Billetto (`billetto.co.uk`) | UK | — | **202**, 2 040 B (challenge page) | Not reachable as a plain client. |
+| DICE (`dice.fm`) | UK, US, DE, FR, SE, AU, NL… | **200** — index 1 100 B, 7 shards; `sitemap1.xml` 4 999 082 B, 3 480 URLs of which **3 471 are `/event/`** | **200**, 369–443 KB; four `application/ld+json` blocks, the first a full `MusicEvent` | **Usable spine.** Town, venue, start, geo, price and line-up are all on the page. |
+| Billetlugen (`www.billetlugen.dk`) | DK | n/a (city pages, no sitemap) | **200**, 308 510 B of HTML | **Reachable**; adapter is P1's work and it is bespoke (no JSON-LD). |
+| Eventfrog (`www.eventfrog.de`) | DE, CH | city pages | **200**, 176 050 B, 71 event links, no JSON-LD | Reachable, but every field would come from parsing markup. |
+| Billetto (`billetto.dk`, `billetto.co.uk`) | DK, UK | — | **202**, 2 040 B challenge page, including `/api/v3/*` | Not reachable as a plain client. |
 | Resident Advisor (`ra.co`) | UK | — | **403**, 768 B | Not reachable from here. |
 
-## What this means for the global gate
+Not one of these was judged on a `curl` result: `curl` and the Go client disagree on the same host within
+the same minute (TLS fingerprint), so a block seen by one is not a block seen by the other.
 
-G0-global asks for **Berlin ≥ 20, London ≥ 20, Austin ≥ 20** from keyless adapters, and named Eventim DE
-for Berlin and AXS for London and Austin. Both of those serve their sitemaps and refuse their event
-pages from this egress, so as measured the gate cannot be met with the candidates it names.
+## DICE is the spine, and what that costs
 
-Two details worth keeping, because both have misled before:
+DICE's `robots.txt` is `User-agent: *` → `Allow: /` with `Content-Signal: search=yes,ai-train=no,
+use=reference`; the named AI-training crawlers are the only ones refused. An index that carries dates and
+links out to the seller is a search/reference use, which is what those signals permit. Its sitemaps are
+listed in the file (`/sitemaps/sitemap{1..7}.xml`), so the shard list is the publisher's own statement.
 
-- **`curl` and the Go client disagree on this host.** Eventim's home page answered 200 to the Go client
-  and a TLS reset to `curl` within the same minute, with identical headers. TLS fingerprint, not
-  reachability. Curl-only evidence is not evidence about the miner.
-- **A cookie jar and a `Referer` did not change the outcome.** Eventim's event pages answered 403 with a
-  session cookie from its own home page and `Sec-Fetch-Site: same-origin`. This is not a missing session;
-  it is the edge refusing that page class to this client.
+The cost is structural: **a DICE event URL is `/event/<id>` — no date and no town.** Every candidate is one
+detail fetch, which is why mining is country-first and why the sweep is the expensive part of a run.
+
+DICE has no Copenhagen listing (`/browse/copenhagen` → 404), so it does not replace Billetlugen for DK, and
+it cannot stand in for Billetto's half of the Copenhagen gate.
+
+## What this means for the gates
+
+- **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is reachable through DICE, which
+  covers all three towns. Eventim DE and AXS cannot do it from this egress.
+- **G0** (Copenhagen: two keyless sources ≥ 20 each, merged ≥ 150, duplicates < 8 %) loses its second source,
+  because Billetto answers a challenge page. Billetlugen alone is one source; a second DK source has to be
+  found (Tickster DK, or DICE if it ever opens Copenhagen) or the gate has to become a one-source promise
+  and say so.
+- **Stockholm** is unmeasured: Eventim SE shares its `.de` sibling's verdict until someone tries an `ESE`
+  event page, and Tickster has not been probed yet.
 
 ## Sources that are not a gate
 

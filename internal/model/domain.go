@@ -61,11 +61,14 @@ func (g *Geo) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Price is what a ticket costs, in the seller's currency. It never reaches a published row: a price
-// is the seller's content, and the index only ever points at the seller.
+// Price is what a ticket costs, in the seller's currency.
+//
+// It never reaches a published row: a price is the seller's content, and the index only ever points at the
+// seller. The amount is a float because that is how sellers state it ("55.55 GBP"); it is never used for
+// arithmetic and never compared, so there is no rounding decision to get wrong here.
 type Price struct {
-	Min      int
-	Max      int
+	Min      float64
+	Max      float64
 	Currency string
 }
 

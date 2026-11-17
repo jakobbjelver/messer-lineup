@@ -1,0 +1,41 @@
+{
+ "@context": "https://schema.org",
+ "@type": "MusicEvent",
+ "name": "Kingfishr",
+ "url": "https://dice.fm/event/3kq9xv-kingfishr-26th-mar-alexandra-palace-london-tickets",
+ "startDate": "2027-03-26T18:30:00+00:00",
+ "doorTime": "2027-03-26T18:30:00+00:00",
+ "endDate": "2027-03-26T22:45:00+00:00",
+ "eventStatus": "https://schema.org/EventScheduled",
+ "description": "If you'd like to learn more about the venue's story and mission, along with how you can play your part to support them -",
+ "location": {
+  "@type": "Place",
+  "name": "Alexandra Palace",
+  "url": "https://dice.fm/venue/alexandra-palace-j7v7",
+  "address": {
+   "@type": "PostalAddress",
+   "streetAddress": "Alexandra Palace, Alexandra Palace Way, London N22 7AY",
+   "addressLocality": "London",
+   "addressCountry": "GB"
+  },
+  "geo": {
+   "@type": "GeoCoordinates",
+   "latitude": 51.5941783,
+   "longitude": -0.130773299999987
+  }
+ },
+ "offers": {
+  "@type": "AggregateOffer",
+  "lowPrice": "55.55",
+  "highPrice": "55.55",
+  "priceCurrency": "GBP",
+  "availability": null,
+  "url": null
+ },
+ "performer": [
+  {
+   "@type": "PerformingGroup",
+   "name": "Kingfishr"
+  }
+ ]
+}
