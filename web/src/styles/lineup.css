@@ -120,7 +120,7 @@ svg.ic[data-off]{display:none}
 /* Film grain over the room: two scales — a fine one that reads as emulation, a coarse one that gives the magenta a
    texture instead of a gradient. Static on purpose (a moving grain is the one effect that makes a slow page feel
    nervous), and blended so it lifts the light rather than greying it. */
-.stage__grain{position:absolute;inset:0;opacity:.10;mix-blend-mode:overlay;
+.stage__grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.34' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
@@ -222,6 +222,12 @@ body[data-lit] .stage__lift{opacity:.7}
 .ribcaption{display:flex;justify-content:space-between;padding:8px 20px 0}
 .ribcaption span{font:400 10px/1 var(--font-mono);color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
 
+/* an artist page's head: the name is the page, and the list is a different thing — give it air and a soft floor */
+.sheet--artist .head{padding-bottom:0;margin-bottom:14px}
+.sheet--artist .head::after{content:"";display:block;height:22px;
+  background:linear-gradient(to bottom, transparent, color-mix(in oklab, var(--foreground) 5%, transparent) 62%, transparent)}
+.sheet--artist .h1row{margin-bottom:4px}
+
 /* coverage line */
 .coverage{display:flex;align-items:center;gap:8px;width:100%;margin-top:18px;height:36px;
   padding:0 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
@@ -310,24 +316,10 @@ body[data-lit] .stage__lift{opacity:.7}
 .foot .l{display:inline-flex;align-items:baseline;gap:8px}
 .foot .num{font-size:10.5px;letter-spacing:.04em;color:var(--text-2)}
 
-/* ── the palettes (⌘K surfaces) ──────────────────────────────────────────── */
-.scrim{position:fixed;inset:0;z-index:40;display:none;
-  background:color-mix(in oklab, var(--background) 42%, transparent);
-  backdrop-filter:blur(10px) saturate(.9)}
-.scrim[data-open]{display:block;animation:fade .18s ease-out}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-.palette{position:fixed;z-index:41;left:50%;top:12vh;translate:-50% 0;width:min(560px,calc(100vw - 32px));
-  background:var(--surface);border:1px solid var(--border-strong);display:none;flex-direction:column;
-  max-height:70vh;background:color-mix(in oklab,var(--surface) 96%,transparent);
-  border-color:var(--border-strong);
-  backdrop-filter:blur(22px) saturate(1.05)}
-.palette[data-open]{display:flex;animation:pop .16s ease-out}
-@keyframes pop{from{opacity:0;translate:-50% 8px}to{opacity:1;translate:-50% 0}}
-.palette__tabs{display:flex;border-bottom:1px solid var(--border)}
-.palette__tabs button{flex:1;height:40px;font:600 10.5px/1 var(--font-golos);letter-spacing:.1em;
-  text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent}
-.palette__tabs button[aria-selected="true"]{color:var(--foreground);border-bottom-color:var(--primary);
-  background:color-mix(in oklab,var(--primary) 8%,transparent)}
+/* ── the palettes (⌘K surfaces) ──────────────────────────────────────────────────────────────────────────────
+   Shape and position belong to `ui/dialog` (a centred dialog, or a bottom sheet under 721px). What is left here is the
+   column inside it: tabs, search, a scrolling body and a foot. */
+.palette{display:flex;flex-direction:column;min-height:0;flex:1}
 .palette__search{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
 .palette__search svg{color:var(--text-3)}
 .palette__search input{flex:1;background:none;border:0;outline:none;color:var(--foreground);
@@ -416,8 +408,11 @@ body[data-lit] .stage__lift{opacity:.7}
   .ribbon--day{display:none}
   .ribbon--wk{display:grid}
   .bar__row{padding:0 16px;gap:8px}
-  .brand b{font-size:11px}
-  .page{padding:12px 0 40px}
+  .brand b{display:none}
+  /* the head has no room for the action on a phone: it is the floating control there */
+  .taste-cta{display:none}
+  /* the sheet tucks under the bar: a 12px slot of page background read as a gap between the header and the content */
+  .page{padding:0 0 96px}
   .sheet{border-left:0;border-right:0}
   .head{padding:16px 14px 0}
   h1{font-size:26px}
@@ -425,7 +420,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .actions{width:100%;gap:6px}
   .actions .div{display:none}
   .seg button{padding:0 8px;font-size:12px}
-  .ribbon{padding:0 14px;height:26px}
+  .ribbon{padding:0 14px;height:auto;min-height:26px;row-gap:0}
   .ribbon i{height:8px}.ribbon i.on{height:14px}.ribbon i.today{height:22px}
   .ribcaption{padding:8px 14px 0}
   .ribcaption #rib-note{display:none}
@@ -452,12 +447,9 @@ body[data-lit] .stage__lift{opacity:.7}
   .sheet::after{content:"";position:absolute;left:-20%;right:-20%;top:-58px;height:min(52dvh,420px);
     pointer-events:none;z-index:0;opacity:.62;mix-blend-mode:var(--lift-mode);
     background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
       radial-gradient(66% 58% at 14% 6%, var(--haze-a), transparent 66%),
       radial-gradient(54% 48% at 88% -4%, var(--haze-b), transparent 64%),
       radial-gradient(78% 64% at 44% 104%, var(--haze-c), transparent 70%);
-    background-size:160px 160px, auto, auto, auto;
-    background-blend-mode:soft-light, normal, normal, normal;
     -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.66) 44%,rgba(0,0,0,.22) 76%,transparent 100%);
     mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.66) 44%,rgba(0,0,0,.22) 76%,transparent 100%)}
 
@@ -472,7 +464,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .sign::after{opacity:.22;filter:blur(16px)}
   /* and the green spill on the paper is pulled back, so the head reads magenta with a green sign in it */
   .sheet::before{opacity:.45}
-  :root:not(.dark) .stage__grain{opacity:.06}
+  :root:not(.dark) .stage__grain{opacity:.04}
   :root:not(.dark) .sheet::after{opacity:.5}
   .row .go{background:rgb(0 0 0 / .34);border:1px solid rgb(255 255 255 / .18)}
   :root:not(.dark) .row .go{background:rgb(255 255 255 / .62);border-color:rgb(0 0 0 / .12)}
@@ -481,10 +473,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .coverage{padding:0 14px;height:auto;min-height:36px;padding-top:8px;padding-bottom:8px}
   .foot{flex-direction:column;gap:6px;padding:14px}
   .state{padding:32px 14px 40px}
-  /* the palette becomes a sheet */
-  .palette{min-height:min(58dvh, 420px);top:auto;bottom:0;left:0;right:0;translate:0 0;width:100%;
-    max-height:min(86dvh, 640px);border-left:0;border-right:0;border-bottom:0;
-    padding-bottom:env(safe-area-inset-bottom)}
+  /* the palette is a sheet: the dialog block owns that shape */
   .palette__body{overscroll-behavior:contain}
   .palette__foot .esc{display:none}
   .palette__foot{padding-bottom:calc(10px + env(safe-area-inset-bottom))}

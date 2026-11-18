@@ -4,6 +4,7 @@ import Coverage from "./components/Coverage";
 import Palette, { type PaletteTab } from "./components/Palette";
 import Ribbon from "./components/Ribbon";
 import TopBar from "./components/TopBar";
+import Fab from "./components/ui/Fab";
 import { CaretDown } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
@@ -377,35 +378,45 @@ export default function App() {
         <section className="sheet">
           <div className="head">
             <div className="eyebrow">
+              {/* The count and the stamp are the two things that arrive late, so they are the two that get a placeholder
+                  of the same width: the label reads "Season board · ▁ days" and never reflows when the number lands. */}
               <span className="lab">
                 {dateWindow && published && dateWindow.from !== published.from ? "Travel" : "Season"} board
-                {phase.kind === "ready" ? " · " : ""}
+                {" · "}
                 {phase.kind === "ready" ? (
                   <span className="num">
                     {dateWindow && published
-                    ? Math.round(
-                        (new Date(`${dateWindow.to}T12:00:00Z`).getTime() -
-                          new Date(`${dateWindow.from}T12:00:00Z`).getTime()) /
-                          86_400_000,
-                      ) + 1
+                      ? Math.round(
+                          (new Date(`${dateWindow.to}T12:00:00Z`).getTime() -
+                            new Date(`${dateWindow.from}T12:00:00Z`).getTime()) /
+                            86_400_000,
+                        ) + 1
                       : (manifest?.window.days ?? 0)}
                   </span>
-                ) : null}
-                {phase.kind === "ready" ? " days" : ""}
+                ) : (
+                  <span className="sk-num" aria-hidden="true" />
+                )}{" "}
+                days
               </span>
-              {manifest ? (
-                <span className="r">
-                  <span className="lab">As of</span>{" "}
+              <span className="r">
+                <span className="lab">As of</span>{" "}
+                {manifest ? (
                   <span className="num" style={{ fontSize: 11, color: "var(--text-2)" }}>
                     {stampLabel(manifest.built_at)}
                   </span>
-                </span>
-              ) : null}
+                ) : (
+                  <span className="sk-stamp" aria-hidden="true" />
+                )}
+              </span>
             </div>
-            <div className="h1row" hidden={phase.kind !== "ready"}>
+            <div className="h1row">
               <h1>
+                {phase.kind !== "ready" ? (
+                  <span className="sk-h1" aria-hidden="true" />
+                ) : null}
                 <button
                   className="townbtn"
+                  hidden={phase.kind !== "ready"}
                   onClick={() => setPalette({ open: true, tab: "town" })}
                   aria-label="Change town"
                 >
@@ -437,12 +448,7 @@ export default function App() {
                   className={tasteKeys.size > 0 ? "taste-cta linked" : "taste-cta"}
                   onClick={() => setPalette({ open: true, tab: "taste" })}
                 >
-                  <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-                    <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM86,176a8,8,0,0,1-16,0V128a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V96a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V112a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0Z" />
-                  </svg>
-                  <span>
-                    {tasteKeys.size > 0 ? `${tasteKeys.size} artists` : "Add taste"}
-                  </span>
+                  <span>{tasteKeys.size > 0 ? `${tasteKeys.size} artists` : "Set taste"}</span>
                 </button>
               </div>
             </div>
@@ -474,8 +480,15 @@ export default function App() {
                 dateWindow={dateWindow ?? published ?? manifest.window}
                 artistNames={taste.map((entry) => entry.name)}
               />
-            </>
-          ) : null}
+              </>
+            ) : (
+              // The ribbon and the coverage line are ~90px of head; reserving them is the difference between a page
+              // that settles once and a page that jumps when the index arrives.
+              <div className="headsk" aria-hidden="true">
+                <div className="sk-ribbon" />
+                <div className="sk-coverage" />
+              </div>
+            )}
 
           <div id="board">{body}</div>
 
@@ -490,6 +503,15 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* The board's own action, in reach of a thumb: taste is something you do to the whole board, not to the town. */}
+      <Fab
+        onClick={() => setPalette({ open: true, tab: "taste" })}
+        badge={tasteKeys.size > 0 ? String(tasteKeys.size) : undefined}
+        label={tasteKeys.size > 0 ? `Set taste, ${tasteKeys.size} artists` : "Set taste"}
+      >
+        Set taste
+      </Fab>
 
       <Palette
         open={palette.open}

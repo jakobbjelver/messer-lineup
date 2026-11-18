@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import * as Popover from "./ui/Popover";
 import { Info } from "./icons";
 import { calendarLink } from "../lib/calendar";
 import { dayOf, stampLabel, type Manifest } from "../lib/indexData";
@@ -36,46 +37,24 @@ export default function Coverage({
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  // Built once per render pass: the token is a pure function of the three things that define the board.
+  // The feed for exactly what is on screen: this town, this window, this taste list.
   const links = calendarLink(town, dateWindow, artistNames);
 
-  // The feed's address is long by nature (it *is* the board). Printing it is what made this panel noisy, so it is
-  // copied rather than shown — and the button says so for a moment, which is the only feedback a copy control has.
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(links.https);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      window.setTimeout(() => setCopied(false), 1400);
     } catch {
-      /* clipboard refused: the webcal link is still there to click */
+      /* a browser that refuses the clipboard leaves the subscribe link, which is the action that matters */
     }
   };
-  const wrap = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    const onDown = (event: PointerEvent) => {
-      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onDown);
-    };
-  }, [open]);
 
   return (
-    <div className="coverage" ref={wrap}>
-      <button
-        className="coverage__line"
-        aria-expanded={open}
-        aria-controls="coverage-panel"
-        onClick={() => setOpen((value) => !value)}
-      >
+    <div className="coverage">
+      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+      <button className="coverage__line" aria-label="Where this board comes from">
         <span>
           <span className="num">{shows}</span> {shows === 1 ? "show" : "shows"}
         </span>
@@ -87,13 +66,9 @@ export default function Coverage({
           <Info />
         </span>
       </button>
+      </Popover.Trigger>
 
-      {open ? (
-        <>
-          {/* A layer needs a layer to sit on: on a phone the panel is a card over cards of the same tone, which reads as
-              a collision rather than as depth. The scrim is the depth, and the way out of it. */}
-          <div className="coverage__scrim" aria-hidden="true" onClick={() => setOpen(false)} />
-          <div className="coverage__panel" id="coverage-panel" role="dialog" aria-label="Where this board comes from">
+      <Popover.Content className="coverage__panel" side="bottom" align="end">
           <div className="coverage__row coverage__row--head">
             <span>Source</span>
             <span>State</span>
@@ -151,13 +126,10 @@ export default function Coverage({
             Forget everything
           </button>
           <p className="coverage__note">
-            {canForget
-              ? "Clears your taste list, its spellings and the “new” markers on this device. The index itself is public and unchanged."
-              : "There is nothing on this device to forget yet."}
+            {canForget ? "Your taste, spellings and “new” markers. The index is public." : "Nothing to forget yet."}
           </p>
-        </div>
-        </>
-      ) : null}
+      </Popover.Content>
+      </Popover.Root>
     </div>
   );
 }

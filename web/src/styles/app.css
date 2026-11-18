@@ -255,30 +255,8 @@
   color: var(--text-2);
   display: inline-flex;
 }
-.coverage__scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  background: color-mix(in oklab, var(--background) 58%, transparent);
-  backdrop-filter: blur(3px);
-  animation: coverfade .16s ease-out;
-}
-@keyframes coverfade {
-  from { opacity: 0 }
-  to { opacity: 1 }
-}
-/* On a wide screen the panel is a popover with room around it, and the surface step is enough depth: dimming a whole
-   board to read five numbers is a modal where a popover belongs. On a phone the same panel sits on rows of its own tone,
-   so there the scrim is the depth. */
-@media (min-width: 721px) {
-  .coverage__scrim { display: none }
-}
+
 .coverage__panel {
-  position: absolute;
-  z-index: 30;
-  left: 20px;
-  right: 20px;
-  top: calc(100% + 6px);
   padding: 14px 16px 16px;
   /* one surface step away from the sheet, in the direction each theme has room to step: elevation without a shadow */
   background: var(--background);
@@ -288,24 +266,7 @@
   letter-spacing: normal;
   font-weight: 400;
 }
-.dark .coverage__scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  background: color-mix(in oklab, var(--background) 58%, transparent);
-  backdrop-filter: blur(3px);
-  animation: coverfade .16s ease-out;
-}
-@keyframes coverfade {
-  from { opacity: 0 }
-  to { opacity: 1 }
-}
-/* On a wide screen the panel is a popover with room around it, and the surface step is enough depth: dimming a whole
-   board to read five numbers is a modal where a popover belongs. On a phone the same panel sits on rows of its own tone,
-   so there the scrim is the depth. */
-@media (min-width: 721px) {
-  .coverage__scrim { display: none }
-}
+.dark 
 .coverage__panel {
   background: var(--surface-2);
 }
@@ -560,4 +521,48 @@
 .coverage__copy:hover {
   background: var(--surface-2);
   color: var(--foreground);
+}
+
+
+/* ── the loading head ──────────────────────────────────────────────────────────────────────────────────────
+   Two facts arrive late (the day count and the build stamp) and two blocks arrive late (the title, the ribbon and
+   coverage band). Each gets a box of the size it will occupy, so the layout is settled before the data is. */
+.sk-num {
+  display: inline-block;
+  width: 26px;
+  height: 9px;
+  vertical-align: baseline;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  animation: sk 7s ease-in-out infinite alternate;
+}
+
+.sk-stamp {
+  display: inline-block;
+  width: 96px;
+  height: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  animation: sk 7s ease-in-out infinite alternate;
+}
+
+.sk-h1 {
+  display: block;
+  height: 34px;
+  width: min(220px, 54%);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  animation: sk 7s ease-in-out infinite alternate;
+}
+
+.headsk {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-num,
+  .sk-stamp,
+  .sk-h1 {
+    animation: none;
+  }
 }

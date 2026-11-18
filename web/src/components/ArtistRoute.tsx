@@ -132,7 +132,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
       <TopBar theme={theme} onToggle={toggle} />
 
       <main className="page">
-        <section className="sheet">
+        <section className="sheet sheet--artist">
           <div className="head">
             <a
               className="backlink"

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DateRange from "./DateRange";
+import ResponsiveDialog from "./ui/ResponsiveDialog";
+import * as TabKit from "./ui/Tabs";
 import { ArrowLeft } from "./icons";
 import { parseTasteList, type TasteEntry } from "../lib/taste";
 import { townLabel, type Town, type TownEntry } from "../lib/indexData";
@@ -54,9 +56,9 @@ export default function Palette(props: Props) {
   const [paste, setPaste] = useState("");
   const [query, setQuery] = useState("");
   const [dropped, setDropped] = useState<Set<string>>(new Set());
-  const panel = useRef<HTMLDivElement | null>(null);
 
-  // A closed palette is not in the document at all, so no focus can land in it and no key handler is live.
+  // The overlay (Radix) owns Escape, focus and the scroll lock; this effect owns only the flow's own reset and the
+  // arrow keys within the option list, which is not a tablist and therefore not Radix's to move.
   useEffect(() => {
     if (!open) {
       setFlow(null);
@@ -66,14 +68,8 @@ export default function Palette(props: Props) {
       return;
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        if (flow) setFlow(null);
-        else onClose();
-        return;
-      }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-      const options = [...(panel.current?.querySelectorAll<HTMLElement>(".opt, .palette__tabs button") ?? [])];
+      const options = [...document.querySelectorAll<HTMLElement>(".ui-dialog .opt")];
       if (!options.length) return;
       const at = options.indexOf(document.activeElement as HTMLElement);
       const next = event.key === "ArrowDown" ? (at + 1) % options.length : (at - 1 + options.length) % options.length;
@@ -81,9 +77,17 @@ export default function Palette(props: Props) {
       options[next]?.focus();
     };
     window.addEventListener("keydown", onKey);
-    panel.current?.querySelector<HTMLElement>(".opt, .palette__tabs button")?.focus();
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, flow, onClose]);
+  }, [open]);
+
+  // A list of options is not the tablist: the first option takes focus when the sheet opens on its own content.
+  useEffect(() => {
+    if (!open || flow) return;
+    const timer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(".ui-dialog .opt")?.focus({ preventScroll: true });
+    }, 30);
+    return () => window.clearTimeout(timer);
+  }, [open, flow, tab]);
 
   const parsed = useMemo(() => parseTasteList(paste), [paste]);
   const visibleTowns = useMemo(() => {
@@ -105,17 +109,33 @@ export default function Palette(props: Props) {
   const linkedState = taste.length > 0;
 
   return (
-    <>
-      <div className="scrim" data-open="" onClick={onClose} />
-      <div className="palette" data-open="" role="dialog" aria-modal="true" aria-label="Town and taste" ref={panel}>
-        <div className="palette__tabs" role="tablist">
-          <button role="tab" aria-selected={tab === "town"} onClick={() => { onTab("town"); setFlow(null); }}>
-            Town
-          </button>
-          <button role="tab" aria-selected={tab === "taste"} onClick={() => { onTab("taste"); setFlow(null); }}>
-            Your taste
-          </button>
-        </div>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      label="Town and taste"
+      // A sheet's Escape goes back one step before it closes the sheet: the flow is a place, and back is where it goes.
+      onEscape={() => {
+        if (flow) {
+          setFlow(null);
+          return true;
+        }
+        return false;
+      }}
+    >
+      <TabKit.Root
+        value={tab}
+        onValueChange={(next) => {
+          onTab(next as PaletteTab);
+          setFlow(null);
+        }}
+        className="palette"
+      >
+        <TabKit.List label="Town and taste">
+          <TabKit.Tab value="town">Town</TabKit.Tab>
+          <TabKit.Tab value="taste">Your taste</TabKit.Tab>
+        </TabKit.List>
 
         {tab === "town" && !flow ? (
           <div className="palette__search">
@@ -286,8 +306,8 @@ export default function Palette(props: Props) {
         <div className="palette__foot">
           <span className="esc">esc</span>
         </div>
-      </div>
-    </>
+      </TabKit.Root>
+    </ResponsiveDialog>
   );
 }
 
