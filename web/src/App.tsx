@@ -466,7 +466,7 @@ export default function App() {
                 onForget={forgetEverything}
                 canForget={taste.length > 0 || newKeys.size > 0}
                 town={ready?.town.town ?? ""}
-                window={dateWindow ?? published ?? manifest.window}
+                dateWindow={dateWindow ?? published ?? manifest.window}
                 artistNames={taste.map((entry) => entry.name)}
               />
             </>

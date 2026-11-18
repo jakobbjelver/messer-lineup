@@ -21,7 +21,7 @@ export default function Coverage({
   onForget,
   canForget,
   town,
-  window,
+  dateWindow,
   artistNames,
 }: {
   manifest: Manifest;
@@ -31,12 +31,25 @@ export default function Coverage({
   canForget: boolean;
   /** What the feed should contain: this town, this window, this taste list. */
   town: string;
-  window: { from: string; to: string };
+  dateWindow: { from: string; to: string };
   artistNames: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   // Built once per render pass: the token is a pure function of the three things that define the board.
-  const links = calendarLink(town, window, artistNames);
+  const links = calendarLink(town, dateWindow, artistNames);
+
+  // The feed's address is long by nature (it *is* the board). Printing it is what made this panel noisy, so it is
+  // copied rather than shown — and the button says so for a moment, which is the only feedback a copy control has.
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(links.https);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard refused: the webcal link is still there to click */
+    }
+  };
   const wrap = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -125,14 +138,10 @@ export default function Coverage({
             <a className="coverage__cal-link" href={links.webcal}>
               Subscribe in your calendar
             </a>
-            <code className="coverage__cal-url">
-              {links.https.replace(/^https?:\/\//, "")}
-            </code>
+            <button type="button" className="coverage__copy" onClick={copy}>
+              {copied ? "Copied" : "Copy link"}
+            </button>
           </div>
-          <p className="coverage__note">
-            A feed of exactly this board — {artistNames.length > 0 ? "your artists" : "the whole town"}, this window —
-            that refreshes itself. It carries no account and no secret: the same link works in any calendar.
-          </p>
 
           <button className="coverage__forget" onClick={onForget} disabled={!canForget}>
             Forget everything
