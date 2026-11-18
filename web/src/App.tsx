@@ -465,6 +465,9 @@ export default function App() {
                 sourceCount={sourceCount}
                 onForget={forgetEverything}
                 canForget={taste.length > 0 || newKeys.size > 0}
+                town={ready?.town.town ?? ""}
+                window={dateWindow ?? published ?? manifest.window}
+                artistNames={taste.map((entry) => entry.name)}
               />
             </>
           ) : null}

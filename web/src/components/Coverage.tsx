@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Info } from "./icons";
+import { calendarLink } from "../lib/calendar";
 import { dayOf, stampLabel, type Manifest } from "../lib/indexData";
 
 /**
@@ -19,14 +20,23 @@ export default function Coverage({
   sourceCount,
   onForget,
   canForget,
+  town,
+  window,
+  artistNames,
 }: {
   manifest: Manifest;
   shows: number;
   sourceCount: number;
   onForget: () => void;
   canForget: boolean;
+  /** What the feed should contain: this town, this window, this taste list. */
+  town: string;
+  window: { from: string; to: string };
+  artistNames: string[];
 }) {
   const [open, setOpen] = useState(false);
+  // Built once per render pass: the token is a pure function of the three things that define the board.
+  const links = calendarLink(town, window, artistNames);
   const wrap = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -110,6 +120,19 @@ export default function Coverage({
               <dd className="num">{manifest.towns.length}</dd>
             </div>
           </dl>
+
+          <div className="coverage__cal">
+            <a className="coverage__cal-link" href={links.webcal}>
+              Subscribe in your calendar
+            </a>
+            <code className="coverage__cal-url">
+              {links.https.replace(/^https?:\/\//, "")}
+            </code>
+          </div>
+          <p className="coverage__note">
+            A feed of exactly this board — {artistNames.length > 0 ? "your artists" : "the whole town"}, this window —
+            that refreshes itself. It carries no account and no secret: the same link works in any calendar.
+          </p>
 
           <button className="coverage__forget" onClick={onForget} disabled={!canForget}>
             Forget everything

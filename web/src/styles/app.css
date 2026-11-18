@@ -480,3 +480,37 @@
     display: none;
   }
 }
+
+/* ── the calendar feed: one link, one address ─────────────────────────────────────────────────────────── */
+.coverage__cal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.coverage__cal-link {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--foreground);
+  font: 500 14px/1 var(--font-golos);
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.coverage__cal-link:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.coverage__cal-url {
+  font: 400 10.5px/1.4 var(--font-mono);
+  color: var(--text-3);
+  word-break: break-all;
+}

@@ -201,7 +201,6 @@ func TestTheRoutesThatNeedAccountsSaySo(t *testing.T) {
 		"/api/v1/taste/me",
 		"/api/v1/taste/handle?p=lastfm&u=x",
 		"/api/v1/auth/spotify/start",
-		"/calendar/taste-abc.ics",
 	} {
 		rec := get(t, handler, path)
 		if rec.Code != http.StatusNotImplemented {

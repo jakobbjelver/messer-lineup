@@ -9,6 +9,9 @@
  *                  takes its clock and its inputs as parameters.
  *   kind: "shape"  only the listed keys must exist on both — for a route whose body carries a clock or a live
  *                  read, where byte equality would assert on the moment of the call.
+ *   kind: "ics"  both must answer 200 `text/calendar` with a structurally valid feed: balanced VEVENTs, a UID /
+ *                DTSTART / DTEND / SUMMARY in each, unique UIDs, CRLF line endings, no line over 75 octets. The
+ *                *contents* differ by design (each runtime reads its own index), the shape may not.
  *   kind: "document" both must answer 200 with an HTML document (a client route, not an asset and not a 404)
  *   kind: "error"  both must answer the same status with the same `error.code`. The message is free text and
  *                  names its runtime on purpose; the code is the contract.
@@ -21,6 +24,12 @@
 
 const GO = process.argv[2] ?? "http://127.0.0.1:8016";
 const WORKER = process.argv[3] ?? "http://127.0.0.1:8788";
+
+/** base64url of a board specification, built the way `web/src/lib/calendar.ts` builds it. */
+const calendarToken = Buffer.from(
+  JSON.stringify({ v: 1, t: "copenhagen-dk", f: "2026-11-01", o: "2027-01-31" }),
+  "utf8",
+).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 const REQUESTS = [
   // Liveness: the clock is the whole point, so only its presence is compared.
@@ -43,10 +52,12 @@ const REQUESTS = [
     compare: { kind: "error", code: "not_implemented", status: 501 },
   },
   { method: "DELETE", path: "/api/v1/session", compare: { kind: "error", code: "not_implemented", status: 501 } },
-  { method: "GET", path: "/calendar/taste-abc.ics", compare: { kind: "error", code: "not_implemented", status: 501 } },
   // The one document route: both runtimes must answer an artist link with the SPA's document, not a 404. On the
   // Worker this goes script → ASSETS → `single-page-application`; on the Go server it is the history fallback.
   { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },
+  // The calendar feed is the only rendered route; its shape is the contract even when the rows behind it differ.
+  { method: "GET", path: `/calendar/${calendarToken}.ics`, compare: { kind: "ics" } },
+  { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
 ];
 
 async function call(base, req) {
@@ -87,6 +98,37 @@ function diff(req, go, worker) {
   }
 
   switch (kind) {
+    case "ics": {
+      for (const [label, res] of [
+        ["go", go],
+        ["worker", worker],
+      ]) {
+        const type = res.type ?? "";
+        if (!type.includes("text/calendar")) problems.push(`${label}: content-type ${type || "(none)"}, want text/calendar`);
+        const body = res.text ?? "";
+        if (!body.endsWith("END:VCALENDAR\r\n")) problems.push(`${label}: feed does not end with END:VCALENDAR + CRLF`);
+        if (!body.startsWith("BEGIN:VCALENDAR\r\n")) problems.push(`${label}: feed does not start with BEGIN:VCALENDAR`);
+        const events = body.split("BEGIN:VEVENT").length - 1;
+        if (events !== body.split("END:VEVENT").length - 1) problems.push(`${label}: unbalanced VEVENTs (${events})`);
+        const uids = new Set();
+        for (const event of body.split("BEGIN:VEVENT").slice(1)) {
+          const block = event.split("END:VEVENT")[0];
+          for (const field of ["UID:", "DTSTAMP:", "DTSTART:", "DTEND:", "SUMMARY:", "LOCATION:"]) {
+            if (!block.includes(field)) problems.push(`${label}: a VEVENT is missing ${field}`);
+          }
+          const uid = /UID:([^\r\n]+)/.exec(block)?.[1];
+          if (uid) {
+            if (uids.has(uid)) problems.push(`${label}: duplicate UID ${uid}`);
+            uids.add(uid);
+          }
+        }
+        if (uids.size !== events) problems.push(`${label}: ${events} events but ${uids.size} unique UIDs`);
+        for (const line of body.split("\r\n")) {
+          if (new TextEncoder().encode(line).length > 75) problems.push(`${label}: a line exceeds 75 octets`);
+        }
+      }
+      break;
+    }
     case "document": {
       for (const [label, res] of [
         ["go", go],

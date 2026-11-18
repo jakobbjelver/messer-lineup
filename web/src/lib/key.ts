@@ -82,7 +82,7 @@ export function sha1Hex(input: string): string {
   for (let offset = 0; offset < padded.length; offset += 64) {
     for (let i = 0; i < 16; i++) w[i] = view.getUint32(offset + i * 4, false);
     for (let i = 16; i < 80; i++) {
-      const n = w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16];
+      const n = w[i - 3]! ^ w[i - 8]! ^ w[i - 14]! ^ w[i - 16]!;
       w[i] = (n << 1) | (n >>> 31);
     }
     let a = h0;
@@ -106,7 +106,7 @@ export function sha1Hex(input: string): string {
         f = b ^ c ^ d;
         k = 0xca62c1d6;
       }
-      const temp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) >>> 0;
+      const temp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]!) >>> 0;
       e = d;
       d = c;
       c = (b << 30) | (b >>> 2);
