@@ -25,6 +25,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	lineupindex "github.com/jakobbjelver/messer-lineup/internal/index"
+	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
 // Cache lifetimes. A shard is immutable for a year; the two files a client polls are minutes old at worst.
@@ -41,8 +44,11 @@ type Options struct {
 	AccessKey string
 	SecretKey string
 	DryRun    bool
-	Log       io.Writer
-	Now       time.Time
+	// NoGuard skips the §5.8 collapse guards. It exists for the operator who has looked at the numbers and
+	// decided the drop is real; an automation must never set it.
+	NoGuard bool
+	Log     io.Writer
+	Now     time.Time
 	// Client lets a test point the publisher at its own server.
 	Client *http.Client
 }
@@ -63,7 +69,9 @@ type Result struct {
 	Skipped    int      `json:"skipped"`
 	Bytes      int64    `json:"bytes"`
 	Keys       []string `json:"keys"`
-	DryRun     bool     `json:"dry_run"`
+	// PreviousRows is what the guards compared against: 0 means nothing was published before this run.
+	PreviousRows int  `json:"previous_rows"`
+	DryRun       bool `json:"dry_run"`
 }
 
 // Run copies the index into the bucket. It refuses to run at all if the index does not verify — publishing an
@@ -85,6 +93,37 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 	logf := func(format string, args ...any) {
 		if opts.Log != nil {
 			fmt.Fprintf(opts.Log, format+"\n", args...)
+		}
+	}
+
+	// The guards run before anything is uploaded, and they run in a dry run too: the point is to find out that
+	// this publish would be refused while looking at it, not after the fact.
+	if !opts.NoGuard {
+		current, err := readManifest(opts.IndexDir)
+		if err != nil {
+			return result, err
+		}
+		// A dry run on a machine with no credentials cannot read what is published, so the guards have nothing
+		// to compare against. Say so rather than pretending the check ran.
+		var previous *model.Manifest
+		if opts.Endpoint != "" && opts.Bucket != "" && opts.AccessKey != "" && opts.SecretKey != "" {
+			previous, err = opts.LoadPrevious(ctx)
+			if err != nil {
+				return result, err
+			}
+		} else {
+			logf("publish: guards skipped — no credentials to read the published manifest")
+		}
+		if previous != nil {
+			result.PreviousRows = rows(previous)
+			logf("guards: %d rows published, %d in the index being replaced", rows(current), result.PreviousRows)
+		}
+		if problems := Check(previous, current); len(problems) > 0 {
+			logf("publish: refused, nothing was uploaded:")
+			for _, problem := range problems {
+				logf("  %s", problem)
+			}
+			return result, Refused{Problems: problems}
 		}
 	}
 
@@ -178,6 +217,19 @@ func cacheControl(maxAge time.Duration) string {
 		return fmt.Sprintf("public, max-age=%d, immutable", int(maxAge.Seconds()))
 	}
 	return fmt.Sprintf("public, max-age=%d", int(maxAge.Seconds()))
+}
+
+// readManifest is the index's own manifest, which the guards compare against the published one.
+func readManifest(dir string) (*model.Manifest, error) {
+	body, err := os.ReadFile(filepath.Join(dir, lineupindex.ManifestFile))
+	if err != nil {
+		return nil, fmt.Errorf("publish: %w", err)
+	}
+	var manifest model.Manifest
+	if err := json.Unmarshal(body, &manifest); err != nil {
+		return nil, fmt.Errorf("publish: %s: %w", lineupindex.ManifestFile, err)
+	}
+	return &manifest, nil
 }
 
 func (o Options) objectURL(key string) string {

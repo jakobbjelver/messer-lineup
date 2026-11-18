@@ -157,6 +157,7 @@ func runPublish(args []string, stdout, stderr io.Writer) int {
 	indexDir := fs.String("index", ".lineup-index", "the index to publish")
 	dryRun := fs.Bool("dry-run", false, "list what would be uploaded; touch nothing")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	force := fs.Bool("force", false, "publish even when the guards refuse: the operator has looked at the numbers")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
@@ -187,6 +188,7 @@ func runPublish(args []string, stdout, stderr io.Writer) int {
 		AccessKey: os.Getenv("LINEUP_R2_ACCESS_KEY_ID"),
 		SecretKey: os.Getenv("LINEUP_R2_SECRET_ACCESS_KEY"),
 		DryRun:    *dryRun,
+		NoGuard:   *force,
 		Now:       clk.Now(),
 		Log:       stderr,
 	})

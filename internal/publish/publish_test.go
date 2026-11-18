@@ -21,6 +21,8 @@ type bucket struct {
 	mu      sync.Mutex
 	objects map[string]record
 	puts    []string
+	// previous is the manifest the guards read before uploading; nil means nothing is published yet.
+	previous []byte
 }
 
 type record struct {
@@ -53,6 +55,14 @@ func (b *bucket) handler(t *testing.T, existing ...string) http.Handler {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		switch r.Method {
+		case http.MethodGet:
+			// The guards read the published manifest before uploading. A bucket with none is the first publish.
+			if b.previous == nil {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(b.previous)
 		case http.MethodHead:
 			if _, ok := b.objects[key]; ok {
 				w.WriteHeader(http.StatusOK)

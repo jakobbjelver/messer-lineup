@@ -54,6 +54,53 @@ lineup publish                            # verify, then upload
 
 `LINEUP_R2_BUCKET` defaults to `messer-lineup-index`.
 
+## The guards
+
+`lineup publish` refuses — non-zero, **nothing uploaded** — when any of these hold:
+
+| Condition | Why |
+|---|---|
+| `lineup verify` rejects the index | schema, projection allowlist, window, an empty index |
+| the whole index would drop more than **25 %** | a collapse is not a quiet week |
+| a town of 20+ shows would drop more than **60 % while its own sources report `ok`** | the signature of a parser that stopped matching |
+| a town of 20+ shows would disappear while its sources report `ok` | the same thing, one step further |
+
+The guards read the manifest **already in the bucket** before uploading, so they compare like with like, and they
+run in a `--dry-run` too — the point is to see the refusal while looking at the numbers.
+
+Two deliberate reductions of the plan's §5.8 list:
+
+- **"fewer than two sources `ok` for the primary town" is gone.** ADR-003 established that no town we mine has
+  two sources (DICE is DE/GB/US, Tickster is DK/NO/SE), so that rule would refuse every publish forever. The rule
+  it protected — a collapse nobody noticed — is the two rows above.
+- **Towns under 20 shows are not guarded.** Three shows becoming one is an ordinary week, and a guard that fires
+  on it teaches people to pass `--force` out of habit.
+
+`--force` exists for the operator who has read the numbers and decided the drop is real. **An automation must
+never set it**: the nightly job does not, which is why a broken parser means a quiet night rather than a quiet
+board.
+
+## Unattended runs
+
+`scripts/nightly.sh` (wrapped for the scheduler as `cron-messer-lineup.sh`) does the whole cycle and writes one
+ledger line:
+
+```
+make build -> lineup mine --town $LINEUP_TOWNS --report .lineup-index/sweep-<day>.json
+           -> lineup publish        (guards apply)
+           -> ~/Artifacts/messer-lineup/ledger.md
+```
+
+- It rebuilds the binary **first**, every night, because a stale `bin/lineup` has twice produced a run that
+  measured nothing and looked fine.
+- Credentials come from `~/.config/messer-lineup/env` (0600, `LINEUP_R2_*`), never from the repo.
+- The full log goes to `~/Artifacts/messer-lineup/logs/nightly-<day>.log`; **exactly one line** goes to stdout,
+  because the scheduler delivers stdout verbatim.
+- A refusal is a normal outcome and is recorded as one: the published index stays, and the ledger says so.
+
+Scheduled as the Hermes cron job `Messer Lineup nightly` (`10 4 * * *`, Europe/Stockholm, `no_agent` — the script
+is the job, no model is involved).
+
 ## One-time setup (already done, recorded for the next person)
 
 1. Bucket `messer-lineup-index` in the `messer.wtf` account.
