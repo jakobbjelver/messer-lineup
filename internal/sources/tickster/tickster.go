@@ -39,6 +39,8 @@ var cities = map[string]string{
 	"aarhus":     "/dk/da/events/in/arhus",
 	"odense":     "/dk/da/events/in/odense",
 	"aalborg":    "/dk/da/events/in/aalborg",
+	"malmo":      "/se/sv/events/in/malm%C3%B6",
+	"goteborg":   "/se/sv/events/in/g%C3%B6teborg",
 	"oslo":       "/no/nb/events/in/oslo",
 	"bergen":     "/no/nb/events/in/bergen",
 }

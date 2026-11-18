@@ -26,7 +26,7 @@
   --ray-mode:multiply;
   --ray-opacity:.75;
   --lift-mode:multiply;
-  --sign-a:oklch(.44 .17 128); --sign-b:oklch(.52 .15 128);
+  --sign-a:oklch(.44 .17 128); --sign-b:oklch(.52 .15 128); --sign-core:oklch(.60 .16 128);
   --glow-a:oklch(.52 .20 128);
   --glow-b:oklch(.86 .14 128);
   --sheet-shadow:none;
@@ -58,7 +58,7 @@
   --ray-mode:screen;
   --ray-opacity:.9;
   --lift-mode:screen;
-  --sign-a:oklch(.88 .20 128); --sign-b:oklch(.74 .18 128);
+  --sign-a:oklch(.88 .20 128); --sign-b:oklch(.74 .18 128); --sign-core:#f4ffec;
   --glow-a:oklch(.80 .22 128);
   --glow-b:oklch(.94 .12 128);
   --sheet-shadow:none;
@@ -117,8 +117,14 @@ svg.ic[data-off]{display:none}
   0%{transform:translate3d(1%,0,0) scale(1.05)}
   100%{transform:translate3d(-2%,-2%,0) scale(1)}
 }
-.stage__grain{position:absolute;inset:0;opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* Film grain over the room: two scales — a fine one that reads as emulation, a coarse one that gives the magenta a
+   texture instead of a gradient. Static on purpose (a moving grain is the one effect that makes a slow page feel
+   nervous), and blended so it lifts the light rather than greying it. */
+.stage__grain{position:absolute;inset:0;opacity:.10;mix-blend-mode:overlay;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.34' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
+  background-size:140px 140px, 220px 220px}
 /* the light lifts the smoke under the cursor, on top of the rays */
 .stage__lift{position:absolute;inset:0;opacity:0;transition:opacity .3s ease;
   background:
@@ -436,10 +442,39 @@ body[data-lit] .stage__lift{opacity:.7}
   .row .venue{color:var(--text-2)}
   .row .km{font-size:11px}
   /* the arrow sits on the portrait band: a chip gives it a surface to sit on */
-  .row .cal{opacity:.8}
-  .row .acts{gap:8px}
-  .row .go{width:26px;height:26px;align-items:center;justify-content:center;
-    background:rgb(0 0 0 / .34);border:1px solid rgb(255 255 255 / .18)}
+  /* The sheet is full-bleed on a phone, so an opaque card hid the whole room behind it and the magenta survived only
+     as a band under the bar. Let the haze through at the top and wash the head in the room's own colour. */
+  .sheet{background:linear-gradient(to bottom,
+    color-mix(in oklab,var(--surface) 38%, transparent) 0,
+    color-mix(in oklab,var(--surface) 68%, transparent) 150px,
+    color-mix(in oklab,var(--surface) 88%, transparent) 300px,
+    var(--surface) 430px)}
+  .sheet::after{content:"";position:absolute;left:-20%;right:-20%;top:-58px;height:min(52dvh,420px);
+    pointer-events:none;z-index:0;opacity:.62;mix-blend-mode:var(--lift-mode);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+      radial-gradient(66% 58% at 14% 6%, var(--haze-a), transparent 66%),
+      radial-gradient(54% 48% at 88% -4%, var(--haze-b), transparent 64%),
+      radial-gradient(78% 64% at 44% 104%, var(--haze-c), transparent 70%);
+    background-size:160px 160px, auto, auto, auto;
+    background-blend-mode:soft-light, normal, normal, normal;
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.66) 44%,rgba(0,0,0,.22) 76%,transparent 100%);
+    mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.66) 44%,rgba(0,0,0,.22) 76%,transparent 100%)}
+
+  /* Thumb targets, not icon sizes: a 14px glyph inside a 34px control. */
+  .row .cal{opacity:.9;width:34px;height:34px;justify-content:center;align-items:center}
+  .row .cal svg{width:16px;height:16px}
+  .row .go{width:34px;height:34px;align-items:center;justify-content:center}
+  .row .acts{gap:4px}
+  /* The sign keeps its core and loses its tight halo: at 26px a 2px blur sitting exactly on the glyphs is not a lamp,
+     it is a soft-focus title. Only the wide bloom stays, and it stays behind. */
+  .sign::before{display:none}
+  .sign::after{opacity:.22;filter:blur(16px)}
+  /* and the green spill on the paper is pulled back, so the head reads magenta with a green sign in it */
+  .sheet::before{opacity:.45}
+  :root:not(.dark) .stage__grain{opacity:.06}
+  :root:not(.dark) .sheet::after{opacity:.5}
+  .row .go{background:rgb(0 0 0 / .34);border:1px solid rgb(255 255 255 / .18)}
   :root:not(.dark) .row .go{background:rgb(255 255 255 / .62);border-color:rgb(0 0 0 / .12)}
   .row .go{grid-area:go;align-self:start;padding-top:3px}
   .month{top:47px;padding:12px 14px 7px}
@@ -447,7 +482,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .foot{flex-direction:column;gap:6px;padding:14px}
   .state{padding:32px 14px 40px}
   /* the palette becomes a sheet */
-  .palette{top:auto;bottom:0;left:0;right:0;translate:0 0;width:100%;
+  .palette{min-height:min(58dvh, 420px);top:auto;bottom:0;left:0;right:0;translate:0 0;width:100%;
     max-height:min(86dvh, 640px);border-left:0;border-right:0;border-bottom:0;
     padding-bottom:env(safe-area-inset-bottom)}
   .palette__body{overscroll-behavior:contain}
@@ -466,7 +501,7 @@ body[data-lit] .stage__lift{opacity:.7}
 /* the neon sign: hot core on the face, a tight bloom, a wide bloom, and a slow
    sheen travelling along the tube (animate-ui's `neon` model, hand-rolled in CSS) */
 .sign{position:relative;display:inline-block;isolation:isolate;
-  background-image:linear-gradient(112deg,#f4ffec 0%,var(--sign-a) 34%,var(--sign-b) 62%,#f4ffec 100%);
+  background-image:linear-gradient(112deg,var(--sign-core) 0%,var(--sign-a) 34%,var(--sign-b) 62%,var(--sign-core) 100%);
   background-size:280% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;
   animation:sign 150s linear infinite}

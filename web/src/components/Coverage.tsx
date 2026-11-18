@@ -89,7 +89,11 @@ export default function Coverage({
       </button>
 
       {open ? (
-        <div className="coverage__panel" id="coverage-panel" role="dialog" aria-label="Where this board comes from">
+        <>
+          {/* A layer needs a layer to sit on: on a phone the panel is a card over cards of the same tone, which reads as
+              a collision rather than as depth. The scrim is the depth, and the way out of it. */}
+          <div className="coverage__scrim" aria-hidden="true" onClick={() => setOpen(false)} />
+          <div className="coverage__panel" id="coverage-panel" role="dialog" aria-label="Where this board comes from">
           <div className="coverage__row coverage__row--head">
             <span>Source</span>
             <span>State</span>
@@ -152,6 +156,7 @@ export default function Coverage({
               : "There is nothing on this device to forget yet."}
           </p>
         </div>
+        </>
       ) : null}
     </div>
   );

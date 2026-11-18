@@ -255,6 +255,24 @@
   color: var(--text-2);
   display: inline-flex;
 }
+.coverage__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: color-mix(in oklab, var(--background) 58%, transparent);
+  backdrop-filter: blur(3px);
+  animation: coverfade .16s ease-out;
+}
+@keyframes coverfade {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+/* On a wide screen the panel is a popover with room around it, and the surface step is enough depth: dimming a whole
+   board to read five numbers is a modal where a popover belongs. On a phone the same panel sits on rows of its own tone,
+   so there the scrim is the depth. */
+@media (min-width: 721px) {
+  .coverage__scrim { display: none }
+}
 .coverage__panel {
   position: absolute;
   z-index: 30;
@@ -270,7 +288,25 @@
   letter-spacing: normal;
   font-weight: 400;
 }
-.dark .coverage__panel {
+.dark .coverage__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: color-mix(in oklab, var(--background) 58%, transparent);
+  backdrop-filter: blur(3px);
+  animation: coverfade .16s ease-out;
+}
+@keyframes coverfade {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+/* On a wide screen the panel is a popover with room around it, and the surface step is enough depth: dimming a whole
+   board to read five numbers is a modal where a popover belongs. On a phone the same panel sits on rows of its own tone,
+   so there the scrim is the depth. */
+@media (min-width: 721px) {
+  .coverage__scrim { display: none }
+}
+.coverage__panel {
   background: var(--surface-2);
 }
 .coverage__row {
