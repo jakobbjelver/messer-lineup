@@ -75,14 +75,28 @@ The URL decides, and then it is a matter of who knows best:
 |---|---|---|
 | 1 | `?town=` | the link names a town — a shared link always opens where it says |
 | 2 | the visitor's own last pick | stored in `localStorage` under `lineup.town.chosen` |
-| 3 | `GET /where` — the edge's country | a first visit, or after "Forget everything" |
+| 3 | `GET /where` — the edge's nearest town | a first visit, or after "Forget everything" |
 | 4 | the first published town | no edge header, or a country the index does not cover |
 
-**A pick outranks a guess on purpose.** Country is not distance: an address in Malmö is served a Swedish town by a border
-that says nothing about which room is nearer, and Malmö is half an hour from Copenhagen. The hint is only ever a guess
-for someone who has not said what they want — once they have, the board remembers, and a wrong guess can never become
-sticky. Only an explicit pick is stored: the hint is re-asked on every first visit, because a remembered guess would be
-indistinguishable from a remembered choice.
+**A pick outranks a guess on purpose.** Country is not distance: an address in Malmö is 28 km from Copenhagen and 500 km
+from Stockholm, and `CF-IPCountry` calls both `SE`. The hint is only ever a guess for someone who has not said what they
+want — once they have, the board remembers, and a wrong guess can never become sticky. Only an explicit pick is stored:
+the hint is re-asked on every first visit, because a remembered guess would be indistinguishable from a remembered
+choice.
+
+### What the hint can and cannot know
+
+`/where` takes each published town with the point the index knows for it — the mean of the venue positions its shows
+publish, which Tickster states in the page's own map link, so the point is evidence rather than a gazetteer — and answers
+with the nearest one, given the edge's `cf.latitude`/`cf.longitude`.
+
+An address's position comes from its IP, and an IP is not an address. One home connection in Skåne geolocates to a point
+11 km from Stockholm, which is a Stockholm answer for a visitor who is nowhere near it. That is not a bug to fix in the
+board: it is the accuracy of the only location signal there is without asking permission. Which is precisely why the
+memory outranks the hint, and why the hint is never stored.
+
+The answer is `private` when it depended on the visitor's position — a shared cache must never hand one visitor's answer
+to another — and `public` with `vary: CF-IPCountry` when it came from the country instead.
 
 The URL is left clean when the board chose: `?town=` is written only when a link *named* a town that could not be
 honoured, so a shared link never freezes one visitor's default into everyone else's address bar.

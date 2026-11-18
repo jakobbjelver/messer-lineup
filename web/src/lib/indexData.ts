@@ -160,11 +160,22 @@ export async function loadArtistRows(manifest: Manifest, key: string): Promise<A
  * and gets back the one whose country suffix matches — or the first, which is what the board used to do unasked. A
  * failure here is not an error: no answer simply means the first town, exactly as before.
  */
-export async function defaultTown(manifest: Manifest): Promise<string | null> {
+export async function defaultTown(manifest: Manifest, towns: Town[]): Promise<string | null> {
   const ids = manifest.towns.map((entry) => entry.town);
   if (ids.length < 2) return ids[0] ?? null;
+
+  // Each town goes with whatever point the index knows for it — the mean of the venue positions its shows publish —
+  // so the edge can answer with the nearest one. A town without a position still competes on its country.
+  const byId = new Map(towns.map((town) => [town.id, town]));
+  const query = ids
+    .map((id) => {
+      const town = byId.get(id);
+      const known = town !== undefined && !(town.lat === 0 && town.lon === 0);
+      return `t=${encodeURIComponent(known ? `${id}@${town!.lat},${town!.lon}` : id)}`;
+    })
+    .join("&");
   try {
-    const res = await fetch(`/where?towns=${encodeURIComponent(ids.join(","))}`);
+    const res = await fetch(`/where?${query}`);
     if (!res.ok) return ids[0] ?? null;
     const body = (await res.json()) as { town?: unknown };
     return typeof body.town === "string" && ids.includes(body.town) ? body.town : (ids[0] ?? null);

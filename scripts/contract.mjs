@@ -59,7 +59,12 @@ const REQUESTS = [
   { method: "GET", path: `/calendar/${calendarToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
   // Which town a visitor lands on. Both runtimes answer from the same header, so the shape (and the fallback) agree.
-  { method: "GET", path: "/where?towns=copenhagen-dk,stockholm-se", compare: { kind: "shape", keys: ["town", "basis"] } },
+  {
+    method: "GET",
+    path: "/where?t=copenhagen-dk@55.6761,12.5683&t=stockholm-se@59.3293,18.0686",
+    compare: { kind: "shape", keys: ["town", "basis", "km"] },
+  },
+  { method: "GET", path: "/where", compare: { kind: "error", code: "bad_request", status: 400 } },
 ];
 
 async function call(base, req) {

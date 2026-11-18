@@ -114,3 +114,19 @@ private and this product is public. The publish order for the index is separate:
   Worker's analytics after a deploy: one page GET, then zero new invocations on the counter.
 - **`lineup.messer.wtf` today** answers the zone's catch-all redirect (302 to the front door). It becomes the
   board when the Worker is deployed with assets.
+
+## `GET /where`
+
+`/where?t=<id>@<lat>,<lon>&t=…` — repeated parameters, because Go's query parser refuses an unencoded `;` and a
+separator the server cannot parse is a trap. Each entry is a published town and, optionally, its point.
+
+| Answer | `basis` | Cache |
+|---|---|---|
+| the nearest town to the visitor's IP position | `distance` | `private, max-age=86400` |
+| the town whose country suffix matches `CF-IPCountry` | `country` | `public, max-age=86400`, `vary: CF-IPCountry` |
+| the first published town | `fallback` | `public, max-age=86400`, `vary: CF-IPCountry` |
+
+`km` is the measured distance for `distance` and `null` otherwise. `(0, 0)` is treated as "no position", not the Gulf of
+Guinea: the index publishes it for any town whose venues have not stated one. A missing `t` is a 400 — the route will
+not guess a town list.
+

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,8 +21,12 @@ var (
 	startPattern     = regexp.MustCompile(`itemprop="startDate"[^>]*content="([^"]+)"`)
 	cityPattern      = regexp.MustCompile(`itemprop="addressLocality"[^>]*>(.*?)<`)
 	venuePattern     = regexp.MustCompile(`itemtype="http://schema.org/Place"[^>]*itemprop="location"[\s\S]{0,400}?<span itemprop="name"[^>]*>(.*?)</span>`)
-	tagPattern       = regexp.MustCompile(`<[^>]+>`)
-	spacePattern     = regexp.MustCompile(`\s+`)
+	// The venue's position, on the page's own link to a map: `/maps/api/staticmap?center=55.6772,12.5652` and the
+	// "open in maps" anchor carry the same pair. It is the only place the page states where the room is, and it is
+	// the venue's own statement — not a gazetteer's opinion of a city.
+	geoPattern   = regexp.MustCompile(`maps(?:/search/\?api=1&query=|/api/staticmap\?center=)(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)`)
+	tagPattern   = regexp.MustCompile(`<[^>]+>`)
+	spacePattern = regexp.MustCompile(`\s+`)
 )
 
 // cancelledLabels are the words a page uses to say the show will not happen. The label is the only datum on
@@ -93,6 +98,17 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 		return model.Show{}, fmt.Errorf("tickster: %s: no town id for %q", pageURL, city)
 	}
 
+	// A position is a bonus, never a requirement: a page without a map still publishes, it just adds nothing to its
+	// town's centre. A malformed pair is treated the same way as an absent one.
+	var geo *model.Geo
+	if pair := geoPattern.FindStringSubmatch(page); pair != nil {
+		lat, latErr := strconv.ParseFloat(pair[1], 64)
+		lon, lonErr := strconv.ParseFloat(pair[2], 64)
+		if latErr == nil && lonErr == nil && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && !(lat == 0 && lon == 0) {
+			geo = &model.Geo{Lat: lat, Lon: lon}
+		}
+	}
+
 	status := model.OnSale
 	if cancelled(page) {
 		status = model.Cancelled
@@ -105,6 +121,7 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 		VenueKey:  model.Key(venue),
 		Town:      slug + "-" + country,
 		TownName:  city,
+		Geo:       geo,
 		Start:     start,
 		Status:    status,
 		URL:       pageURL,

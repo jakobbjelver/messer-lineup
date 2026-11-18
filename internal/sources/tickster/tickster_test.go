@@ -250,3 +250,37 @@ func TestParseLocalKeepsAnOffsetThatExists(t *testing.T) {
 
 // model0 is the candidate one URL becomes; the name is a reminder that only the URL matters here.
 func model0(u string) model.Candidate { return model.Candidate{URL: u, Source: ID} }
+
+// The venue's position comes from the page's own map link, which is the only statement the page makes about where the
+// room is. A page that states none is still a show: a position is a bonus, not a requirement.
+func TestAPageStatesItsVenuePosition(t *testing.T) {
+	base, err := os.ReadFile("testdata/event.html")
+	if err != nil {
+		t.Fatalf("reading fixture: %v", err)
+	}
+	// The fixture is a fragment with no </body>, so the map link is appended rather than spliced.
+	page := string(base) + `\n<a href="https://www.google.com/maps/search/?api=1&query=55.6772,12.5652" title="Pumpehuset"></a>`
+
+	show, err := parseEvent([]byte(page), "https://www.tickster.com/dk/da/events/2m4f0f9wkgyevz0/2027-02-13/a-good-year-pumpehuset")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if show.Geo == nil || show.Geo.Lat != 55.6772 || show.Geo.Lon != 12.5652 {
+		t.Fatalf("geo = %v, want 55.6772,12.5652", show.Geo)
+	}
+
+	// The same page with the map removed still parses, and claims no position at all.
+	plain, err := parseEvent(base, "https://www.tickster.com/dk/da/events/2m4f0f9wkgyevz0/2027-02-13/a-good-year-pumpehuset")
+	if err != nil {
+		t.Fatalf("parse without a map: %v", err)
+	}
+	if plain.Geo != nil {
+		t.Fatalf("a page with no map claimed %v", plain.Geo)
+	}
+
+	// And a pair in the wrong part of the world is refused rather than believed.
+	broken := string(base) + `\n<a href="https://www.google.com/maps/search/?api=1&query=155.6772,12.5652"></a>`
+	if show, err := parseEvent([]byte(broken), "https://www.tickster.com/dk/da/events/2m4f0f9wkgyevz0/2027-02-13/a-good-year-pumpehuset"); err != nil || show.Geo != nil {
+		t.Fatalf("a latitude of 155 was believed: %v %v", show.Geo, err)
+	}
+}

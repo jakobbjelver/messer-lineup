@@ -80,23 +80,98 @@ app.get("/readyz", async (c) => {
  * first one when nothing matches. No index read, no state, and the answer is cached per country for a day — so this
  * costs one Worker invocation per country per day, not per visitor.
  */
+/**
+ * `/where?t=<id>@<lat>,<lon>&t=<id>@<lat>,<lon>` — which town a visitor should land on.
+ *
+ * The board is static, so it cannot know where a request came from; the edge can. Each entry is a published town and,
+ * when the index knows it, that town's own point (the mean of the venue positions its shows publish). With a point for
+ * the visitor and a point for each town, the answer is the nearest one — because a country is not a distance: an address
+ * in Malmö is 28 km from Copenhagen and 500 km from Stockholm, and `CF-IPCountry` calls both `SE`.
+ *
+ * Without coordinates (no geo header, or a town whose venues never stated a position) the country suffix decides, then
+ * the first published town. And because a nearest answer is about one visitor, it must never be cached for another:
+ * `public` only when the answer did not depend on where the request came from.
+ */
 app.get("/where", (c) => {
-  const country = (c.req.header("cf-ipcountry") ?? "").toLowerCase();
-  const ids = (c.req.query("towns") ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0 && id.length <= 64)
-    .slice(0, 50);
-  if (ids.length === 0) {
-    return c.json(errorBody("bad_request", "towns is required: the published town ids"), 400);
+  const entries = (c.req.queries("t") ?? [])
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .slice(0, 50)
+    .map(parseTownEntry)
+    .filter((entry): entry is TownEntry => entry !== null);
+  if (entries.length === 0) {
+    return c.json(errorBody("bad_request", "t is required: the published towns, as id@lat,lon"), 400);
   }
-  const match = country ? ids.find((id) => id.endsWith(`-${country}`)) : undefined;
+
+  const cf = c.req.raw.cf as { country?: string; latitude?: string; longitude?: string } | undefined;
+  const country = (cf?.country ?? c.req.header("cf-ipcountry") ?? "").toLowerCase();
+  const here = point(Number(cf?.latitude), Number(cf?.longitude));
+
+  let chosen: TownEntry = entries[0]!;
+  let basis = "fallback";
+  if (here) {
+    let best = Number.POSITIVE_INFINITY;
+    for (const entry of entries) {
+      if (!entry.at) continue;
+      const distance = haversine(here, entry.at);
+      if (distance < best) {
+        best = distance;
+        chosen = entry;
+        basis = "distance";
+      }
+    }
+  }
+  if (basis === "fallback" && country) {
+    const match = entries.find((entry) => entry.id.endsWith(`-${country}`));
+    if (match) {
+      chosen = match;
+      basis = "country";
+    }
+  }
+
+  const headers: Record<string, string> =
+    basis === "distance"
+      ? { "cache-control": "private, max-age=86400" }
+      : { "cache-control": "public, max-age=86400", vary: "CF-IPCountry" };
   return c.json(
-    { town: match ?? ids[0], country: country || null, basis: match ? "country" : "fallback" },
+    {
+      town: chosen.id,
+      country: country || null,
+      basis,
+      km: basis === "distance" ? Math.round(haversine(here!, chosen.at!) / 100) / 10 : null,
+    },
     200,
-    { "cache-control": "public, max-age=86400", vary: "CF-IPCountry" },
+    headers,
   );
 });
+
+interface TownEntry {
+  id: string;
+  at: { lat: number; lon: number } | null;
+}
+
+function parseTownEntry(raw: string): TownEntry | null {
+  const [id, coords] = raw.split("@");
+  if (!id || id.length > 64) return null;
+  return { id, at: coords ? point(Number(coords.split(",")[0]), Number(coords.split(",")[1])) : null };
+}
+
+function point(lat: number, lon: number): { lat: number; lon: number } | null {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  if (lat === 0 && lon === 0) return null; // "unknown", not the Gulf of Guinea
+  return { lat, lon };
+}
+
+/** Great-circle distance in metres. */
+function haversine(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6_371_000;
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLon = (b.lon - a.lon) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 // The five JSON routes from plan §5.6, plus the calendar feed. Until P5 they answer honestly rather than
 // pretending to be a 404: the board can tell "not mine" from "not yet".

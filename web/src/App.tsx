@@ -72,7 +72,7 @@ export default function App() {
         const { manifest, towns } = await loadIndex();
         // A town in the URL wins, then the one this visitor picked before, then the edge's country hint, then the
         // first published town. The memory outranks the hint on purpose: a border is not a preference.
-        const chosen = wantedTown ?? rememberedTown() ?? (await defaultTown(manifest));
+        const chosen = wantedTown ?? rememberedTown() ?? (await defaultTown(manifest, towns));
         const town = manifest.towns.find((t) => t.town === chosen) ?? manifest.towns[0];
         const rows = await loadShard(town.shard);
         if (!live) return;
