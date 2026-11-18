@@ -9,6 +9,7 @@
  *                  takes its clock and its inputs as parameters.
  *   kind: "shape"  only the listed keys must exist on both — for a route whose body carries a clock or a live
  *                  read, where byte equality would assert on the moment of the call.
+ *   kind: "document" both must answer 200 with an HTML document (a client route, not an asset and not a 404)
  *   kind: "error"  both must answer the same status with the same `error.code`. The message is free text and
  *                  names its runtime on purpose; the code is the contract.
  *
@@ -43,6 +44,9 @@ const REQUESTS = [
   },
   { method: "DELETE", path: "/api/v1/session", compare: { kind: "error", code: "not_implemented", status: 501 } },
   { method: "GET", path: "/calendar/taste-abc.ics", compare: { kind: "error", code: "not_implemented", status: 501 } },
+  // The one document route: both runtimes must answer an artist link with the SPA's document, not a 404. On the
+  // Worker this goes script → ASSETS → `single-page-application`; on the Go server it is the history fallback.
+  { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },
 ];
 
 async function call(base, req) {
@@ -60,9 +64,9 @@ async function call(base, req) {
     } catch {
       /* a non-JSON body is compared as text */
     }
-    return { status: res.status, json, text };
+    return { status: res.status, json, text, type: res.headers.get("content-type") ?? "" };
   } catch (err) {
-    return { status: 0, json: null, text: err instanceof Error ? err.message : String(err) };
+    return { status: 0, json: null, type: "", text: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -83,6 +87,17 @@ function diff(req, go, worker) {
   }
 
   switch (kind) {
+    case "document": {
+      for (const [label, res] of [
+        ["go", go],
+        ["worker", worker],
+      ]) {
+        if (res.status !== 200) problems.push(`${label}: status ${res.status}, want 200`);
+        if (!res.type.includes("text/html")) problems.push(`${label}: content-type ${res.type || "(none)"}, want text/html`);
+        if (!/id="root"/.test(res.text)) problems.push(`${label}: the document has no #root`);
+      }
+      break;
+    }
     case "shape": {
       const a = JSON.stringify(pick(go.json, req.compare.keys));
       const b = JSON.stringify(pick(worker.json, req.compare.keys));
