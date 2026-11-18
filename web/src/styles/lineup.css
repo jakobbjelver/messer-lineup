@@ -228,7 +228,7 @@ body[data-lit] .stage__lift{opacity:.7}
 .month{position:sticky;top:47px;z-index:5;background:var(--surface);
   padding:16px 20px 8px;font:600 10.5px/1 var(--font-golos);letter-spacing:.1em;text-transform:uppercase;
   color:var(--text-3);border-bottom:1px solid var(--border)}
-.row{display:grid;grid-template-columns:58px minmax(0,1fr) 16px;column-gap:14px;
+.row{display:grid;grid-template-columns:58px minmax(0,1fr) auto;column-gap:14px;
   align-items:center;padding:16px 20px;position:relative;
   /* opaque, so the hairline reads the same over a portrait as over the sheet */
   border-bottom:1px solid color-mix(in oklab, var(--foreground) 9%, var(--surface));
@@ -270,6 +270,12 @@ body[data-lit] .stage__lift{opacity:.7}
 .row .km{font:400 11.5px/1 var(--font-mono);color:var(--foreground);white-space:nowrap}
 .row .km b{font-weight:500}
 :root:not(.dark) .row .venue,:root:not(.dark) .row .km{color:var(--text)}
+/* Two actions, one cell: the arrow still owns the edge, the calendar sits a step inside it. */
+.row .acts{display:flex;align-items:center;gap:10px;justify-self:end}
+.row .cal{color:var(--text-2);display:inline-flex;align-items:center;opacity:.62;
+  transition:opacity .18s ease, color .18s ease}
+.row .cal svg{width:14px;height:14px}
+.row:hover .cal, .row .cal:focus-visible{opacity:1;color:var(--foreground)}
 .row .go{color:var(--foreground);display:inline-flex;justify-content:flex-end;opacity:.85}
 .row .go svg{width:14px;height:14px}
 .row .new{position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--primary);
@@ -417,7 +423,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .ribbon i{height:8px}.ribbon i.on{height:14px}.ribbon i.today{height:22px}
   .ribcaption{padding:8px 14px 0}
   .ribcaption #rib-note{display:none}
-  .row{grid-template-columns:44px minmax(0,1fr) 16px;padding:12px 14px;column-gap:10px;min-height:76px}
+  .row{grid-template-columns:44px minmax(0,1fr) auto;padding:12px 14px;column-gap:10px;min-height:76px}
   /* a phone row has no room for text over a photo: the portrait becomes a band on the
      right, dissolving into the surface under the text */
   .shot{inset:0 0 0 38%;
@@ -430,6 +436,8 @@ body[data-lit] .stage__lift{opacity:.7}
   .row .venue{color:var(--text-2)}
   .row .km{font-size:11px}
   /* the arrow sits on the portrait band: a chip gives it a surface to sit on */
+  .row .cal{opacity:.8}
+  .row .acts{gap:8px}
   .row .go{width:26px;height:26px;align-items:center;justify-content:center;
     background:rgb(0 0 0 / .34);border:1px solid rgb(255 255 255 / .18)}
   :root:not(.dark) .row .go{background:rgb(255 255 255 / .62);border-color:rgb(0 0 0 / .12)}

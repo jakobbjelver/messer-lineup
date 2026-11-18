@@ -14,8 +14,8 @@
  */
 
 import { Hono } from "hono";
-import { buildIcs, type CalendarRow } from "./calendar/ics";
-import { decodeSpec } from "./calendar/spec";
+import { buildEvent, buildIcs, type CalendarRow } from "./calendar/ics";
+import { decodeEvent, decodeSpec } from "./calendar/spec";
 // The identity key is the client's own implementation, imported rather than re-implemented: a third copy of a
 // normalisation rule is a third place for it to drift, and `make keycheck` already proves this one against
 // `internal/model/testdata/keys.json`.
@@ -195,6 +195,34 @@ app.all("/api/v1/*", (c) =>
  * client we do not control, so there is no page to hand it a pre-rendered file. One manifest, one towns file and one
  * shard per request, all cached for fifteen minutes — a daily refresh across a handful of subscribers is not a load.
  */
+/**
+ * `/event/<token>.ics` — one show, as a calendar file.
+ *
+ * The token carries the event itself, so this route reads nothing: no manifest, no shard, no town lookup. It is the same
+ * `VEVENT` the feed writes for that row, with the same `UID`, so a show taken from a row and the same show arriving
+ * through a subscription are one event to the client rather than two.
+ */
+app.get("/event/:file", (c) => {
+  const file = c.req.param("file");
+  if (!file.endsWith(".ics")) {
+    return c.json(errorBody("not_found", "a single event is /event/<token>.ics"), 404);
+  }
+  const spec = decodeEvent(file.slice(0, -4));
+  if (!spec) {
+    return c.json(errorBody("invalid_event", "that link is not a show"), 400);
+  }
+  const ics = buildEvent(
+    { k: spec.k, a: spec.a, v: spec.v2, d: spec.d, u: spec.u, st: "o" },
+    { townId: "", townLabel: spec.n, builtAt: new Date().toISOString(), origin: new URL(c.req.url).origin },
+  );
+  return c.body(ics, 200, {
+    "content-type": "text/calendar; charset=utf-8",
+    // The event is in the URL, so the answer can never change for that URL.
+    "cache-control": "public, max-age=3600",
+    "content-disposition": `attachment; filename="${file.replace(/\.ics$/, "")}.ics"`,
+  });
+});
+
 app.get("/calendar/:file", async (c) => {
   const file = c.req.param("file");
   if (!file.endsWith(".ics")) {

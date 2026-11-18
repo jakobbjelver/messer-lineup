@@ -34,6 +34,20 @@ export function calendarLink(
   return { token, https, webcal: https.replace(/^https?:\/\//, "webcal://") };
 }
 
+/**
+ * One show, as a calendar link.
+ *
+ * The row is nine short strings, so the whole event fits in the token and `/event/<token>.ics` answers without reading
+ * anything. The token is unsigned for the same reason the feed's is: it grants nothing but a slice of the public board.
+ */
+export function eventLink(row: { k: string; a: string; v: string; d: string; u: string }, townLabel: string): CalendarLinks {
+  const spec = { v: 1, k: row.k, a: row.a, v2: row.v, d: row.d, u: row.u, n: townLabel };
+  const token = base64url(new TextEncoder().encode(JSON.stringify(spec)));
+  const origin = typeof location === "undefined" ? "" : location.origin;
+  const https = `${origin}/event/${token}.ics`;
+  return { token, https, webcal: https.replace(/^https?:\/\//, "webcal://") };
+}
+
 function base64url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);

@@ -64,3 +64,31 @@ no line over 75 octets. The *contents* differ by design, because each runtime re
 **Confirmed in a real client:** Jakob subscribed to the live feed in Apple Calendar and it imported without complaint
 (2026-11-18). Google Calendar is still unverified — the structure is the same file a strict parser accepted, but "same
 file" is not the same as "imported".
+
+## One show, one file
+
+A feed's URL has to be short, so it names a board and the route reads the index to expand it. A single show needs no
+expansion: the row is nine short strings, so the whole event travels in the token and `/event/<token>.ics` answers
+without reading a manifest, a shard or a town — the cheapest route on the Worker, and the only one that works with the
+index down.
+
+| | Feed | One show |
+|---|---|---|
+| token carries | `{v,t,f,o,a?}` — a slice of a town | `{v,k,a,v2,d,u,n}` — the event itself |
+| reads the index | yes (manifest + one shard) | no |
+| `UID` | the row key | **the same row key** |
+| cache | `max-age=900` | `max-age=3600` |
+| calendar-level lines | `X-WR-CALNAME`, `REFRESH-INTERVAL` | none — one event must not rename the reader's calendar |
+
+`DTSTAMP` is the moment the file was written and is allowed to move; the `UID` is what makes two files one event, which
+is why a show added from a row and the same show arriving through a subscription do not duplicate in the client.
+
+Rows without a town label offer no link: `LOCATION` would read `Venue, ` and half a location is worse than none. In the
+board the label is the town on screen; on an artist's page it is each row's own town, because that page spans them.
+
+**Verified:** a strict third-party parser (`icalendar`) reads the route's output as one `VEVENT` — 459 bytes, CRLF
+throughout, no bare LF, `DTSTART 19:00Z` from a `20:00+01:00` row, `DTEND` three hours later; Go tests cover the token's
+refusals (version, empty field, unreadable date, a `javascript:` URL, a missing town label, a non-`.ics` path); the
+contract holds both runtimes to the same event (14/14); and live, every row on the board carries the link, a click on the
+row still opens the ticket, and the icon and arrow sit on one baseline.
+

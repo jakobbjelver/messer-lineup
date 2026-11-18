@@ -50,28 +50,56 @@ export function buildIcs(rows: CalendarRow[], meta: Meta): string {
   ];
 
   for (const row of rows) {
-    const start = new Date(row.d);
-    if (Number.isNaN(start.getTime())) continue; // a row without a readable date is not an event
-    const end = new Date(start.getTime() + DEFAULT_DURATION_MS);
-    const status = row.st === "c" ? "CANCELLED" : "CONFIRMED";
-    lines.push(
-      "BEGIN:VEVENT",
-      `UID:${escapeText(`${row.k}@lineup.messer.wtf`)}`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART:${toStamp(start)!}`,
-      `DTEND:${toStamp(end)!}`,
-      `SUMMARY:${escapeText(`${row.a} @ ${row.v}`)}`,
-      `LOCATION:${escapeText(`${row.v}, ${meta.townLabel}`)}`,
-      `URL:${row.u}`,
-      `STATUS:${status}`,
-      `CATEGORIES:${escapeText("Messer Lineup")}`,
-      "TRANSP:OPAQUE",
-      "END:VEVENT",
-    );
+    const event = vevent(row, meta, stamp);
+    if (event) lines.push(...event);
   }
 
   lines.push("END:VCALENDAR");
-  // CRLF, folded at 75 octets, and no trailing newline beyond the final CRLF the spec requires.
+  return finish(lines);
+}
+
+/**
+ * One show as a calendar file: the same `VEVENT` the feed would write for it, and nothing else. Same `UID`, so a show
+ * added from a row and the same show arriving through a subscription are one event to the client, not two.
+ */
+export function buildEvent(row: CalendarRow, meta: Meta): string {
+  const stamp = toStamp(new Date(meta.builtAt)) ?? toStamp(new Date())!;
+  const event = vevent(row, meta, stamp) ?? [];
+  return finish([
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Messer//Lineup//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...event,
+    "END:VCALENDAR",
+  ]);
+}
+
+/** The lines of one event, or `null` for a row whose date cannot be read — which is not an event. */
+function vevent(row: CalendarRow, meta: Meta, stamp: string): string[] | null {
+  const start = new Date(row.d);
+  if (Number.isNaN(start.getTime())) return null;
+  const end = new Date(start.getTime() + DEFAULT_DURATION_MS);
+  const status = row.st === "c" ? "CANCELLED" : "CONFIRMED";
+  return [
+    "BEGIN:VEVENT",
+    `UID:${escapeText(`${row.k}@lineup.messer.wtf`)}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${toStamp(start)!}`,
+    `DTEND:${toStamp(end)!}`,
+    `SUMMARY:${escapeText(`${row.a} @ ${row.v}`)}`,
+    `LOCATION:${escapeText(`${row.v}, ${meta.townLabel}`)}`,
+    `URL:${row.u}`,
+    `STATUS:${status}`,
+    `CATEGORIES:${escapeText("Messer Lineup")}`,
+    "TRANSP:OPAQUE",
+    "END:VEVENT",
+  ];
+}
+
+// CRLF, folded at 75 octets, and no trailing newline beyond the final CRLF the spec requires.
+function finish(lines: string[]): string {
   return lines.map(fold).join("\r\n") + "\r\n";
 }
 

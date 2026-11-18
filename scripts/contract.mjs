@@ -31,6 +31,24 @@ const calendarToken = Buffer.from(
   "utf8",
 ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
+/** base64url of one row, written by hand so this file depends on neither implementation. */
+const eventToken = Buffer.from(
+  JSON.stringify({
+    v: 1,
+    k: "opeth|pumpehuset|2027-02-13",
+    a: "Opeth",
+    v2: "Pumpehuset",
+    d: "2027-02-13T20:00:00+01:00",
+    u: "https://www.tickster.com/dk/da/events/abc/2027-02-13/opeth-pumpehuset",
+    n: "København",
+  }),
+  "utf8",
+)
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
 const REQUESTS = [
   // Liveness: the clock is the whole point, so only its presence is compared.
   { method: "GET", path: "/healthz", compare: { kind: "shape", keys: ["ok", "as_of"] } },
@@ -58,6 +76,9 @@ const REQUESTS = [
   // The calendar feed is the only rendered route; its shape is the contract even when the rows behind it differ.
   { method: "GET", path: `/calendar/${calendarToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
+  // One show, from a token that carries the whole event: same VEVENT lines on both runtimes.
+  { method: "GET", path: `/event/${eventToken}.ics`, compare: { kind: "ics", contains: ["BEGIN:VEVENT", "UID:opeth|pumpehuset|2027-02-13@lineup.messer.wtf", "DTSTART:20270213T190000Z"] } },
+  { method: "GET", path: "/event/not-a-token.ics", compare: { kind: "error", code: "invalid_event", status: 400 } },
   // Which town a visitor lands on. Both runtimes answer from the same header, so the shape (and the fallback) agree.
   {
     method: "GET",
@@ -98,7 +119,7 @@ function pick(json, keys) {
 /** Returns a list of differences; empty means the two runtimes agree. */
 function diff(req, go, worker) {
   const problems = [];
-  const { kind } = req.compare;
+  const { kind, contains } = req.compare;
 
   if (go.status !== worker.status) {
     problems.push(`status ${go.status} vs ${worker.status}`);
@@ -132,6 +153,11 @@ function diff(req, go, worker) {
         if (uids.size !== events) problems.push(`${label}: ${events} events but ${uids.size} unique UIDs`);
         for (const line of body.split("\r\n")) {
           if (new TextEncoder().encode(line).length > 75) problems.push(`${label}: a line exceeds 75 octets`);
+        }
+        // A case may name lines the body must carry — the token's own event, spelled out, so a single-event route is
+        // held to more than "some VEVENT parsed".
+        for (const wanted of contains ?? []) {
+          if (!body.includes(wanted)) problems.push(`${label}: the body is missing ${wanted}`);
         }
       }
       break;

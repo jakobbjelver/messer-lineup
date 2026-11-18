@@ -56,6 +56,7 @@ func Handler(opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /towns/", s.shard)
 	mux.HandleFunc("GET /data/", s.townData)
 	mux.HandleFunc("GET /where", s.where)
+	mux.HandleFunc("GET /event/", s.event)
 	mux.HandleFunc("/api/v1/", s.apiNotYet)
 	mux.HandleFunc("GET /calendar/{file}", s.calendar)
 	mux.HandleFunc("/", s.web)

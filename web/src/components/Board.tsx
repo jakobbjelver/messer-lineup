@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
-import { ArrowUpRight } from "./icons";
+import { ArrowUpRight, CalendarPlus } from "./icons";
+import { eventLink } from "../lib/calendar";
 import { Key } from "../lib/key";
 import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
 import type { Row } from "../lib/indexData";
@@ -14,6 +15,8 @@ type Props = {
   townOf?: Map<string, string>;
   /** Whether the artist name is a link to that artist's page. Off on the page itself. */
   linkArtist?: boolean;
+  /** The town a row is in, for the event link's `LOCATION`. A page that spans towns answers per row. */
+  townForRow?: (row: Row) => string;
 };
 
 /**
@@ -22,7 +25,7 @@ type Props = {
  * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
  * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
  */
-export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true }: Props) {
+export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true, townForRow }: Props) {
   let month = "";
   const hasTaste = (tasteKeys?.size ?? 0) > 0;
 
@@ -36,6 +39,8 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
         const status = statusLabel(row.st);
         const mine = hasTaste && tasteKeys?.has(Key(row.a));
         const isNew = newKeys?.has(row.k) ?? false;
+        // A row with no town label has nowhere to say it is, so it offers no calendar link rather than half of one.
+        const rowTown = townForRow?.(row) ?? "";
         // The whole row opens the show, except on a control — the artist link and the arrow own their own clicks.
         const openRow = (event: MouseEvent<HTMLDivElement>) => {
           if ((event.target as HTMLElement).closest("a,button")) return;
@@ -84,15 +89,26 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
                 </span>
                 {mine ? <span className="aff" style={{ width: "100%" }} /> : null}
               </span>
-              <a
-                className="go"
-                href={row.u}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Open ${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
+              <span className="acts">
+                {rowTown ? (
+                  <a
+                    className="cal"
+                    href={eventLink(row, rowTown).webcal}
+                    aria-label={`Add ${row.a} at ${row.v}, ${dayNumber(day)} ${monthShort(day)}, to your calendar`}
+                  >
+                    <CalendarPlus />
+                  </a>
+                ) : null}
+                <a
+                  className="go"
+                  href={row.u}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
               >
-                <ArrowUpRight />
-              </a>
+                  <ArrowUpRight />
+                </a>
+              </span>
             </div>
           </div>
         );

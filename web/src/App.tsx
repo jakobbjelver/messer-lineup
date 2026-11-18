@@ -353,7 +353,10 @@ export default function App() {
         </div>
       );
     }
-    return <Board rows={shown} tasteKeys={tasteKeys} newKeys={newKeys} />;
+    const boardTown = ready ? townLabel(ready.town, ready.loaded.towns) : "";
+    return (
+      <Board rows={shown} tasteKeys={tasteKeys} newKeys={newKeys} townForRow={() => boardTown} />
+    );
   })();
 
   const townName = ready ? townLabel(ready.town, ready.loaded.towns) : "";

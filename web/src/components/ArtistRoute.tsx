@@ -110,7 +110,14 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
         </div>
       );
     }
-    return <Board rows={phase.shows} townOf={townOf} linkArtist={false} />;
+    return (
+      <Board
+        rows={phase.shows}
+        townOf={townOf}
+        linkArtist={false}
+        townForRow={(row) => townOf?.get(row.k) ?? ""}
+      />
+    );
   })();
 
   const townCount = new Set(phase.kind === "ready" ? phase.shows.map((s) => s.town) : []).size;
