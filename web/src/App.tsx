@@ -7,6 +7,15 @@ import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
 import { readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
 import {
+  boardDay,
+  previouslySeen,
+  publishedWindow,
+  rememberVisit,
+  windowFromURL,
+  windowToURL,
+  type Window as DateWindow,
+} from "./lib/state";
+import {
   dayOf,
   loadIndex,
   loadShard,
@@ -29,6 +38,10 @@ export default function App() {
   const [wantedTown, setWantedTown] = useState<string | null>(() => new URLSearchParams(location.search).get("town"));
   const [taste, setTaste] = useState<TasteEntry[]>(() => toEntries(readTasteParam(location.search)));
   const [filter, setFilter] = useState<"all" | "yours">("all");
+  // The window is the URL's, clamped to whatever the manifest publishes. Until the manifest arrives it is the
+  // published window itself, so nothing renders against a range the index does not cover.
+  const [dateWindow, setWindow] = useState<DateWindow | null>(null);
+  const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
   const [palette, setPalette] = useState<{ open: boolean; tab: PaletteTab }>({ open: false, tab: "town" });
   const [theme, setTheme] = useState<"light" | "dark">(() =>
     document.documentElement.classList.contains("dark") ? "dark" : "light",
@@ -46,6 +59,15 @@ export default function App() {
         const rows = await loadShard(town.shard);
         if (!live) return;
         setPhase({ kind: "ready", loaded: { manifest, towns }, rows, town });
+
+        // Two things happen once, when the board first has rows: the travel window is resolved against what is
+        // published, and the visitor's previous visit is compared with what is here now.
+        const published = publishedWindow(manifest);
+        const resolved = windowFromURL(location.search, published);
+        setWindow(resolved);
+        const seen = previouslySeen(boardDay(manifest));
+        setNewKeys(seen.size ? new Set(rows.filter((row) => !seen.has(row.k)).map((row) => row.k)) : new Set());
+        rememberVisit(rows.map((row) => row.k), boardDay(manifest));
         if (wantedTown !== town.town) {
           const url = new URL(location.href);
           url.searchParams.set("town", town.town);
@@ -151,10 +173,31 @@ export default function App() {
     return new Set(rows.filter((row) => tasteKeys.has(Key(row.a))).map((row) => row.k));
   }, [ready, tasteKeys]);
   const mineCount = mineKeys.size;
-  const shown = useMemo(() => {
+  // A travel window narrows the board; the taste filter narrows it again. Both are views over the same shard, so
+  // the counts under the ribbon always describe what is actually on screen.
+  const inWindow = useMemo(() => {
     const rows = ready?.rows ?? [];
-    return filter === "yours" && mineKeys.size > 0 ? rows.filter((row) => mineKeys.has(row.k)) : rows;
-  }, [filter, mineKeys, ready]);
+    if (!dateWindow) return rows;
+    return rows.filter((row) => {
+      const day = dayOf(row.d);
+      return day >= dateWindow.from && day <= dateWindow.to;
+    });
+  }, [ready, dateWindow]);
+  const shown = useMemo(() => {
+    return filter === "yours" && mineKeys.size > 0 ? inWindow.filter((row) => mineKeys.has(row.k)) : inWindow;
+  }, [filter, mineKeys, inWindow]);
+
+  // A window is only worth writing down once it differs from what the manifest publishes.
+  const published = ready ? publishedWindow(ready.loaded.manifest) : null;
+  const applyWindow = useCallback(
+    (next: DateWindow) => {
+      setWindow(next);
+      if (published) {
+        history.replaceState(null, "", windowToURL(next, published, location.href));
+      }
+    },
+    [published],
+  );
 
   const body = (() => {
     if (phase.kind === "loading") {
@@ -211,7 +254,7 @@ export default function App() {
         </div>
       );
     }
-    return <Board rows={shown} tasteKeys={tasteKeys} />;
+    return <Board rows={shown} tasteKeys={tasteKeys} newKeys={newKeys} />;
   })();
 
   const townName = ready ? townLabel(ready.town, ready.loaded.towns) : "…";
@@ -249,7 +292,17 @@ export default function App() {
           <div className="head">
             <div className="eyebrow">
               <span className="lab">
-                Season board · <span className="num">{manifest?.window.days ?? 0}</span> days
+                {dateWindow && published && dateWindow.from !== published.from ? "Travel" : "Season"} board ·{" "}
+                <span className="num">
+                  {dateWindow && published
+                    ? Math.round(
+                        (new Date(`${dateWindow.to}T12:00:00Z`).getTime() -
+                          new Date(`${dateWindow.from}T12:00:00Z`).getTime()) /
+                          86_400_000,
+                      ) + 1
+                    : (manifest?.window.days ?? 0)}
+                </span>{" "}
+                days
               </span>
               <span className="r">
                 <span className="lab">As of</span>{" "}
@@ -314,9 +367,17 @@ export default function App() {
           {manifest && ready ? (
             <>
               <Ribbon
-                from={manifest.window.from}
-                days={manifest.window.days}
-                rows={ready.rows}
+                from={dateWindow?.from ?? manifest.window.from}
+                days={
+                  dateWindow
+                    ? Math.round(
+                        (new Date(`${dateWindow.to}T12:00:00Z`).getTime() -
+                          new Date(`${dateWindow.from}T12:00:00Z`).getTime()) /
+                          86_400_000,
+                      ) + 1
+                    : manifest.window.days
+                }
+                rows={inWindow}
                 builtOn={dayOf(manifest.built_at)}
               />
               <button
@@ -328,7 +389,7 @@ export default function App() {
                 }
               >
                 <span>
-                  <span className="num">{ready.rows.length}</span> shows
+                  <span className="num">{inWindow.length}</span> shows
                 </span>
                 <span className="g">·</span>
                 <span className="g">
@@ -364,6 +425,9 @@ export default function App() {
         townNames={ready?.loaded.towns ?? []}
         currentTown={ready?.town.town ?? ""}
         onTown={chooseTown}
+        dateWindow={dateWindow}
+        published={published}
+        onWindow={applyWindow}
         taste={taste}
         onTaste={applyTaste}
         onBoard={(key) => (ready ? ready.rows.some((row) => Key(row.a) === key) : false)}

@@ -7,6 +7,8 @@ type Props = {
   rows: Row[];
   /** The visitor's taste, as identity keys. A row whose artist is in this set is "yours". */
   tasteKeys?: Set<string>;
+  /** Shows that were not on the board at this browser's last visit. */
+  newKeys?: Set<string>;
 };
 
 /**
@@ -15,7 +17,7 @@ type Props = {
  * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
  * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
  */
-export default function Board({ rows, tasteKeys }: Props) {
+export default function Board({ rows, tasteKeys, newKeys }: Props) {
   let month = "";
   const hasTaste = (tasteKeys?.size ?? 0) > 0;
 
@@ -28,6 +30,7 @@ export default function Board({ rows, tasteKeys }: Props) {
         if (header) month = monthName;
         const status = statusLabel(row.st);
         const mine = hasTaste && tasteKeys?.has(Key(row.a));
+        const isNew = newKeys?.has(row.k) ?? false;
 
         return (
           <div key={row.k}>
@@ -42,6 +45,7 @@ export default function Board({ rows, tasteKeys }: Props) {
               aria-label={`${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
             >
               <span className="shot" />
+              {isNew ? <span className="new" aria-label="new since your last visit" /> : null}
               <span className="when">
                 <span className="wd">{weekdayOf(day)}</span>
                 <span className="dd">
