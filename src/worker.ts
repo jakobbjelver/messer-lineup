@@ -72,6 +72,32 @@ app.get("/readyz", async (c) => {
   }
 });
 
+/**
+ * `/where?towns=a-dk,b-se` — which town a visitor should land on.
+ *
+ * The board is static, so it cannot know a country; the edge can, for free. The client sends the published town ids
+ * and gets back the one whose country suffix matches `CF-IPCountry` (every id is `<slug>-<cc>` by construction), or the
+ * first one when nothing matches. No index read, no state, and the answer is cached per country for a day — so this
+ * costs one Worker invocation per country per day, not per visitor.
+ */
+app.get("/where", (c) => {
+  const country = (c.req.header("cf-ipcountry") ?? "").toLowerCase();
+  const ids = (c.req.query("towns") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0 && id.length <= 64)
+    .slice(0, 50);
+  if (ids.length === 0) {
+    return c.json(errorBody("bad_request", "towns is required: the published town ids"), 400);
+  }
+  const match = country ? ids.find((id) => id.endsWith(`-${country}`)) : undefined;
+  return c.json(
+    { town: match ?? ids[0], country: country || null, basis: match ? "country" : "fallback" },
+    200,
+    { "cache-control": "public, max-age=86400", vary: "CF-IPCountry" },
+  );
+});
+
 // The five JSON routes from plan §5.6, plus the calendar feed. Until P5 they answer honestly rather than
 // pretending to be a 404: the board can tell "not mine" from "not yet".
 app.all("/api/v1/*", (c) =>

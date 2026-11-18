@@ -29,6 +29,7 @@ import {
 import {
   addDays,
   dayNumber,
+  defaultTown,
   dayOf,
   monthShort,
   loadIndex,
@@ -68,7 +69,9 @@ export default function App() {
     (async () => {
       try {
         const { manifest, towns } = await loadIndex();
-        const town = manifest.towns.find((t) => t.town === wantedTown) ?? manifest.towns[0];
+        // A town in the URL wins; otherwise the edge's country match; otherwise the first published town.
+        const chosen = wantedTown ?? (await defaultTown(manifest));
+        const town = manifest.towns.find((t) => t.town === chosen) ?? manifest.towns[0];
         const rows = await loadShard(town.shard);
         if (!live) return;
         setPhase({ kind: "ready", loaded: { manifest, towns }, rows, town });
@@ -97,24 +100,19 @@ export default function App() {
           if (changed) writeNames(next);
           return changed ? next : current;
         });
-        // The artist page's way back returns to this town, not to the first published one.
-        // A link can name a town the index does not publish; the board falls back to the first one, and the URL is
-        // rewritten to match rather than claiming a town that is not on screen.
-        if (town.town !== wantedTown) {
+        // A link that names a town the index does not publish is rewritten to the one on screen — the URL must not
+        // claim a town that is not there. A board that simply *chose* a town (from the edge's country, or the first
+        // published) leaves the URL clean: that choice belongs to the visitor's location, not to the link.
+        if (wantedTown && town.town !== wantedTown) {
           const url = new URL(location.href);
           url.searchParams.set("town", town.town);
           history.replaceState(null, "", url);
         }
+        // The artist page's way back returns to this town, not to the first published one.
         try {
           sessionStorage.setItem("lineup.town", town.town);
         } catch {
           /* storage refused: back falls back to the root */
-        }
-        if (wantedTown !== town.town) {
-          const url = new URL(location.href);
-          url.searchParams.set("town", town.town);
-          history.replaceState(null, "", url);
-          setWantedTown(town.town);
         }
       } catch (err) {
         if (!live) return;

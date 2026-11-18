@@ -61,5 +61,6 @@ no line over 75 octets. The *contents* differ by design, because each runtime re
   every `DTEND` after its `DTSTART`, every event with `LOCATION` and `URL`, `X-WR-CALNAME: Messer Lineup — København`.
 - In a browser: the panel's token decodes to the board on screen, and the feed it points at answers 200 `text/calendar`.
 
-**Not verified:** that Apple Calendar and Google Calendar import it without complaint. The structure is validated by a
-third-party parser and by the RFC's own rules, but an import in a real client is the check that only a human can run.
+**Confirmed in a real client:** Jakob subscribed to the live feed in Apple Calendar and it imported without complaint
+(2026-11-18). Google Calendar is still unverified — the structure is the same file a strict parser accepted, but "same
+file" is not the same as "imported".

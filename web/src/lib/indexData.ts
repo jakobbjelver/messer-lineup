@@ -153,6 +153,26 @@ export async function loadArtistRows(manifest: Manifest, key: string): Promise<A
   return shows;
 }
 
+/**
+ * Which town to open, when the visitor did not name one.
+ *
+ * The edge knows the country from the request; the board cannot. So the board asks once, with its published town ids,
+ * and gets back the one whose country suffix matches — or the first, which is what the board used to do unasked. A
+ * failure here is not an error: no answer simply means the first town, exactly as before.
+ */
+export async function defaultTown(manifest: Manifest): Promise<string | null> {
+  const ids = manifest.towns.map((entry) => entry.town);
+  if (ids.length < 2) return ids[0] ?? null;
+  try {
+    const res = await fetch(`/where?towns=${encodeURIComponent(ids.join(","))}`);
+    if (!res.ok) return ids[0] ?? null;
+    const body = (await res.json()) as { town?: unknown };
+    return typeof body.town === "string" && ids.includes(body.town) ? body.town : (ids[0] ?? null);
+  } catch {
+    return ids[0] ?? null;
+  }
+}
+
 /* ── dates: the window is the manifest's, the day is the row's own ─────────────────────────────────── */
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];

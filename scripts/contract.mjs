@@ -58,6 +58,8 @@ const REQUESTS = [
   // The calendar feed is the only rendered route; its shape is the contract even when the rows behind it differ.
   { method: "GET", path: `/calendar/${calendarToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
+  // Which town a visitor lands on. Both runtimes answer from the same header, so the shape (and the fallback) agree.
+  { method: "GET", path: "/where?towns=copenhagen-dk,stockholm-se", compare: { kind: "shape", keys: ["town", "basis"] } },
 ];
 
 async function call(base, req) {
