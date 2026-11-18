@@ -27,7 +27,10 @@ import {
   type Window as DateWindow,
 } from "./lib/state";
 import {
+  addDays,
+  dayNumber,
   dayOf,
+  monthShort,
   loadIndex,
   loadShard,
   stampLabel,
@@ -95,6 +98,13 @@ export default function App() {
           return changed ? next : current;
         });
         // The artist page's way back returns to this town, not to the first published one.
+        // A link can name a town the index does not publish; the board falls back to the first one, and the URL is
+        // rewritten to match rather than claiming a town that is not on screen.
+        if (town.town !== wantedTown) {
+          const url = new URL(location.href);
+          url.searchParams.set("town", town.town);
+          history.replaceState(null, "", url);
+        }
         try {
           sessionStorage.setItem("lineup.town", town.town);
         } catch {
@@ -285,6 +295,43 @@ export default function App() {
         </div>
       );
     }
+    // An empty travel window is not an empty board: the town has shows, just not in these dates.
+    if (inWindow.length === 0 && phase.rows.length > 0) {
+      const from = dateWindow?.from ?? "";
+      const to = dateWindow?.to ?? "";
+      const nextDay = phase.rows.map((row) => dayOf(row.d)).find((day) => day > to);
+      const prevDay = [...phase.rows].reverse().map((row) => dayOf(row.d)).find((day) => day < from);
+      const jump = (day: string) => {
+        const end = addDays(day, 6);
+        applyWindow({ from: day, to: end > published!.to ? published!.to : end });
+      };
+      return (
+        <div className="state">
+          <h2>
+            Nothing between {friendly(from)} and {friendly(to)}.
+          </h2>
+          <p>
+            <span className="num">{phase.rows.length}</span> shows are in this town, just not in those dates.
+            {nextDay ? ` The next one is ${friendly(nextDay)}.` : prevDay ? ` The last one was ${friendly(prevDay)}.` : ""}
+          </p>
+          <div className="cta">
+            {nextDay ? (
+              <button className="btn primary" onClick={() => jump(nextDay)}>
+                Jump to {friendly(nextDay)}
+              </button>
+            ) : null}
+            {published ? (
+              <button className="btn" onClick={() => applyWindow(published)}>
+                Show the whole season
+              </button>
+            ) : null}
+            <button className="btn" onClick={() => setPalette({ open: true, tab: "town" })}>
+              Another town
+            </button>
+          </div>
+        </div>
+      );
+    }
     if (shown.length === 0) {
       return (
         <div className="state">
@@ -454,4 +501,10 @@ export default function App() {
       />
     </>
   );
+}
+
+/** `2027-01-15` → `15 jan`, the board's own voice for a day. */
+function friendly(day: string): string {
+  if (!day) return "";
+  return `${Number(dayNumber(day))} ${monthShort(day)}`;
 }
