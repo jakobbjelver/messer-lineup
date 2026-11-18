@@ -1,3 +1,5 @@
+import { Key } from "./key";
+
 /**
  * The index, as the browser sees it.
  *
@@ -23,6 +25,9 @@ export type Row = {
   /** [lat, lon] when the source publishes a venue position. */
   g?: [number, number];
 };
+
+/** A row that knows which town published it, for the artist page. */
+export type ArtistShow = Row & { town: string };
 
 export type SourceReport = {
   id: string;
@@ -120,6 +125,32 @@ export async function loadIndex(): Promise<{ manifest: Manifest; towns: Town[] }
     throw new IndexError("no_towns", "the manifest lists no towns");
   }
   return { manifest, towns: townsFile.towns ?? [] };
+}
+
+/**
+ * Every dated show for one artist, across every published town.
+ *
+ * The index is sharded per town, so "across the reach" means reading every shard — two towns today, and the page
+ * says which town each date is in rather than pretending the board's town is the only one. A shard that fails to
+ * load is reported, not swallowed: an artist page missing one town's dates is a wrong answer, not a smaller one.
+ */
+export async function loadArtistRows(manifest: Manifest, key: string): Promise<ArtistShow[]> {
+  const groups = await Promise.all(
+    manifest.towns.map(async (entry) => {
+      const rows = await loadShard(entry.shard);
+      return rows.filter((row) => Key(row.a) === key).map((row) => ({ ...row, town: entry.town }));
+    }),
+  );
+  // One show belongs to one town, but two towns can list the same event; the row key is what makes it one show.
+  const seen = new Set<string>();
+  const shows: ArtistShow[] = [];
+  for (const row of groups.flat()) {
+    if (seen.has(row.k)) continue;
+    seen.add(row.k);
+    shows.push(row);
+  }
+  shows.sort((a, b) => (a.d === b.d ? a.town.localeCompare(b.town) : a.d < b.d ? -1 : 1));
+  return shows;
 }
 
 /* ── dates: the window is the manifest's, the day is the row's own ─────────────────────────────────── */

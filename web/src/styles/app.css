@@ -118,6 +118,10 @@
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+/* above a page heading it keeps the eyebrow's left edge and leaves the heading its room */
+.head > .backlink {
+  margin: 0 0 16px;
+}
 /* inside the palette it takes the flow's own 16px inset, so the back control and the heading share one left edge */
 .palette__body > .backlink {
   margin: 16px 16px 0;

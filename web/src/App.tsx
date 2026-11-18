@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Board from "./components/Board";
 import Palette, { type PaletteTab } from "./components/Palette";
 import Ribbon from "./components/Ribbon";
-import { CaretDown, Info, MicrophoneStage, Moon, Sun } from "./components/icons";
+import TopBar from "./components/TopBar";
+import { CaretDown, Info } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
+import { useTheme } from "./lib/theme";
 import { readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
 import {
   boardDay,
@@ -43,9 +45,7 @@ export default function App() {
   const [dateWindow, setWindow] = useState<DateWindow | null>(null);
   const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
   const [palette, setPalette] = useState<{ open: boolean; tab: PaletteTab }>({ open: false, tab: "town" });
-  const [theme, setTheme] = useState<"light" | "dark">(() =>
-    document.documentElement.classList.contains("dark") ? "dark" : "light",
-  );
+  const { theme, toggle: toggleTheme } = useTheme();
   const lamps = useRef<Lamps | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
 
@@ -68,6 +68,12 @@ export default function App() {
         const seen = previouslySeen(boardDay(manifest));
         setNewKeys(seen.size ? new Set(rows.filter((row) => !seen.has(row.k)).map((row) => row.k)) : new Set());
         rememberVisit(rows.map((row) => row.k), boardDay(manifest));
+        // The artist page's way back returns to this town, not to the first published one.
+        try {
+          sessionStorage.setItem("lineup.town", town.town);
+        } catch {
+          /* storage refused: back falls back to the root */
+        }
         if (wantedTown !== town.town) {
           const url = new URL(location.href);
           url.searchParams.set("town", town.town);
@@ -117,12 +123,6 @@ export default function App() {
 
   /* A theme change retints the lamps: they are lit by the tokens, not by hard-coded colour. */
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    try {
-      localStorage.setItem("lineup.theme", theme);
-    } catch {
-      /* a browser that refuses storage still renders */
-    }
     lamps.current?.retint();
   }, [theme]);
 
@@ -281,23 +281,7 @@ export default function App() {
       </div>
       <canvas id="rays" ref={canvas} aria-hidden="true" />
 
-      <header className="bar">
-        <div className="bar__row">
-          <a className="brand" href="/" aria-label="Messer Lineup">
-            <MicrophoneStage />
-            <b>Messer Lineup</b>
-          </a>
-          <div className="bar__actions">
-            <button
-              className="iconbtn"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-            >
-              {theme === "dark" ? <Sun /> : <Moon />}
-            </button>
-          </div>
-        </div>
-      </header>
+      <TopBar theme={theme} onToggle={toggleTheme} />
 
       <main className="page">
         <section className="sheet">
@@ -338,11 +322,6 @@ export default function App() {
                   <span
                     className="sign"
                     data-t={townName}
-                    style={{
-                      // One green: both stops are the accent's hue. The old pair ran to 170 (teal) and 150 (success).
-                      ["--sign-a" as string]: theme === "dark" ? "oklch(.88 .20 128)" : "oklch(.44 .17 128)",
-                      ["--sign-b" as string]: theme === "dark" ? "oklch(.74 .18 128)" : "oklch(.52 .15 128)",
-                    }}
                   >
                     {townName}
                   </span>

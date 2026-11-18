@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { ArrowUpRight } from "./icons";
 import { Key } from "../lib/key";
 import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
@@ -9,6 +10,10 @@ type Props = {
   tasteKeys?: Set<string>;
   /** Shows that were not on the board at this browser's last visit. */
   newKeys?: Set<string>;
+  /** `k` → the town it is in, for a page that spans towns (the artist route). */
+  townOf?: Map<string, string>;
+  /** Whether the artist name is a link to that artist's page. Off on the page itself. */
+  linkArtist?: boolean;
 };
 
 /**
@@ -17,7 +22,7 @@ type Props = {
  * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
  * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
  */
-export default function Board({ rows, tasteKeys, newKeys }: Props) {
+export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true }: Props) {
   let month = "";
   const hasTaste = (tasteKeys?.size ?? 0) > 0;
 
@@ -31,18 +36,20 @@ export default function Board({ rows, tasteKeys, newKeys }: Props) {
         const status = statusLabel(row.st);
         const mine = hasTaste && tasteKeys?.has(Key(row.a));
         const isNew = newKeys?.has(row.k) ?? false;
+        // The whole row opens the show, except on a control — the artist link and the arrow own their own clicks.
+        const openRow = (event: MouseEvent<HTMLDivElement>) => {
+          if ((event.target as HTMLElement).closest("a,button")) return;
+          window.open(row.u, "_blank", "noopener,noreferrer");
+        };
 
         return (
           <div key={row.k}>
             {header ? <div className="month">{header}</div> : null}
-            <a
+            <div
               className="row"
-              href={row.u}
-              target="_blank"
-              rel="noopener noreferrer"
               data-status={row.st}
               data-mine={mine ? "" : undefined}
-              aria-label={`${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
+              onClick={openRow}
             >
               <span className="shot" />
               {isNew ? <span className="new" aria-label="new since your last visit" /> : null}
@@ -53,9 +60,21 @@ export default function Board({ rows, tasteKeys, newKeys }: Props) {
                 </span>
               </span>
               <span className="who">
-                <span className="artist">{row.a}</span>
+                {linkArtist ? (
+                  <a className="artist artist--link" href={`/a/${Key(row.a)}`} title={row.a}>
+                    {row.a}
+                  </a>
+                ) : (
+                  <span className="artist">{row.a}</span>
+                )}
                 <span className="meta">
                   <span className="venue">{row.v}</span>
+                  {townOf?.get(row.k) ? (
+                    <>
+                      <span className="dot">·</span>
+                      <span className="venue town">{townOf.get(row.k)}</span>
+                    </>
+                  ) : null}
                   {status ? (
                     <>
                       <span className="dot">·</span>
@@ -65,10 +84,16 @@ export default function Board({ rows, tasteKeys, newKeys }: Props) {
                 </span>
                 {mine ? <span className="aff" style={{ width: "100%" }} /> : null}
               </span>
-              <span className="go">
+              <a
+                className="go"
+                href={row.u}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
+              >
                 <ArrowUpRight />
-              </span>
-            </a>
+              </a>
+            </div>
           </div>
         );
       })}

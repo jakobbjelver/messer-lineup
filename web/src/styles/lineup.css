@@ -26,6 +26,7 @@
   --ray-mode:multiply;
   --ray-opacity:.75;
   --lift-mode:multiply;
+  --sign-a:oklch(.44 .17 128); --sign-b:oklch(.52 .15 128);
   --glow-a:oklch(.52 .20 128);
   --glow-b:oklch(.86 .14 128);
   --sheet-shadow:none;
@@ -57,6 +58,7 @@
   --ray-mode:screen;
   --ray-opacity:.9;
   --lift-mode:screen;
+  --sign-a:oklch(.88 .20 128); --sign-b:oklch(.74 .18 128);
   --glow-a:oklch(.80 .22 128);
   --glow-b:oklch(.94 .12 128);
   --sheet-shadow:none;
