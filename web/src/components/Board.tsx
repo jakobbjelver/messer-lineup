@@ -1,6 +1,13 @@
 import { ArrowUpRight } from "./icons";
-import { dayNumber, dayOf, monthLong, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
+import { Key } from "../lib/key";
+import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
 import type { Row } from "../lib/indexData";
+
+type Props = {
+  rows: Row[];
+  /** The visitor's taste, as identity keys. A row whose artist is in this set is "yours". */
+  tasteKeys?: Set<string>;
+};
 
 /**
  * The board: month headers, then one row per show, oldest first.
@@ -8,17 +15,19 @@ import type { Row } from "../lib/indexData";
  * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
  * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
  */
-export default function Board({ rows }: { rows: Row[] }) {
+export default function Board({ rows, tasteKeys }: Props) {
   let month = "";
+  const hasTaste = (tasteKeys?.size ?? 0) > 0;
 
   return (
     <div>
       {rows.map((row) => {
         const day = dayOf(row.d);
-        const monthName = monthLong(day).toUpperCase();
+        const monthName = monthLongUpper(day);
         const header = monthName !== month ? monthName : null;
         if (header) month = monthName;
         const status = statusLabel(row.st);
+        const mine = hasTaste && tasteKeys?.has(Key(row.a));
 
         return (
           <div key={row.k}>
@@ -29,6 +38,7 @@ export default function Board({ rows }: { rows: Row[] }) {
               target="_blank"
               rel="noopener noreferrer"
               data-status={row.st}
+              data-mine={mine ? "" : undefined}
               aria-label={`${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
             >
               <span className="shot" />
@@ -49,6 +59,7 @@ export default function Board({ rows }: { rows: Row[] }) {
                     </>
                   ) : null}
                 </span>
+                {mine ? <span className="aff" style={{ width: "100%" }} /> : null}
               </span>
               <span className="go">
                 <ArrowUpRight />
@@ -59,4 +70,22 @@ export default function Board({ rows }: { rows: Row[] }) {
       })}
     </div>
   );
+}
+
+function monthLongUpper(day: string): string {
+  const names = [
+    "JANUARY",
+    "FEBRUARY",
+    "MARCH",
+    "APRIL",
+    "MAY",
+    "JUNE",
+    "JULY",
+    "AUGUST",
+    "SEPTEMBER",
+    "OCTOBER",
+    "NOVEMBER",
+    "DECEMBER",
+  ];
+  return names[new Date(`${day}T12:00:00Z`).getUTCMonth()] ?? "";
 }

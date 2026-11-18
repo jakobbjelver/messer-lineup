@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check contract
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck contract
 
 all: build
 
@@ -58,6 +58,10 @@ worker-dev:
 worker-check:
 	@test -d node_modules || { echo "worker-check: run npm install first" >&2; exit 1; }
 	@npm run --silent check
+
+# The identity contract, in the second runtime: the TypeScript twin of model.Key against the shared vectors.
+keycheck:
+	@node web/scripts/keycheck.mjs
 
 # G1: the same requests against both runtimes. Needs `make serve` and `make worker-dev` running.
 contract:

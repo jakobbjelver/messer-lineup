@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Board from "./components/Board";
+import Palette, { type PaletteTab } from "./components/Palette";
 import Ribbon from "./components/Ribbon";
 import { CaretDown, Info, MicrophoneStage, Moon, Sun } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
+import { Key } from "./lib/key";
+import { readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
 import {
   dayOf,
   loadIndex,
@@ -24,10 +27,12 @@ type Phase =
 export default function App() {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [wantedTown, setWantedTown] = useState<string | null>(() => new URLSearchParams(location.search).get("town"));
+  const [taste, setTaste] = useState<TasteEntry[]>(() => toEntries(readTasteParam(location.search)));
+  const [filter, setFilter] = useState<"all" | "yours">("all");
+  const [palette, setPalette] = useState<{ open: boolean; tab: PaletteTab }>({ open: false, tab: "town" });
   const [theme, setTheme] = useState<"light" | "dark">(() =>
     document.documentElement.classList.contains("dark") ? "dark" : "light",
   );
-  const [pickerOpen, setPickerOpen] = useState(false);
   const lamps = useRef<Lamps | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
 
@@ -42,7 +47,6 @@ export default function App() {
         if (!live) return;
         setPhase({ kind: "ready", loaded: { manifest, towns }, rows, town });
         if (wantedTown !== town.town) {
-          // The URL always names what is on screen, so a copied link opens the same board.
           const url = new URL(location.href);
           url.searchParams.set("town", town.town);
           history.replaceState(null, "", url);
@@ -100,13 +104,34 @@ export default function App() {
     lamps.current?.retint();
   }, [theme]);
 
+  /* ⌘K / Ctrl-K: the palette, from anywhere. */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPalette({ open: true, tab: "town" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const chooseTown = useCallback((id: string) => {
-    setPickerOpen(false);
-    setPhase({ kind: "loading" });
+    setPhase((current) => (current.kind === "ready" && current.town.town === id ? current : { kind: "loading" }));
     setWantedTown(id);
     const url = new URL(location.href);
     url.searchParams.set("town", id);
     history.replaceState(null, "", url);
+  }, []);
+
+  const applyTaste = useCallback((entries: TasteEntry[]) => {
+    setTaste(entries);
+    const next = writeTasteParam(
+      entries.map((entry) => entry.key),
+      location.href,
+    );
+    history.replaceState(null, "", next);
+    if (entries.length === 0) setFilter("all");
   }, []);
 
   const retry = useCallback(() => {
@@ -114,7 +139,24 @@ export default function App() {
     setWantedTown((current) => current ?? "");
   }, []);
 
-  const body = useMemo(() => {
+  const ready = phase.kind === "ready" ? phase : null;
+  const manifest = ready?.loaded.manifest;
+
+  const tasteKeys = useMemo(() => new Set(taste.map((entry) => entry.key)), [taste]);
+  // One pass over the shard: a row is "yours" when its artist key is in the taste set. The count and the filter
+  // both read this set, so they cannot disagree with the rows that are actually marked.
+  const mineKeys = useMemo(() => {
+    const rows = ready?.rows ?? [];
+    if (tasteKeys.size === 0) return new Set<string>();
+    return new Set(rows.filter((row) => tasteKeys.has(Key(row.a))).map((row) => row.k));
+  }, [ready, tasteKeys]);
+  const mineCount = mineKeys.size;
+  const shown = useMemo(() => {
+    const rows = ready?.rows ?? [];
+    return filter === "yours" && mineKeys.size > 0 ? rows.filter((row) => mineKeys.has(row.k)) : rows;
+  }, [filter, mineKeys, ready]);
+
+  const body = (() => {
     if (phase.kind === "loading") {
       return (
         <div className="state">
@@ -143,17 +185,35 @@ export default function App() {
         <div className="state">
           <h2>Nothing in this window.</h2>
           <p>
-            The town is published, but no show in it lands inside the <span className="num">{phase.loaded.manifest.window.days}</span>-day
-            window. Nothing is broken — the next sweep replaces the shard.
+            The town is published, but no show in it lands inside the{" "}
+            <span className="num">{phase.loaded.manifest.window.days}</span>-day window. Nothing is broken — the next
+            sweep replaces the shard.
           </p>
         </div>
       );
     }
-    return <Board rows={phase.rows} />;
-  }, [phase, retry]);
+    if (shown.length === 0) {
+      return (
+        <div className="state">
+          <h2>None of your artists play here in this window.</h2>
+          <p>
+            <span className="num">{phase.rows.length}</span> shows are on the board. Your taste sharpens it — it never
+            gates it — so the full board is one tap away.
+          </p>
+          <div className="cta">
+            <button className="btn primary" onClick={() => setFilter("all")}>
+              Show the whole board
+            </button>
+            <button className="btn" onClick={() => setPalette({ open: true, tab: "taste" })}>
+              Add more artists
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return <Board rows={shown} tasteKeys={tasteKeys} />;
+  })();
 
-  const ready = phase.kind === "ready" ? phase : null;
-  const manifest = ready?.loaded.manifest;
   const townName = ready ? townLabel(ready.town, ready.loaded.towns) : "…";
   const sourceCount = ready ? new Set(ready.rows.flatMap((row) => row.src)).size : 0;
 
@@ -202,15 +262,13 @@ export default function App() {
               <h1>
                 <button
                   className="townbtn"
-                  onClick={() => setPickerOpen((open) => !open)}
-                  aria-expanded={pickerOpen}
+                  onClick={() => setPalette({ open: true, tab: "town" })}
                   aria-label="Change town"
                 >
                   <span
                     className="sign"
                     data-t={townName}
                     style={{
-                      // The sign's two gradient stops are per-theme by design; the sheen itself is CSS.
                       ["--sign-a" as string]: theme === "dark" ? "oklch(.88 .20 132)" : "oklch(.44 .17 128)",
                       ["--sign-b" as string]: theme === "dark" ? "oklch(.74 .18 170)" : "oklch(.52 .15 150)",
                     }}
@@ -225,19 +283,30 @@ export default function App() {
               </h1>
               <div className="spacer" />
               <div className="actions">
-                {pickerOpen && manifest ? (
-                  <div className="seg" role="group" aria-label="Towns">
-                    {manifest.towns.map((entry) => (
-                      <button
-                        key={entry.town}
-                        aria-pressed={entry.town === ready?.town.town}
-                        onClick={() => chooseTown(entry.town)}
-                      >
-                        {townLabel(entry, ready?.loaded.towns ?? [])} <span className="num">{entry.count}</span>
+                {tasteKeys.size > 0 ? (
+                  <>
+                    <div className="seg" role="group" aria-label="Filter">
+                      <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+                        all
                       </button>
-                    ))}
-                  </div>
+                      <button aria-pressed={filter === "yours"} onClick={() => setFilter("yours")}>
+                        yours <span className="num">{mineCount}</span>
+                      </button>
+                    </div>
+                    <span className="div" aria-hidden="true" />
+                  </>
                 ) : null}
+                <button
+                  className={tasteKeys.size > 0 ? "taste-cta linked" : "taste-cta"}
+                  onClick={() => setPalette({ open: true, tab: "taste" })}
+                >
+                  <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                    <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM86,176a8,8,0,0,1-16,0V128a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V96a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V112a8,8,0,0,1,16,0Zm40,0a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0Z" />
+                  </svg>
+                  <span>
+                    {tasteKeys.size > 0 ? `${tasteKeys.size} artists` : "Add taste"}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -285,6 +354,20 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      <Palette
+        open={palette.open}
+        tab={palette.tab}
+        onTab={(tab) => setPalette((current) => ({ ...current, tab }))}
+        onClose={() => setPalette((current) => ({ ...current, open: false }))}
+        towns={manifest?.towns ?? []}
+        townNames={ready?.loaded.towns ?? []}
+        currentTown={ready?.town.town ?? ""}
+        onTown={chooseTown}
+        taste={taste}
+        onTaste={applyTaste}
+        onBoard={(key) => (ready ? ready.rows.some((row) => Key(row.a) === key) : false)}
+      />
     </>
   );
 }
