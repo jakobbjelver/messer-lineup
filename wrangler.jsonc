@@ -1,18 +1,23 @@
 {
-  // Messer Lineup — one Worker: static assets first, the script only for /api/v1/* and
-  // /calendar/*.ics (ADR-001 §1). NEVER add "run_worker_first": a request that always reaches
-  // the script is metered (free plan answers 429 at the daily limit) instead of falling back to
-  // the assets, and that is what keeps a page view free.
+  // Messer Lineup — one Worker: static assets first, the script only for /healthz, /readyz, /api/v1/* and
+  // /calendar/*.ics (ADR-001 §1). NEVER add "run_worker_first": a request that always reaches the script is
+  // metered (the free plan answers 429 at the daily limit) instead of falling back to the assets, and that is
+  // what keeps a page view free.
   "$schema": "https://json.schemastore.org/wrangler.json",
   "name": "messer-lineup",
   "compatibility_date": "2026-11-01",
-  // Filled at P4 (the SPA build) — assets are served without invoking the script.
+  // Served by the platform without invoking the script. `web/dist` is a build product (P4): `make worker-dev`
+  // creates a labelled stub so the Worker can be exercised before the board exists.
   "assets": {
     "directory": "./web/dist",
     "not_found_handling": "single-page-application"
   },
-  // Filled at P3 (Hono: the six /api/v1 routes and the ICS endpoint).
   "main": "src/worker.ts",
   "routes": [{ "pattern": "lineup.messer.wtf", "custom_domain": true }],
+  // The index lives in R2 behind its own hostname; the board fetches it directly, so a shard never travels
+  // through the Worker. Only /readyz reads this, to answer whether there is an index at all.
+  "vars": {
+    "DATA_BASE": "https://lineup-data.messer.wtf"
+  },
   "observability": { "enabled": true }
 }

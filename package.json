@@ -1,0 +1,20 @@
+{
+  "name": "messer-lineup-worker",
+  "private": true,
+  "type": "module",
+  "description": "The Messer Lineup Worker: static assets first, the script only for /api/v1/* and /calendar/*.ics",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "contract": "node scripts/contract.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.9.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261117.1",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.40.0"
+  }
+}

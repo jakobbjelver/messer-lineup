@@ -8,18 +8,15 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe worker-dev worker-check contract
 
 all: build
 
 build:
 	go build -trimpath -ldflags '$(LDFLAGS)' -o bin/$(BINARY) ./cmd/lineup
 
-# `lineup serve` arrives in P3 with the API and the board; until then the dev pair has nothing to
-# start, and the target says so instead of starting something that answers nothing.
-dev:
-	@echo "dev: nothing to serve yet — lineup serve lands in P3 (plan: .hermes/plans/2026-11-17_start-here-p0.md)" >&2
-	@exit 1
+# The Go runtime: the index, the API envelope, and the board once web/dist exists.
+dev: serve
 
 doctor: build
 	@./bin/$(BINARY) doctor $(ARGS)
@@ -34,6 +31,25 @@ mine: build
 # Serve the built index (and the board, once web/dist exists). ARGS for --addr/--web/--now.
 serve: build
 	@./bin/$(BINARY) serve $(ARGS)
+
+# The Worker, locally. Assets are required by the config, so a stub is created when the board has not been
+# built yet — labelled as a stub so it can never be mistaken for the real page.
+worker-dev:
+	@mkdir -p web/dist
+	@test -f web/dist/index.html || printf '%s\n' \
+		'<!doctype html><title>Messer Lineup</title>' \
+		'<body style="font:14px system-ui;padding:2rem">The board is not built yet. Run <code>make worker-dev</code> after P4, or <code>make serve</code> for the index.</body>' \
+		> web/dist/index.html
+	@npx wrangler dev --port 8788
+
+# Typecheck the Worker. `make check` stays Go-only so CI needs no node_modules.
+worker-check:
+	@test -d node_modules || { echo "worker-check: run npm install first" >&2; exit 1; }
+	@npm run --silent check
+
+# G1: the same requests against both runtimes. Needs `make serve` and `make worker-dev` running.
+contract:
+	@node scripts/contract.mjs
 
 # The header-profile canary. It touches the network, so it is not in check; run it before believing any
 # report that a source has started blocking us (UA-only evidence is a known false "blocked").

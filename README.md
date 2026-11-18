@@ -91,3 +91,11 @@ source as it lands.
 
 MIT — including the miners and the index format. Not accepting contributions; see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## How it is served
+
+Two hosts, two jobs: the index is static in an R2 bucket (`lineup-data.messer.wtf`) and the board is one
+Worker with assets (`lineup.messer.wtf`). A page view is an asset request, so it never invokes the Worker and
+costs nothing; the script answers only what cannot be a file. The route table, the assets-first rule and the
+two-runtime contract test are in [`docs/serving.md`](docs/serving.md); publishing is in
+[`docs/publishing.md`](docs/publishing.md).

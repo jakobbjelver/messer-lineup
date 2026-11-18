@@ -28,6 +28,8 @@ instead of one document.
 |---|---|
 | `internal/server/` | serves a built index with the edge's headers, `/data/<town>.json` for the SPA, health, and a 501 in the contract's envelope for the routes that need accounts |
 | `internal/publish/` | copies a verified index into R2 with SigV4, skipping content-addressed objects that already exist |
+| `src/worker.ts` | the Worker (Hono): `/healthz`, `/readyz`, the five `/api/v1` routes and the calendar feed; assets are served by the platform first, so only these paths invoke the script |
+| `scripts/contract.mjs` | G1 — the same requests against `lineup serve` and `wrangler dev`, diffed by status and body/error code |
 | `cmd/lineup/` | the entry point: `mine`, `verify`, `doctor`, `serve`, `publish`; `findings` still names its phase |
 | `internal/model/` | `Show` (full fidelity), `Row` (the published nine keys), identity keys |
 | `internal/clock/` | the only place the wall clock is read; every selection path takes the time as a parameter |
@@ -51,6 +53,7 @@ make verify    # check a built index; ARGS="--index <dir>" to point it elsewhere
 make mine      # sweep platforms and write an index; ARGS="--source dice,tickster --town copenhagen --interval 2s"
 make mine ARGS="--source tickster --town copenhagen --dry-run --report r.json"   # measure only
 make serve     # serve the built index at 127.0.0.1:8016 (--web for the board, --now to freeze the clock)
+make worker-dev # the Worker at 127.0.0.1:8788 (stub board until P4), then `make contract` to diff the two
 make publish   # verify, then upload to the bucket; ARGS="--dry-run" to list
 make doctor    # report the install: version, go, clock, index state, registry
 make dev       # the local pair (lands in P3 with `lineup serve`)
