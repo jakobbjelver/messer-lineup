@@ -8,6 +8,7 @@ package mine
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -134,6 +135,12 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 				}
 				show, derr := adapter.Detail(ctx, candidate)
 				if derr != nil {
+					if errors.Is(derr, model.ErrNotAnArtist) {
+						// Parsed, but the platform used an admission label as the event name. Counted apart
+						// from a failure: nothing went wrong, the row was never a show.
+						src.NotAnArtist++
+						continue
+					}
 					src.Failures[classify(derr)]++
 					continue
 				}
@@ -245,15 +252,16 @@ type TownReport struct {
 
 // SourceReport is one adapter's contribution to one town.
 type SourceReport struct {
-	ID         string         `json:"id"`
-	Candidates int            `json:"candidates"`
-	Rows       int            `json:"rows"`
-	Filtered   int            `json:"filtered"`
-	Failures   map[string]int `json:"failures,omitempty"`
-	Outside    int            `json:"outside_window"`
-	Elsewhere  int            `json:"other_town"`
-	Seconds    float64        `json:"seconds"`
-	Error      string         `json:"error,omitempty"`
+	ID          string         `json:"id"`
+	Candidates  int            `json:"candidates"`
+	Rows        int            `json:"rows"`
+	Filtered    int            `json:"filtered"`
+	Failures    map[string]int `json:"failures,omitempty"`
+	Outside     int            `json:"outside_window"`
+	NotAnArtist int            `json:"not_an_artist"`
+	Elsewhere   int            `json:"other_town"`
+	Seconds     float64        `json:"seconds"`
+	Error       string         `json:"error,omitempty"`
 	// Warning is a run that completed but should not be trusted: the budget ran out, or the yield collapsed
 	// against this town's own median. A warning is never a reason to publish less than what was mined; it is
 	// the reason to look.
@@ -273,12 +281,13 @@ type BuildReport struct {
 
 // Totals is the run in one line.
 type Totals struct {
-	Candidates int `json:"candidates"`
-	Rows       int `json:"rows"`
-	Filtered   int `json:"filtered"`
-	Outside    int `json:"outside_window"`
-	Elsewhere  int `json:"other_town"`
-	Failures   int `json:"failures"`
+	Candidates  int `json:"candidates"`
+	Rows        int `json:"rows"`
+	Filtered    int `json:"filtered"`
+	Outside     int `json:"outside_window"`
+	Elsewhere   int `json:"other_town"`
+	NotAnArtist int `json:"not_an_artist"`
+	Failures    int `json:"failures"`
 }
 
 // WriteJSON writes the report where a script or an agent can read it.
@@ -308,6 +317,7 @@ func totalsOf(towns []TownReport) Totals {
 			totals.Candidates += src.Candidates
 			totals.Rows += src.Rows
 			totals.Filtered += src.Filtered
+			totals.NotAnArtist += src.NotAnArtist
 			totals.Outside += src.Outside
 			totals.Elsewhere += src.Elsewhere
 			totals.Failures += failures(src)

@@ -52,6 +52,12 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 	if title == "" {
 		return model.Show{}, fmt.Errorf("tickster: %s: no event title", pageURL)
 	}
+	// Tickster names some un-ticketed admission with its own ticket product ("Entrébiljetter/Tickets"). It parses
+	// perfectly and is not a show, so the adapter refuses it by name instead of publishing an artist called
+	// "Tickets" — see model.NotAnArtistTitle.
+	if model.NotAnArtistTitle(text(title)) {
+		return model.Show{}, model.ErrNotAnArtist
+	}
 	rawStart := firstGroup(startPattern, page)
 	if rawStart == "" {
 		return model.Show{}, fmt.Errorf("tickster: %s: no start date", pageURL)

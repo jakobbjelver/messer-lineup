@@ -28,6 +28,7 @@ instead of one document.
 |---|---|
 | `internal/server/` | serves a built index with the edge's headers, `/data/<town>.json` for the SPA, health, and a 501 in the contract's envelope for the routes that need accounts |
 | `internal/publish/` | copies a verified index into R2 with SigV4, skipping content-addressed objects that already exist |
+| `web/src/lib/{key,taste}.ts` | the client's identity function (the twin of `model.Key`) and the pasted-list parser; `make keycheck` diffs the twin against the shared vectors |
 | `web/` | the board: Vite + React 19, the frozen `lineup.css` from the design mockup, the WebGL lamps, and a loader that reads `manifest.json` + one shard |
 | `src/worker.ts` | the Worker (Hono): `/healthz`, `/readyz`, the five `/api/v1` routes and the calendar feed; assets are served by the platform first, so only these paths invoke the script |
 | `scripts/contract.mjs` | G1 — the same requests against `lineup serve` and `wrangler dev`, diffed by status and body/error code |

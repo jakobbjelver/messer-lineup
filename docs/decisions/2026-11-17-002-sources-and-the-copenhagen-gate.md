@@ -106,3 +106,20 @@ coordinate pass (one fetch per venue, cached) or the town registry — not a gue
   source and make the duplicate rate live again.
 - A DICE or Eventim town inside Denmark or Sweden, which would create the first two-source town.
 - The registry landing ticket-master-scale coverage for DK through a licensed agreement with a purge path.
+
+## Amendment (2026-11-18) — what the sweep found in Stockholm, and the one thing filtered at ingest
+
+The first full Stockholm sweep (932 candidates → 787 rows, merged 824 → 779) exposed something the sampled run
+had hidden: **44 rows whose artist was `Entrébiljetter/Tickets`** — one Stockholm museum's unticketed admission,
+published by Tickster with its own ticket product as the event name. Another 30-odd rows are theatre, julbord and
+cinema, which this ADR already accepts as the platform's mix.
+
+The mix stays. The ticket label does not, because it is not a category judgement — the field is not an artist
+*name*, and printing it makes the board look broken. So `model.NotAnArtistTitle` refuses a title whose
+normalised form is an admission label (`Entrébiljetter/Tickets`, `Tickets`, `Biljetter`, `Presentkort`,
+`Säsongskort`) and nothing else: matching is on the **whole** title, so "Nazareth — Right, Left, Centre Tour" and
+"Tomorrow shall be — Fri entré" stay shows. Adapters return `model.ErrNotAnArtist`, and the run report counts
+those apart from failures (`not_an_artist`), because nothing failed — the row was never a show.
+
+The line this does not cross: there is still no keyword filter for *music*. Pancake workshops, wrestling and
+julbord are published, and filtering them is P4's display concern, where a person can see what was dropped.

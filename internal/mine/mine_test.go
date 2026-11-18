@@ -433,3 +433,35 @@ func TestARunWithHistorySurvivesARestart(t *testing.T) {
 		t.Fatalf("history = %d entries after restart, want 1", got)
 	}
 }
+
+func TestATicketLabelIsCountedApartFromAFailure(t *testing.T) {
+	// A detail that parses but is not a show must not appear as a failure: nothing went wrong, and a report that
+	// mixes the two makes a platform look broken when it is merely selling admission.
+	dir := t.TempDir()
+	day := time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC)
+	fake := &fakeAdapter{
+		id:      "fake",
+		towns:   map[string][]string{"copenhagen": {"https://t.test/a", "https://t.test/b"}},
+		shows:   map[string]model.Show{"https://t.test/a": showAt("https://t.test/a", "Efterklang", "Vega", "copenhagen-dk", day, "fake")},
+		failure: map[string]error{"https://t.test/b": model.ErrNotAnArtist},
+	}
+	report, err := Run(context.Background(), Options{
+		Adapters: []Adapter{fake},
+		Towns:    []string{"copenhagen"},
+		IndexDir: filepath.Join(dir, "index"),
+		Now:      time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	src := report.Towns[0].Sources[0]
+	if src.NotAnArtist != 1 {
+		t.Fatalf("not_an_artist = %d, want 1", src.NotAnArtist)
+	}
+	if len(src.Failures) != 0 {
+		t.Fatalf("a ticket label was counted as a failure: %v", src.Failures)
+	}
+	if src.Rows != 1 {
+		t.Fatalf("rows = %d, want 1", src.Rows)
+	}
+}
