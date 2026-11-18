@@ -21,6 +21,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
+	"github.com/jakobbjelver/messer-lineup/internal/publish"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
@@ -57,7 +58,7 @@ func commands() []command {
 		{"verify", "check a built index against the published contract", runVerify},
 		{"doctor", "report the state of this install", runDoctor},
 		{"mine", "sweep a platform and write the report a publish is based on", runMine},
-		{"publish", "copy a verified index to object storage (P3)", notWired("P3", "the object-storage publisher")},
+		{"publish", "copy a verified index into the public bucket", runPublish},
 		{"serve", "serve the index and the board locally (P3)", notWired("P3", "the API and the board")},
 		{"findings", "emit the parser findings an agent acts on (P8)", notWired("P8", "the autonomous warden")},
 		{"version", "print the build stamp", runVersion},
@@ -108,6 +109,72 @@ func usage(only string) string {
 
 // notWired is how a command the plan has not reached yet behaves: it says which phase fills it and
 // exits non-zero, so a script that depends on it fails loudly instead of reading an empty success.
+func runPublish(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("lineup publish", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	indexDir := fs.String("index", ".lineup-index", "the index to publish")
+	dryRun := fs.Bool("dry-run", false, "list what would be uploaded; touch nothing")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+	clk, ok := (&flags{now: nowFlag}).clock(stderr)
+	if !ok {
+		return exitUsage
+	}
+
+	// Verify first: an index the contract rejects must not reach a public URL, whatever the exit code says.
+	report, err := index.Verify(*indexDir, clk.Now())
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup publish: %v\n", err)
+		return exitRefused
+	}
+	if !report.OK() {
+		fmt.Fprintln(stderr, "lineup publish: the index does not verify, so it will not be published:")
+		for _, problem := range report.Problems {
+			fmt.Fprintf(stderr, "  %s\n", problem)
+		}
+		return exitRefused
+	}
+
+	result, err := publish.Run(context.Background(), publish.Options{
+		IndexDir:  *indexDir,
+		Endpoint:  os.Getenv("LINEUP_R2_ENDPOINT"),
+		Bucket:    envOr("LINEUP_R2_BUCKET", "messer-lineup-index"),
+		AccessKey: os.Getenv("LINEUP_R2_ACCESS_KEY_ID"),
+		SecretKey: os.Getenv("LINEUP_R2_SECRET_ACCESS_KEY"),
+		DryRun:    *dryRun,
+		Now:       clk.Now(),
+		Log:       stderr,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup publish: %v\n", err)
+		return exitRefused
+	}
+	if *asJSON {
+		if err := writeJSON(stdout, result); err != nil {
+			fmt.Fprintf(stderr, "lineup publish: %v\n", err)
+			return exitRefused
+		}
+		return exitOK
+	}
+	mode := "published"
+	if result.DryRun {
+		mode = "would publish"
+	}
+	fmt.Fprintf(stdout, "%s %d of %d object(s), %d skipped, %d bytes\n",
+		mode, len(result.Keys), result.Considered, result.Skipped, result.Bytes)
+	return exitOK
+}
+
+func envOr(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func notWired(phase, what string) func([]string, io.Writer, io.Writer) int {
 	return func(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "lineup: this command is not wired yet — %s arrives in %s.\n", what, phase)
