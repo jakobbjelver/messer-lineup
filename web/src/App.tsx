@@ -41,6 +41,7 @@ import {
   type Town,
   type TownEntry,
 } from "./lib/indexData";
+import { forgetTown, rememberedTown, rememberTown } from "./lib/town";
 
 type Loaded = { manifest: Manifest; towns: Town[] };
 type Phase =
@@ -69,8 +70,9 @@ export default function App() {
     (async () => {
       try {
         const { manifest, towns } = await loadIndex();
-        // A town in the URL wins; otherwise the edge's country match; otherwise the first published town.
-        const chosen = wantedTown ?? (await defaultTown(manifest));
+        // A town in the URL wins, then the one this visitor picked before, then the edge's country hint, then the
+        // first published town. The memory outranks the hint on purpose: a border is not a preference.
+        const chosen = wantedTown ?? rememberedTown() ?? (await defaultTown(manifest));
         const town = manifest.towns.find((t) => t.town === chosen) ?? manifest.towns[0];
         const rows = await loadShard(town.shard);
         if (!live) return;
@@ -174,6 +176,7 @@ export default function App() {
 
   const chooseTown = useCallback((id: string) => {
     setPhase((current) => (current.kind === "ready" && current.town.town === id ? current : { kind: "loading" }));
+    rememberTown(id);
     setWantedTown(id);
     const url = new URL(location.href);
     url.searchParams.set("town", id);
@@ -193,6 +196,7 @@ export default function App() {
       localStorage.removeItem("lineup.seen");
       localStorage.removeItem("lineup.visited");
       localStorage.removeItem("lineup.names");
+      forgetTown();
       sessionStorage.removeItem("lineup.town");
     } catch {
       /* a browser that refuses storage has nothing to forget */

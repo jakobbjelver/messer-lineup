@@ -67,3 +67,23 @@ stockholm, December                698 → 345 rows · eyebrow "TRAVEL BOARD · 
 memory seeded with one row         36 of 37 marked new
 memory cleared                     0 marked new
 ```
+## Which town opens
+
+The URL decides, and then it is a matter of who knows best:
+
+| Order | Source | When |
+|---|---|---|
+| 1 | `?town=` | the link names a town — a shared link always opens where it says |
+| 2 | the visitor's own last pick | stored in `localStorage` under `lineup.town.chosen` |
+| 3 | `GET /where` — the edge's country | a first visit, or after "Forget everything" |
+| 4 | the first published town | no edge header, or a country the index does not cover |
+
+**A pick outranks a guess on purpose.** Country is not distance: an address in Malmö is served a Swedish town by a border
+that says nothing about which room is nearer, and Malmö is half an hour from Copenhagen. The hint is only ever a guess
+for someone who has not said what they want — once they have, the board remembers, and a wrong guess can never become
+sticky. Only an explicit pick is stored: the hint is re-asked on every first visit, because a remembered guess would be
+indistinguishable from a remembered choice.
+
+The URL is left clean when the board chose: `?town=` is written only when a link *named* a town that could not be
+honoured, so a shared link never freezes one visitor's default into everyone else's address bar.
+
