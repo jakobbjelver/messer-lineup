@@ -126,6 +126,29 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 			if opts.MaxPerTown > 0 && len(candidates) > opts.MaxPerTown {
 				candidates = candidates[:opts.MaxPerTown]
 			}
+
+			// Then whatever this town's last runs could not read for a reason that might have changed. A retry is an
+			// ordinary candidate: the same projection, the same town check, the same failure accounting.
+			retried := map[string]bool{}
+			if opts.State != nil {
+				listed := map[string]bool{}
+				for _, candidate := range candidates {
+					listed[candidate.URL] = true
+				}
+				for _, job := range opts.State.DueJobs(opts.Now, maxRetriesPerTown) {
+					if job.Source != adapter.ID() || job.Town != slug || job.Target == "" {
+						continue
+					}
+					// The target is this run's problem either way, so its failures count against the job — but if the
+					// town page lists it too, fetching it twice would double the row and the budget for one show.
+					retried[job.Target] = true
+					src.Retried++
+					if listed[job.Target] {
+						continue
+					}
+					candidates = append([]model.Candidate{{URL: job.Target, Source: job.Source}}, candidates...)
+				}
+			}
 			src.Candidates = len(candidates)
 
 			for i, candidate := range candidates {
@@ -141,8 +164,37 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 						src.NotAnArtist++
 						continue
 					}
-					src.Failures[classify(derr)]++
+					kind := classify(derr)
+					src.Failures[kind]++
+					if opts.State != nil {
+						id := state.JobID(adapter.ID(), state.JobDetail, candidate.URL)
+						switch {
+						case retried[candidate.URL] && !retryable(kind):
+							// It failed again, and this time for a reason that will not change: stop spending the
+							// budget on it.
+							opts.State.SuccessJob(id)
+							src.GivenUp++
+						case retried[candidate.URL]:
+							if opts.State.FailJob(id, derr, opts.Now) {
+								src.GivenUp++
+							}
+						case retryable(kind):
+							if opts.State.EnqueueJob(state.Job{
+								Source:    adapter.ID(),
+								Kind:      state.JobDetail,
+								Target:    candidate.URL,
+								Town:      slug,
+								NotBefore: opts.Now.Add(state.FirstRetry),
+								LastError: derr.Error(),
+							}) {
+								src.Queued++
+							}
+						}
+					}
 					continue
+				}
+				if opts.State != nil && retried[candidate.URL] {
+					opts.State.SuccessJob(state.JobID(adapter.ID(), state.JobDetail, candidate.URL))
 				}
 				if _, perr := model.Project(show); perr != nil {
 					src.Failures["not publishable: "+perr.Error()]++
@@ -259,6 +311,9 @@ type SourceReport struct {
 	Failures    map[string]int `json:"failures,omitempty"`
 	Outside     int            `json:"outside_window"`
 	NotAnArtist int            `json:"not_an_artist"`
+	Retried     int            `json:"retried,omitempty"`  // queued targets this run picked up
+	Queued      int            `json:"queued,omitempty"`   // new failures worth another attempt
+	GivenUp     int            `json:"given_up,omitempty"` // retries that failed for good
 	Elsewhere   int            `json:"other_town"`
 	Seconds     float64        `json:"seconds"`
 	Error       string         `json:"error,omitempty"`
@@ -288,6 +343,9 @@ type Totals struct {
 	Elsewhere   int `json:"other_town"`
 	NotAnArtist int `json:"not_an_artist"`
 	Failures    int `json:"failures"`
+	Retried     int `json:"retried"`
+	Queued      int `json:"queued"`
+	GivenUp     int `json:"given_up"`
 }
 
 // WriteJSON writes the report where a script or an agent can read it.
@@ -321,6 +379,9 @@ func totalsOf(towns []TownReport) Totals {
 			totals.Outside += src.Outside
 			totals.Elsewhere += src.Elsewhere
 			totals.Failures += failures(src)
+			totals.Retried += src.Retried
+			totals.Queued += src.Queued
+			totals.GivenUp += src.GivenUp
 		}
 	}
 	return totals
@@ -471,6 +532,36 @@ func countryOf(townID string) string {
 
 // classify names why a page did not become a row, so a report distinguishes "the host refused us" from "the
 // page had no event". A run that loses pages and cannot say why is not a measurement.
+// QueueNote is queueNote for the CLI's own table: the retry accounting belongs on a town's line, and nowhere when the
+// queue stayed out of the way.
+func QueueNote(src SourceReport) string { return queueNote(src) }
+
+// queueNote appends the retry accounting to a town's line, and says nothing when the queue stayed out of the way.
+func queueNote(src SourceReport) string {
+	if src.Retried == 0 && src.Queued == 0 && src.GivenUp == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" · %d retried, %d queued, %d given up", src.Retried, src.Queued, src.GivenUp)
+}
+
+// maxRetriesPerTown caps how many queued targets one town's run picks up, so a bad week cannot turn a sweep into a
+// retry loop that crowds out the fresh candidates.
+const maxRetriesPerTown = 50
+
+// retryable says whether a failed fetch is worth another attempt. A 429 or a timeout is a bad minute; a 404, a
+// robots refusal, a 403 or a page with no event block is a fact about the target, and re-fetching it spends budget to
+// learn nothing.
+func retryable(kind string) bool {
+	switch {
+	case strings.HasPrefix(kind, "rate limited"):
+		return true
+	case strings.Contains(kind, "timeout"), strings.Contains(kind, "connection"), strings.Contains(kind, "temporary"),
+		strings.Contains(kind, "answered 5"), strings.Contains(kind, "answered 502"), strings.Contains(kind, "answered 503"):
+		return true
+	}
+	return false
+}
+
 func classify(err error) string {
 	if err == nil {
 		return "ok"

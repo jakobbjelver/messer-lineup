@@ -569,12 +569,17 @@ func writeMineText(out io.Writer, rep mine.Report) {
 				fmt.Fprintf(out, "  %-12s %-9s could not be read: %s\n", town.Slug, src.ID, src.Error)
 				continue
 			}
-			fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %2d filtered · %d failures · %.0fs\n",
-				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, sumFailures(src.Failures), src.Seconds)
+			fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %2d filtered · %d failures · %.0fs%s\n",
+				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, sumFailures(src.Failures), src.Seconds,
+				mine.QueueNote(src))
 			if src.Warning != "" {
 				fmt.Fprintf(out, "  %-12s %-9s ⚠ %s\n", "", "", src.Warning)
 			}
 		}
+	}
+	if rep.Totals.Retried > 0 || rep.Totals.Queued > 0 || rep.Totals.GivenUp > 0 {
+		fmt.Fprintf(out, "  %-12s %-9s %d retried · %d queued for the next run · %d given up\n",
+			"queue", "", rep.Totals.Retried, rep.Totals.Queued, rep.Totals.GivenUp)
 	}
 	fmt.Fprintf(out, "  %-12s %-9s %3d candidates · %3d rows · %3d towns discovered\n",
 		"total", "", rep.Totals.Candidates, rep.Totals.Rows, rep.TownCount)

@@ -36,6 +36,8 @@ type Data struct {
 	Version int                       `json:"version"`
 	Budget  map[string]map[string]int `json:"budget"` // source → YYYY-MM-DD → requests taken
 	Runs    map[string][]Run          `json:"runs"`   // "<source>|<town>" → most recent last
+	Jobs    []Job                     `json:"jobs,omitempty"`
+	GaveUp  map[string]time.Time      `json:"gave_up,omitempty"`
 }
 
 // State is the open file. Safe for concurrent use.

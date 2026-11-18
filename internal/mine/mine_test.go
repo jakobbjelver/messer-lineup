@@ -465,3 +465,76 @@ func TestATicketLabelIsCountedApartFromAFailure(t *testing.T) {
 		t.Fatalf("rows = %d, want 1", src.Rows)
 	}
 }
+
+// TestATransientFailureIsRetriedOnTheNextRun is the queue's whole reason to exist: a page that answered 429 is not a
+// show the town does not have, it is a show this run could not read.
+func TestATransientFailureIsRetriedOnTheNextRun(t *testing.T) {
+	dir := t.TempDir()
+	statePath := filepath.Join(dir, "state.json")
+	opened, err := state.Open(statePath)
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+
+	adapter := baseAdapter()
+	adapter.towns["copenhagen"] = []string{"https://d.test/c1", "https://d.test/c2"}
+	adapter.failure = map[string]error{"https://d.test/c2": errors.New("the host answered 429")}
+
+	first := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"copenhagen"}, DryRun: true, State: opened, Now: time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC)})
+	if first.Totals.Rows != 1 {
+		t.Fatalf("first run rows = %d, want 1 (the other page was rate limited)", first.Totals.Rows)
+	}
+	if first.Totals.Queued != 1 {
+		t.Fatalf("first run queued = %d, want 1", first.Totals.Queued)
+	}
+	if due, waiting, total := opened.JobStats(time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC)); due != 0 || waiting != 1 || total != 1 {
+		t.Fatalf("queue after the first run = %d due, %d waiting, %d total", due, waiting, total)
+	}
+
+	// A permanent failure is a fact and must not be queued: the 403 town proves it.
+	permanent := baseAdapter()
+	blocked := run(t, Options{Adapters: []Adapter{permanent}, Towns: []string{"london"}, DryRun: true, State: opened, Now: time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC)})
+	if blocked.Totals.Queued != 0 {
+		t.Fatalf("a 403 was queued (%d): a blocked page is not a bad minute", blocked.Totals.Queued)
+	}
+
+	// The platform recovers; six hours later the retry finds the show.
+	adapter.failure = map[string]error{}
+	later := time.Date(2026, 11, 17, 13, 0, 0, 0, time.UTC)
+	second := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"copenhagen"}, DryRun: true, State: opened, Now: later})
+	if second.Totals.Retried != 1 {
+		t.Fatalf("second run retried = %d, want 1", second.Totals.Retried)
+	}
+	if second.Totals.Rows != 2 {
+		t.Fatalf("second run rows = %d, want 2 (the retry recovered the page)", second.Totals.Rows)
+	}
+	if _, _, total := opened.JobStats(later); total != 0 {
+		t.Fatalf("the queue still holds %d jobs after a successful retry", total)
+	}
+}
+
+// TestARetryThatKeepsFailingIsGivenUp keeps the budget honest: five attempts, then the target is a loss rather than a
+// permanent tax on every run.
+func TestARetryThatKeepsFailingIsGivenUp(t *testing.T) {
+	opened, err := state.Open(filepath.Join(t.TempDir(), "state.json"))
+	if err != nil {
+		t.Fatalf("state: %v", err)
+	}
+	adapter := baseAdapter()
+	adapter.towns["copenhagen"] = []string{"https://d.test/c1"}
+	adapter.failure = map[string]error{"https://d.test/c1": errors.New("the host answered 503")}
+
+	now := time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC)
+	givenUp := 0
+	for round := 0; round < state.MaxJobAttempts+1; round++ {
+		report := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"copenhagen"}, DryRun: true, State: opened, Now: now})
+		givenUp += report.Totals.GivenUp
+		now = now.Add(24 * time.Hour)
+	}
+	if givenUp != 1 {
+		t.Fatalf("given up = %d, want exactly 1", givenUp)
+	}
+	if _, _, total := opened.JobStats(now); total != 0 {
+		t.Fatalf("the queue still holds %d jobs after the attempts ran out", total)
+	}
+}
