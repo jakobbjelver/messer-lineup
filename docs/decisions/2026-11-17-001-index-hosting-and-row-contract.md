@@ -130,16 +130,20 @@ by the cross-runtime contract (one fixture file, one clock-free selector).
 | D1 for the board | a read-only published index is a file; D1 stays for sessions and taste only |
 | Presigned URLs for shards | throws away the edge cache and the "cache forever" property that makes page views free |
 
-## Operational note (2026-11-18) — the index is served on a one-level host
+## Amendment (2026-11-18) — the index is served at `lineup-data.messer.wtf`
 
-The bucket, lifecycle rule, cache headers and Access bypass this ADR specifies are all in place; the hostname is
-not. Universal SSL on this zone covers `*.messer.wtf`, which is one label deep, so a second-level name has no
-certificate: `data.lineup.messer.wtf` resolves, points at the bucket, and fails the TLS handshake. Advanced
-Certificate Manager — the product that would cover it — answers `1450 not granted for this zone`, and the R2
-custom domain's own certificate has been `ssl: pending` since creation.
+This ADR names the data origin `data.lineup.messer.wtf`. That name cannot have a certificate on this zone:
+Universal SSL covers `*.messer.wtf`, which is one label deep, and nothing else covers a second level (the
+Advanced Certificate Manager endpoints answer `1450 not granted for this zone`, and the R2 custom domain's own
+certificate stays `ssl: pending`). A name whose only possible state is a TLS handshake failure is not a
+decision worth keeping.
 
-So the same bucket is also attached to **`lineup-data.messer.wtf`**, which `*.messer.wtf` covers, and that is the
-name the board should read until the canonical one has a certificate. Both records exist and both are in the
-zone's catch-all allowlist; nothing needs to change here when the certificate arrives. `PROJECT.yaml` records
-the substitution as a dated exception, and `docs/publishing.md` has the setup steps, including the catch-all
-rule that answers 302 before anything else if a host is missing from its list.
+**The index is served at `https://lineup-data.messer.wtf`.** It is the same bucket, the same object names, the
+same headers; only the hostname changed, and it changed to a one-level name so that the certificate the zone can
+actually issue covers it. `data.lineup.messer.wtf` was retired — removed from the bucket, the Access app and the
+zone's catch-all — rather than parked as a second name for one artifact.
+
+Everything else in this ADR is unchanged: R2 rather than Pages, content-addressed `.jsonl.gz` shards, immutable
+shard caching with a short-cached manifest, a 30-day lifecycle rule, and the nine-key row. The setup steps,
+including the two that have nothing to do with R2 (the Access bypass app and the catch-all allowlist), are in
+`docs/publishing.md`.

@@ -4,11 +4,10 @@ The miner builds a directory; `lineup publish` copies it into an R2 bucket that 
 **`https://lineup-data.messer.wtf`**. That hostname is the product's only data origin: the board (P3) fetches
 the manifest and one shard, and nothing else here is reachable.
 
-Both `lineup-data.messer.wtf` and `data.lineup.messer.wtf` are attached to the bucket. The second is the name
-ADR-001 gives it, and it is the one to use once it has a certificate; today only the first does. Universal SSL
-covers `*.messer.wtf`, which is one label deep, and nothing on this zone covers a second level: the Advanced
-Certificate Manager endpoints answer `1450 not granted for this zone`, and the R2 custom domain's own
-certificate has been `ssl: pending` since it was created. See ADR-001's operational note.
+The hostname is one level deep on purpose. Universal SSL covers `*.messer.wtf` and nothing on this zone covers a
+second level — the Advanced Certificate Manager endpoints answer `1450 not granted for this zone` — so ADR-001's
+original `data.lineup.messer.wtf` could never hold a certificate and was retired on 2026-11-18 (ADR-001 carries
+the amendment). One name, one bucket, no parked alias.
 
 ## What is in the bucket
 
@@ -59,16 +58,16 @@ lineup publish                            # verify, then upload
 
 1. Bucket `messer-lineup-index` in the `messer.wtf` account.
 2. Lifecycle rule: `towns/` → delete after 30 days.
-3. Custom domains `lineup-data.messer.wtf` and `data.lineup.messer.wtf` on the bucket (each creates a proxied
-   CNAME to `public.r2.dev`). **A one-level host is the one that works**: see the certificate note above.
+3. Custom domain `lineup-data.messer.wtf` on the bucket (creates a proxied CNAME to `public.r2.dev`). **The
+   hostname must be one level deep**: see the certificate note above.
 4. **Access bypass for the hostname.** The zone's `Private Admin Apps` app covers `*.messer.wtf`, so every
    uncovered subdomain answers 401 to the world. A self-hosted app named `Lineup Index (public)` on
-   `data.lineup.messer.wtf` with a `Bypass Everyone` policy is what makes the index readable; without it the
+   `lineup-data.messer.wtf` with a `Bypass Everyone` policy is what makes the index readable; without it the
    bucket is correct and unreachable.
-5. **Add both hostnames to the zone's catch-all** (`~/Repos/messer-site`, `node scripts/sync-catchall.mjs`).
+5. **Add the hostname to the zone's catch-all** (`~/Repos/messer-site`, `node scripts/sync-catchall.mjs`).
    Rule 2 of the zone's dynamic-redirect ruleset sends any host that is not in the known list to
    `https://messer.wtf/?from=<host>` with a 302 — which is what answers a bucket that is correctly configured,
-   because redirect rules run before anything else. The hosts are in the script's explicit "outside the server
+   because redirect rules run before anything else. The host is in the script's explicit "outside the server
    repo" list (an R2 bucket has no origin on the tunnel and no `services.yaml` entry). The script's
    `CLOUDFLARE_API_TOKEN` must carry rulesets write; if it does not, the same ruleset can be PUT through the
    Cloudflare MCP session.

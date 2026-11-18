@@ -25,8 +25,6 @@ deploy:
   kind: "cloudflare-worker"       # one Worker: assets.directory + main for /api/v1/* and /calendar/*
   domain: "lineup.messer.wtf"     # the board
   data_domain: "lineup-data.messer.wtf"   # R2 bucket behind a custom domain (immutable shards)
-  # `data.lineup.messer.wtf` (ADR-001's name) is attached to the same bucket but has no certificate:
-  # Universal SSL is one label deep and ACM is not entitled on this zone. See exceptions.index-host-alias.
 
 dev:
   command: "make dev"
@@ -54,9 +52,6 @@ exceptions:
     expires: 2027-06-30
   - id: edge-primitive
     reason: "A global board read by people who are not on this network needs an anycast origin with a free page view. The mini cannot meet that, and the index is static files so the edge holds no state."
-    expires: 2027-06-30
-  - id: index-host-alias
-    reason: "The index is served at lineup-data.messer.wtf instead of ADR-001's data.lineup.messer.wtf: Universal SSL covers *.messer.wtf (one label), a second-level name has no certificate, ACM answers 1450 not-granted, and the R2 custom domain's own certificate stays pending. Both names are attached; the alias is the one with TLS."
     expires: 2027-06-30
   - id: no-settings-page
     reason: "The miner is configured by files in this repo (sources/, config.toml) and the board has no account; there is nothing a settings page would write to."

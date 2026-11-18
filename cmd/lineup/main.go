@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 	"github.com/jakobbjelver/messer-lineup/internal/publish"
+	"github.com/jakobbjelver/messer-lineup/internal/server"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
@@ -59,7 +61,7 @@ func commands() []command {
 		{"doctor", "report the state of this install", runDoctor},
 		{"mine", "sweep a platform and write the report a publish is based on", runMine},
 		{"publish", "copy a verified index into the public bucket", runPublish},
-		{"serve", "serve the index and the board locally (P3)", notWired("P3", "the API and the board")},
+		{"serve", "serve the index (and the board, once it is built) locally", runServe},
 		{"findings", "emit the parser findings an agent acts on (P8)", notWired("P8", "the autonomous warden")},
 		{"version", "print the build stamp", runVersion},
 	}
@@ -109,6 +111,46 @@ func usage(only string) string {
 
 // notWired is how a command the plan has not reached yet behaves: it says which phase fills it and
 // exits non-zero, so a script that depends on it fails loudly instead of reading an empty success.
+func runServe(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("lineup serve", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	indexDir := fs.String("index", ".lineup-index", "the index to serve")
+	addr := fs.String("addr", "127.0.0.1:8016", "listen address")
+	webDir := fs.String("web", "", "the built board (web/dist); empty serves the index only")
+	nowFlag := fs.String("now", "", "pin the clock (also accepted as --frozen-clock for fixtures)")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+	if len(*webDir) > 0 {
+		if info, err := os.Stat(filepath.Join(*webDir, "index.html")); err != nil || info.IsDir() {
+			fmt.Fprintf(stderr, "lineup serve: %s has no index.html\n", *webDir)
+			return exitUsage
+		}
+	}
+	clk, ok := (&flags{now: nowFlag}).clock(stderr)
+	if !ok {
+		return exitUsage
+	}
+	fmt.Fprintf(stderr, "lineup serve: index %s, board %s\n", *indexDir, orDefault(*webDir, "none yet"))
+	if err := server.Run(context.Background(), server.Options{
+		IndexDir: *indexDir,
+		WebDir:   *webDir,
+		Now:      clk.Now,
+		Log:      stdout,
+	}, *addr); err != nil {
+		fmt.Fprintf(stderr, "lineup serve: %v\n", err)
+		return exitRefused
+	}
+	return exitOK
+}
+
+func orDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
 func runPublish(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("lineup publish", flag.ContinueOnError)
 	fs.SetOutput(stderr)
