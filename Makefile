@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe worker-dev worker-check contract
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-dev worker-dev worker-check contract
 
 all: build
 
@@ -31,6 +31,13 @@ mine: build
 # Serve the built index (and the board, once web/dist exists). ARGS for --addr/--web/--now.
 serve: build
 	@./bin/$(BINARY) serve $(ARGS)
+
+# The board. `make serve` must be running: the dev server proxies the three index paths to it.
+web:
+	@cd web && npm run --silent build
+
+web-dev:
+	@cd web && npm run dev
 
 # The Worker, locally. Assets are required by the config, so a stub is created when the board has not been
 # built yet — labelled as a stub so it can never be mistaken for the real page.

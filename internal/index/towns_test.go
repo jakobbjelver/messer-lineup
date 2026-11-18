@@ -48,7 +48,7 @@ func TestTownSetDiscoversAndCentroids(t *testing.T) {
 func TestTownSetWithoutGeoLeavesZero(t *testing.T) {
 	set := NewTownSet()
 	set.Add(show("austin-us", "Austin", 0, 0, false))
-	towns := set.Towns(time.Now())
+	towns := set.Towns(time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC))
 	if towns.Towns[0].Lat != 0 || towns.Towns[0].Lon != 0 {
 		t.Fatalf("a town with no positions invented one: %+v", towns.Towns[0])
 	}
@@ -94,5 +94,21 @@ func TestCountryOf(t *testing.T) {
 		if got := countryOf(id); got != want {
 			t.Errorf("countryOf(%q) = %q, want %q", id, got, want)
 		}
+	}
+}
+
+func TestACompactLabelNamesTheTown(t *testing.T) {
+	// One town id, three labels: the platform names the district as often as the city. The shortest is the city
+	// the other two belong to, and it is the one the board prints as the sign.
+	set := NewTownSet()
+	for _, name := range []string{"København Ø", "København NV", "København"} {
+		set.Add(model.Show{Artist: "a", Venue: "v", Town: "copenhagen-dk", TownName: name, Start: time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC)})
+	}
+	towns := set.Towns(time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC))
+	if len(towns.Towns) != 1 {
+		t.Fatalf("expected one town, got %d", len(towns.Towns))
+	}
+	if got := towns.Towns[0].Name; got != "København" {
+		t.Fatalf("town name = %q, want København", got)
 	}
 }

@@ -35,6 +35,33 @@ The 501s are honest answers in the contract's envelope — `{"error":{"code":"no
 — so a client can tell "not mine" from "not yet", and so the envelope is under test before the routes exist.
 `message` is free text and names its runtime; `code` and the status are the contract.
 
+## The board
+
+The SPA is `web/` (Vite + React). It fetches **two** things, both from the bucket: `manifest.json`, then the one
+shard for the town it is showing. Nothing is proxied through the Worker, and the shard's name is its own digest,
+so the browser cache holds it forever while the manifest — five minutes — is the only thing that moves.
+
+That cross-origin fetch is why the bucket carries a CORS policy:
+
+```
+GET/HEAD, origins https://lineup.messer.wtf and http://localhost:5173
+expose content-length, content-type, content-encoding, etag · max-age 86400
+```
+
+It is narrow on purpose: a request from any other origin gets no `access-control-allow-origin` header, which is
+what the board's own error state renders when the bucket is misconfigured — a real failure that says so instead
+of a blank page.
+
+Two builds, one difference:
+
+```
+make web                                         # VITE_DATA_BASE unset → same origin → for `lineup serve`
+VITE_DATA_BASE=https://lineup-data.messer.wtf npm run build   # the edge build: assets on the Worker, data on R2
+```
+
+`npm run dev` proxies `/manifest.json`, `/towns.json` and `/towns` to `lineup serve` on 8016, so HMR works
+against a local index and localhost never needs a CORS exemption on the bucket.
+
 ## One contract, two runtimes
 
 `lineup serve` (Go) and the Worker answer the same six routes with the same statuses and the same envelope.
@@ -66,6 +93,10 @@ public host by accident. The publish order for the index is separate and documen
 
 ## What is not verified yet
 
+- **The board on the real host.** The production-shaped build (data from the bucket, assets from a static
+  server) renders all 37 Copenhagen rows with no console errors, and the same build served from a foreign
+  origin correctly shows its error state instead. What has *not* happened is a deploy: `lineup.messer.wtf` is
+  still the catch-all redirect.
 - **Assets-first in production.** Locally, `/` returns the asset and `/api/v1/*` returns the script, which is
   the right split — but the claim that a page view costs *zero* Worker invocations is only provable from the
   Worker's analytics after a deploy: one page GET, then zero new invocations on the counter.

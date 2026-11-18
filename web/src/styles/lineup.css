@@ -1,0 +1,473 @@
+
+@font-face{font-family:"Golos Text";src:url("/fonts/golos-text-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  font-weight:100 800;font-style:normal;font-display:swap}
+
+/* ── tokens (messer-ui 2.5.0) + brand messer-lineup ───────────────────────── */
+:root{
+  --background:#f7f6f4; --foreground:#141414;
+  --surface:#ffffff; --surface-2:#f2f2f2;
+  --text-2:#525252; --text-3:#6f6f6f;
+  --border:#e4e4e4; --border-strong:#d4d4d4;
+  --success:oklch(.53 .13 150); --warning:oklch(.70 .14 75); --destructive:oklch(.55 .19 25);
+  --primary:oklch(.52 .17 128);
+  --primary-foreground:#ffffff;
+  --primary-hover:color-mix(in oklab, oklch(.52 .17 128) 84%, #000);
+  --ring:oklch(.52 .17 128);
+  /* the stage */
+  --haze-a:oklch(.72 .23 330 / .64);   /* magenta, the room */
+  --haze-b:oklch(.74 .20 352 / .46);   /* rose               */
+  --haze-c:oklch(.64 .19 300 / .42);   /* violet, its shadow */
+  --haze-d:oklch(.80 .17 320 / .26);   /* soft magenta       */
+  --haze-mask:linear-gradient(to bottom,#000 0,rgba(0,0,0,.80) 30%,rgba(0,0,0,.55) 66%,rgba(0,0,0,.70) 100%);
+  --ray:oklch(.86 .09 12);            /* a warm key, still in the magenta family */
+  --ray2:oklch(.70 .22 325);
+  --ray-mode:multiply;
+  --ray-opacity:.75;
+  --lift-mode:multiply;
+  --glow-a:oklch(.52 .20 128);
+  --glow-b:oklch(.86 .16 150);
+  --sheet-shadow:none;
+  --sheet-bg:var(--surface);
+  --sheet-blur:16px;
+  --rim:var(--border-strong);
+  --spill:oklch(.56 .18 128 / .10);
+  --font-golos:"Golos Text",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --shell:1152px; --narrow:896px; --pad:32px;
+}
+.dark{
+  --background:#08080a; --foreground:#f2f2f2;
+  --surface:#101012; --surface-2:#191a1d;
+  --text-2:#a3a3a3; --text-3:#8a8a8a;
+  --border:#26262a; --border-strong:#34343a;
+  --success:oklch(.70 .12 150); --warning:oklch(.80 .13 75); --destructive:oklch(.68 .17 25);
+  --primary:oklch(.84 .19 128);
+  --primary-foreground:#0a0a0a;
+  --primary-hover:color-mix(in oklab, oklch(.84 .19 128) 86%, #fff);
+  --ring:oklch(.84 .19 128);
+  --haze-a:oklch(.55 .28 330 / .44);
+  --haze-b:oklch(.56 .26 352 / .32);
+  --haze-c:oklch(.42 .24 300 / .40);
+  --haze-d:oklch(.62 .26 320 / .18);
+  --haze-mask:linear-gradient(to bottom,#000 0,rgba(0,0,0,.62) 34%,rgba(0,0,0,.22) 64%,rgba(0,0,0,.46) 100%);
+  --ray:oklch(.97 .07 340);
+  --ray2:oklch(.78 .26 320);
+  --ray-mode:screen;
+  --ray-opacity:.9;
+  --lift-mode:screen;
+  --glow-a:oklch(.80 .22 132);
+  --glow-b:oklch(.94 .10 150);
+  --sheet-shadow:none;
+  --sheet-bg:color-mix(in oklab, var(--surface) 88%, transparent);
+  --sheet-blur:20px;
+  --rim:color-mix(in oklab, var(--primary) 26%, var(--border-strong));
+  --spill:oklch(.80 .20 132 / .10);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{overflow-x:clip}
+body{margin:0;background:var(--background);color:var(--foreground);
+  font:400 14px/1.45 var(--font-golos);-webkit-font-smoothing:antialiased}
+::selection{background:color-mix(in oklab,var(--primary) 40%,transparent)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;
+  box-shadow:0 0 0 4px color-mix(in oklab,var(--ring) 26%,transparent)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+ul{margin:0;padding:0;list-style:none}
+h1,h2{margin:0;font-family:var(--font-golos)}
+svg.ic{display:block;width:16px;height:16px;flex:none}
+svg.ic[data-off]{display:none}
+
+/* labels are Golos caps now; mono is reserved for digits, times and hashes */
+.lab{font:600 10.5px/1 var(--font-golos);letter-spacing:.09em;text-transform:uppercase;color:var(--text-3)}
+:root:not(.dark) .lab{color:var(--text-2)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:400}
+
+/* ── the stage: rays + drifting haze + grain ─────────────────────────────── */
+.stage{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#rays{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;
+  opacity:var(--ray-opacity);mix-blend-mode:var(--ray-mode)}
+.stage__blobs{position:absolute;inset:-25%;
+  background:
+    radial-gradient(46% 38% at 22% 12%, var(--haze-a), transparent 70%),
+    radial-gradient(42% 34% at 78% 8%,  var(--haze-b), transparent 68%),
+    radial-gradient(56% 44% at 50% 92%, var(--haze-c), transparent 72%),
+    radial-gradient(30% 22% at 64% 58%, var(--haze-d), transparent 74%);
+  -webkit-mask-image:var(--haze-mask);
+  mask-image:var(--haze-mask);
+  animation:drift 46s ease-in-out infinite alternate;
+}
+/* a second, slower pass so the smoke never repeats in step with itself */
+.stage__blobs::after{content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(38% 30% at 68% 26%, var(--haze-a), transparent 72%),
+    radial-gradient(44% 36% at 30% 70%, var(--haze-c), transparent 70%);
+  animation:drift2 73s ease-in-out infinite alternate;
+  opacity:.7}
+@keyframes drift{
+  0%{transform:translate3d(-1.5%,-1%,0) scale(1)}
+  50%{transform:translate3d(1.5%,2%,0) scale(1.07)}
+  100%{transform:translate3d(-1%,1.5%,0) scale(1.03)}
+}
+@keyframes drift2{
+  0%{transform:translate3d(1%,0,0) scale(1.05)}
+  100%{transform:translate3d(-2%,-2%,0) scale(1)}
+}
+.stage__grain{position:absolute;inset:0;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* the light lifts the smoke under the cursor, on top of the rays */
+.stage__lift{position:absolute;inset:0;opacity:0;transition:opacity .3s ease;
+  background:
+    radial-gradient(42% 34% at var(--mx,50%) calc(var(--my,18%) + 4%), var(--haze-a), transparent 70%),
+    radial-gradient(36% 28% at calc(var(--mx,50%) + 10%) var(--my,18%), var(--haze-b), transparent 72%),
+    linear-gradient(to bottom, oklch(1 0 0 / .06), transparent 60%);
+  -webkit-mask-image:radial-gradient(430px 540px at var(--mx,50%) var(--my,18%),#000 0%,rgba(0,0,0,.5) 44%,transparent 76%);
+  mask-image:radial-gradient(430px 540px at var(--mx,50%) var(--my,18%),#000 0%,rgba(0,0,0,.5) 44%,transparent 76%);
+  mix-blend-mode:var(--lift-mode)}
+body[data-lit] .stage__lift{opacity:.7}
+@media (prefers-reduced-motion:reduce){
+  .stage__blobs,.stage__blobs::after{animation:none}
+  .stage__lift{display:none}
+  #rays{opacity:.5}
+}
+@media (prefers-contrast:more){.stage__blobs,.stage__grain,.stage__lift,#rays{display:none}}
+
+/* ── bar ─────────────────────────────────────────────────────────────────── */
+.bar{position:sticky;top:0;z-index:30;background:color-mix(in oklab,var(--surface) 88%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.bar__row{max-width:var(--shell);margin:0 auto;padding:0 var(--pad);height:47px;
+  display:flex;align-items:center;gap:12px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:20px;height:20px;filter:drop-shadow(0 0 6px color-mix(in oklab,var(--primary) 55%,transparent))}
+.brand b{font:600 13px/20px var(--font-golos);letter-spacing:.13em;text-transform:uppercase;white-space:nowrap}
+.bar__actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.iconbtn{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border-strong);
+  background:color-mix(in oklab,var(--surface) 80%,transparent);color:var(--text-2)}
+.iconbtn:hover{background:var(--surface-2);color:var(--foreground)}
+.iconbtn.neon{color:var(--primary);border-color:color-mix(in oklab,var(--primary) 55%,transparent);
+  box-shadow:0 0 1px color-mix(in oklab,var(--primary) 90%,transparent),
+    0 0 10px color-mix(in oklab,var(--primary) 34%,transparent),
+    0 0 26px color-mix(in oklab,var(--primary) 16%,transparent)}
+.iconbtn.neon:hover{color:var(--primary);background:color-mix(in oklab,var(--primary) 12%,transparent);
+  box-shadow:0 0 2px var(--primary),
+    0 0 16px color-mix(in oklab,var(--primary) 52%,transparent),
+    0 0 40px color-mix(in oklab,var(--primary) 26%,transparent)}
+
+/* ── sheet ───────────────────────────────────────────────────────────────── */
+.page{position:relative;z-index:1;max-width:var(--narrow);margin:0 auto;padding:28px var(--pad) 64px}
+.sheet{position:relative;background:var(--sheet-bg);border:1px solid var(--border-strong);
+  border-top-color:var(--rim);box-shadow:var(--sheet-shadow);backdrop-filter:blur(var(--sheet-blur));
+  overflow:hidden}
+/* the neon sign spills onto the paper it is printed on */
+.sheet::before{content:"";position:absolute;left:-10%;top:-40%;width:70%;height:190%;pointer-events:none;
+  background:radial-gradient(46% 42% at 34% 26%, var(--spill), transparent 72%);
+  mix-blend-mode:var(--lift-mode);z-index:0}
+.sheet > *{position:relative;z-index:1}
+.head{padding:20px 20px 0}
+.eyebrow{display:flex;justify-content:space-between;gap:16px;align-items:baseline;flex-wrap:wrap}
+.eyebrow .r{display:inline-flex;align-items:center;gap:6px}
+.h1row{display:flex;align-items:flex-end;gap:14px;margin-top:10px;flex-wrap:wrap}
+.townbtn{display:inline-flex;align-items:center;gap:10px;height:40px;margin-left:-2px;
+  font:600 32px/1.05 var(--font-golos);letter-spacing:-.011em}
+.townbtn svg{color:var(--text-3);transition:color .12s}
+.townbtn:hover svg{color:var(--primary)}
+.h1row .spacer{flex:1 1 auto}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--border-strong);height:32px;
+  background:color-mix(in oklab,var(--surface) 70%,transparent)}
+.seg button{padding:0 10px;height:30px;font:400 12.5px var(--font-golos);color:var(--text-2);
+  display:inline-flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-pressed="true"]{background:color-mix(in oklab,var(--primary) 12%,var(--surface));
+  color:var(--foreground);font-weight:600;box-shadow:inset 0 -2px 0 var(--primary)}
+.seg .u{padding:0 7px 0 8px;height:30px;display:inline-flex;align-items:center;
+  font:400 10px var(--font-mono);color:var(--text-3);border-left:1px solid var(--border)}
+.actions .div{width:1px;height:20px;background:var(--border-strong);margin:0 4px}
+/* the one taste affordance on the page */
+.taste-cta{height:32px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--primary);color:var(--primary);font:600 11px/1 var(--font-golos);
+  letter-spacing:.08em;text-transform:uppercase;background:transparent;position:relative}
+.taste-cta svg{width:14px;height:14px}
+.taste-cta:hover{background:color-mix(in oklab,var(--primary) 14%,transparent)}
+.taste-cta.linked{border-color:var(--border-strong);color:var(--text-2);background:transparent}
+.taste-cta.linked:hover{color:var(--foreground);border-color:var(--primary)}
+.taste-cta{margin-left:4px}
+:root:not(.dark) .taste-cta{box-shadow:0 0 14px color-mix(in oklab,var(--primary) 22%,transparent)}
+.dark .taste-cta{box-shadow:0 0 1px var(--primary),0 0 12px color-mix(in oklab,var(--primary) 38%,transparent),
+  0 0 30px color-mix(in oklab,var(--primary) 18%,transparent)}
+.approx{font:400 10px var(--font-mono);color:var(--text-3);border:1px solid var(--border-strong);
+  padding:3px 5px;align-self:center}
+
+/* ribbon */
+.ribbon{display:grid;grid-template-columns:repeat(120,1fr);gap:1px;padding:0 20px;margin-top:16px;align-items:end}
+.ribbon i{display:block;height:11px;background:var(--border-strong);opacity:.28}
+:root:not(.dark) .ribbon i{opacity:.55}
+.ribbon i.on{height:19px;background:var(--primary);opacity:.8;
+  box-shadow:0 0 8px color-mix(in oklab,var(--primary) 45%,transparent)}
+.ribbon i.today{height:28px;background:var(--primary);opacity:1;
+  box-shadow:0 0 4px var(--primary),0 0 14px color-mix(in oklab,var(--primary) 60%,transparent),0 0 34px color-mix(in oklab,var(--primary) 35%,transparent)}
+.ribbon .mo{grid-row:2;padding-top:8px;font:600 10px/1 var(--font-golos);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--text-3)}
+.ribbon--wk{display:none;grid-template-columns:repeat(17,1fr);gap:2px}
+.ribcaption{display:flex;justify-content:space-between;padding:8px 20px 0}
+.ribcaption span{font:400 10px/1 var(--font-mono);color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+
+/* coverage line */
+.coverage{display:flex;align-items:center;gap:8px;width:100%;margin-top:18px;height:36px;
+  padding:0 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  font:600 10.5px/1 var(--font-golos);letter-spacing:.09em;text-transform:uppercase;color:var(--text-2);text-align:left}
+.coverage:hover{background:var(--surface-2)}
+.coverage .g{color:var(--text-3);font-weight:400}
+.coverage .i{margin-left:auto;color:var(--text-2);display:inline-flex}
+
+/* rows */
+.month{position:sticky;top:47px;z-index:5;background:var(--surface);
+  padding:16px 20px 8px;font:600 10.5px/1 var(--font-golos);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);border-bottom:1px solid var(--border)}
+.row{display:grid;grid-template-columns:58px minmax(0,1fr) 16px;column-gap:14px;
+  align-items:center;padding:16px 20px;position:relative;
+  /* opaque, so the hairline reads the same over a portrait as over the sheet */
+  border-bottom:1px solid color-mix(in oklab, var(--foreground) 9%, var(--surface));
+  min-height:78px;overflow:hidden;isolation:isolate}
+.row > *:not(.shot){position:relative;z-index:2}
+.shot{position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--surface-2)}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:center 36%;
+  filter:grayscale(1) brightness(.84) contrast(1.12);opacity:1;transform:scale(1.06);
+  transition:opacity .3s ease, transform .5s ease}
+.row:hover .shot img{opacity:1;transform:scale(1.09)}
+/* depth of field instead of a scrim: the left third is defocused behind the
+   text, the right stays sharp. progressive blur = backdrop-filter + a mask. */
+.row::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  -webkit-backdrop-filter:blur(18px) saturate(.9);
+  backdrop-filter:blur(18px) saturate(.9);
+  -webkit-mask-image:linear-gradient(90deg,#000 0%,#000 22%,transparent 96%);
+  mask-image:linear-gradient(90deg,#000 0%,#000 22%,transparent 96%)}
+/* the fade is the row's own surface, so the left edge is indistinguishable from the
+   sheet; it fades out across the whole row, top to bottom, with no separate floor */
+.row::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg, var(--surface) 0%, color-mix(in oklab,var(--surface) 94%,transparent) 22%,
+    color-mix(in oklab,var(--surface) 62%,transparent) 54%, color-mix(in oklab,var(--surface) 20%,transparent) 82%,
+    transparent 100%)}
+:root:not(.dark) .shot img{filter:grayscale(1) brightness(1.02) contrast(1.02);opacity:.62}
+:root:not(.dark) .row:hover .shot img{opacity:.76}
+@media (prefers-reduced-motion:reduce){.shot img{transition:none}.row:hover .shot img{transform:scale(1.05)}}
+.row .when{display:flex;flex-direction:column;gap:3px}
+.row .when .wd{font:600 10px/1 var(--font-golos);letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.row .when .dd{font:400 13px/1.2 var(--font-mono);color:var(--text-2)}
+.row .who{min-width:0;display:flex;flex-direction:column;gap:3px}
+.row .meta{display:flex;align-items:baseline;gap:7px;min-width:0}
+.row .meta .dot{color:var(--text-3);font-size:11px}
+.row .artist{font:500 15px/1.25 var(--font-golos);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aff{display:block;height:2px;margin-top:2px;background:var(--primary);width:0;
+  box-shadow:0 0 6px color-mix(in oklab,var(--primary) 60%,transparent)}
+.row:not([data-mine]) .aff{display:none}
+.row .venue{font:400 12.5px/1.3 var(--font-golos);color:var(--foreground);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.row .km{font:400 11.5px/1 var(--font-mono);color:var(--foreground);white-space:nowrap}
+.row .km b{font-weight:500}
+:root:not(.dark) .row .venue,:root:not(.dark) .row .km{color:var(--text)}
+.row .go{color:var(--foreground);display:inline-flex;justify-content:flex-end;opacity:.85}
+.row .go svg{width:14px;height:14px}
+.row .new{position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--primary);
+  box-shadow:0 0 10px color-mix(in oklab,var(--primary) 70%,transparent)}
+
+/* states */
+.state{padding:44px 20px 52px;text-align:left}
+.state h2{margin:0 0 8px;font:600 18px/1.3 var(--font-golos)}
+.state p{margin:0;color:var(--text-2);max-width:52ch}
+.state .cta{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.btn{height:32px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--border-strong);font:400 12.5px var(--font-golos);background:var(--surface)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary);font-weight:600;
+  box-shadow:0 0 1px color-mix(in oklab,var(--primary) 90%,transparent),
+    0 0 10px color-mix(in oklab,var(--primary) 50%,transparent),
+    0 0 28px color-mix(in oklab,var(--primary) 30%,transparent),
+    0 0 64px color-mix(in oklab,var(--primary) 16%,transparent)}
+.btn.primary:hover{background:var(--primary-hover);
+  box-shadow:0 0 2px var(--primary),0 0 16px color-mix(in oklab,var(--primary) 62%,transparent),
+    0 0 40px color-mix(in oklab,var(--primary) 38%,transparent),0 0 90px color-mix(in oklab,var(--primary) 20%,transparent)}
+.banner{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--surface-2);
+  border-bottom:1px solid var(--border);font:400 12.5px var(--font-golos);color:var(--text-2)}
+.banner svg{color:var(--warning)}
+.foot{display:flex;justify-content:space-between;gap:16px;padding:14px 20px;align-items:baseline}
+.foot .l{display:inline-flex;align-items:baseline;gap:8px}
+.foot .num{font-size:10.5px;letter-spacing:.04em;color:var(--text-2)}
+
+/* ── the palettes (⌘K surfaces) ──────────────────────────────────────────── */
+.scrim{position:fixed;inset:0;z-index:40;display:none;
+  background:color-mix(in oklab, var(--background) 42%, transparent);
+  backdrop-filter:blur(10px) saturate(.9)}
+.scrim[data-open]{display:block;animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.palette{position:fixed;z-index:41;left:50%;top:12vh;translate:-50% 0;width:min(560px,calc(100vw - 32px));
+  background:var(--surface);border:1px solid var(--border-strong);display:none;flex-direction:column;
+  max-height:70vh;background:color-mix(in oklab,var(--surface) 96%,transparent);
+  border-color:var(--border-strong);
+  backdrop-filter:blur(22px) saturate(1.05)}
+.palette[data-open]{display:flex;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;translate:-50% 8px}to{opacity:1;translate:-50% 0}}
+.palette__tabs{display:flex;border-bottom:1px solid var(--border)}
+.palette__tabs button{flex:1;height:40px;font:600 10.5px/1 var(--font-golos);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent}
+.palette__tabs button[aria-selected="true"]{color:var(--foreground);border-bottom-color:var(--primary);
+  background:color-mix(in oklab,var(--primary) 8%,transparent)}
+.palette__search{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.palette__search svg{color:var(--text-3)}
+.palette__search input{flex:1;background:none;border:0;outline:none;color:var(--foreground);
+  font:400 14px var(--font-golos)}
+.palette__search input::placeholder{color:var(--text-3)}
+.palette__search kbd{font:400 10px var(--font-mono);color:var(--text-3);border:1px solid var(--border-strong);
+  padding:3px 5px}
+.palette__body{overflow:auto;flex:1}
+.palette__foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;
+  font:400 11.5px var(--font-golos);color:var(--text-3)}
+.palette__foot .esc{margin-left:auto;font:400 10px var(--font-mono);color:var(--text-2);
+  border:1px solid var(--border-strong);padding:2px 5px}
+.opt{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;width:100%;
+  padding:11px 16px;text-align:left;border-bottom:1px solid var(--border)}
+.opt:hover{background:var(--surface-2)}
+.opt:last-child{border-bottom:0}
+.opt__ic{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--border-strong);color:var(--text-2)}
+.opt__t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.opt__t b{font:500 13.5px/1.2 var(--font-golos)}
+.opt__t span{font:400 11.5px/1.3 var(--font-golos);color:var(--text-3)}
+.opt__tag{font:600 10px/1 var(--font-golos);letter-spacing:.09em;text-transform:uppercase;
+  color:var(--primary);border:1px solid color-mix(in oklab,var(--primary) 45%,transparent);padding:4px 6px}
+.opt__tag.plain{color:var(--text-3);border-color:var(--border-strong)}
+.opt__check{color:var(--primary);display:inline-flex}
+.opt[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.flow{padding:16px}
+.flow h3{margin:0 0 4px;font:600 15px/1.25 var(--font-golos)}
+.flow p{margin:0 0 14px;font:400 12.5px/1.45 var(--font-golos);color:var(--text-2);max-width:46ch}
+.field{display:flex;gap:8px}
+.field input{flex:1;height:36px;padding:0 10px;background:var(--background);border:1px solid var(--border-strong);
+  color:var(--foreground);font:400 13px var(--font-golos);outline:none}
+.field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 22%,transparent)}
+.field .btn{height:36px}
+.prov{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.prov button{height:64px;border:1px solid var(--border-strong);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;font:500 11.5px var(--font-golos);background:var(--surface)}
+.prov button:hover{border-color:var(--primary);background:color-mix(in oklab,var(--primary) 8%,transparent)}
+.prov svg{width:20px;height:20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chips span{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;font:400 12px var(--font-golos);
+  border:1px solid color-mix(in oklab,var(--primary) 40%,var(--border-strong));
+  background:color-mix(in oklab,var(--primary) 8%,transparent)}
+.chips span b{font:400 10px var(--font-mono);color:var(--text-3)}
+.back{display:inline-flex;align-items:center;gap:6px;height:24px;font:400 11.5px var(--font-golos);
+  color:var(--text-3);margin-bottom:10px}
+.back:hover{color:var(--foreground)}
+
+/* curation still exists, opened from the palette */
+.panel{position:fixed;z-index:41;right:24px;top:80px;bottom:24px;width:380px;
+  background:color-mix(in oklab,var(--surface) 93%,transparent);border:1px solid var(--border-strong);
+  display:none;flex-direction:column;backdrop-filter:blur(20px)}
+.panel[data-open]{display:flex}
+.panel__head{padding:14px 16px;border-bottom:1px solid var(--border)}
+.panel__head h2{margin:6px 0 0;font:600 18px/1.25 var(--font-golos)}
+.panel__list{overflow:auto;flex:1}
+.crow{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border)}
+.crow:hover{background:var(--surface-2)}
+.crow .box{width:16px;height:16px;border:1px solid var(--border-strong);flex:none;display:grid;place-items:center;background:var(--surface)}
+.crow[data-on="1"] .box{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground);
+  box-shadow:0 0 10px color-mix(in oklab,var(--primary) 55%,transparent)}
+.crow .box svg{width:10px;height:10px}
+.crow .nm{flex:1;min-width:0;font:400 13px var(--font-golos);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .w{font:400 11px var(--font-mono);color:var(--text-3)}
+.panel__foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+
+/* coverage popover */
+.pop{position:fixed;z-index:42;background:var(--surface);border:1px solid var(--border-strong);
+  min-width:340px;display:none;backdrop-filter:blur(20px)}
+.pop[data-open]{display:block}
+.pop__head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.pop__row{display:grid;grid-template-columns:1fr 44px 80px;gap:10px;align-items:center;
+  padding:9px 14px;border-bottom:1px solid var(--border);font:400 12.5px var(--font-golos)}
+.pop__row:last-child{border-bottom:0}
+.pop__row .src{display:flex;align-items:center;gap:8px}
+.pop__row .st{font:600 10px/1 var(--font-golos);letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);text-align:right}
+.pop__row .ok{color:var(--success)}
+.pop__row .n{font:400 12px var(--font-mono);text-align:right;color:var(--text-2)}
+.pop__foot{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--border)}
+.pop__foot .forget{margin-left:auto;color:var(--destructive);font:400 12.5px var(--font-golos);
+  display:inline-flex;align-items:center;gap:6px}
+.pop__foot .forget:hover{text-decoration:underline}
+
+/* ── 390 ─────────────────────────────────────────────────────────────────── */
+@media (max-width:720px){
+  :root{--pad:16px}
+  .ribbon--day{display:none}
+  .ribbon--wk{display:grid}
+  .bar__row{padding:0 16px;gap:8px}
+  .brand b{font-size:11px}
+  .page{padding:12px 0 40px}
+  .sheet{border-left:0;border-right:0}
+  .head{padding:16px 14px 0}
+  h1{font-size:26px}
+  .townbtn{font-size:26px;height:34px}
+  .actions{width:100%;gap:6px}
+  .actions .div{display:none}
+  .seg button{padding:0 8px;font-size:12px}
+  .ribbon{padding:0 14px;height:26px}
+  .ribbon i{height:8px}.ribbon i.on{height:14px}.ribbon i.today{height:22px}
+  .ribcaption{padding:8px 14px 0}
+  .ribcaption #rib-note{display:none}
+  .row{grid-template-columns:44px minmax(0,1fr) 16px;padding:12px 14px;column-gap:10px;min-height:76px}
+  /* a phone row has no room for text over a photo: the portrait becomes a band on the
+     right, dissolving into the surface under the text */
+  .shot{inset:0 0 0 38%;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 52%);
+    mask-image:linear-gradient(90deg,transparent 0%,#000 52%)}
+  .row::before{display:none}
+  .row::after{background:linear-gradient(90deg, var(--surface) 0%, var(--surface) 34%,
+    color-mix(in oklab,var(--surface) 52%,transparent) 62%, transparent 100%)}
+  .row .when{align-self:start;padding-top:2px}
+  .row .venue{color:var(--text-2)}
+  .row .km{font-size:11px}
+  /* the arrow sits on the portrait band: a chip gives it a surface to sit on */
+  .row .go{width:26px;height:26px;align-items:center;justify-content:center;
+    background:rgb(0 0 0 / .34);border:1px solid rgb(255 255 255 / .18)}
+  :root:not(.dark) .row .go{background:rgb(255 255 255 / .62);border-color:rgb(0 0 0 / .12)}
+  .row .go{grid-area:go;align-self:start;padding-top:3px}
+  .month{top:47px;padding:12px 14px 7px}
+  .coverage{padding:0 14px;height:auto;min-height:36px;padding-top:8px;padding-bottom:8px}
+  .foot{flex-direction:column;gap:6px;padding:14px}
+  .state{padding:32px 14px 40px}
+  /* the palette becomes a sheet */
+  .palette{top:auto;bottom:0;left:0;right:0;translate:0 0;width:100%;
+    max-height:min(86dvh, 640px);border-left:0;border-right:0;border-bottom:0;
+    padding-bottom:env(safe-area-inset-bottom)}
+  .palette__body{overscroll-behavior:contain}
+  .palette__foot .esc{display:none}
+  .palette__foot{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .scrim{background:color-mix(in oklab, var(--background) 58%, transparent)}
+  .palette[data-open]{animation:up .2s ease-out}
+  @keyframes up{from{opacity:0;translate:0 16px}to{opacity:1;translate:0 0}}
+  .prov{grid-template-columns:1fr}
+  .prov button{height:52px;flex-direction:row;gap:10px}
+  .pop{left:8px!important;right:8px;min-width:0}
+}
+[hidden]{display:none!important}
+
+
+/* the neon sign: hot core on the face, a tight bloom, a wide bloom, and a slow
+   sheen travelling along the tube (animate-ui's `neon` model, hand-rolled in CSS) */
+.sign{position:relative;display:inline-block;isolation:isolate;
+  background-image:linear-gradient(112deg,#f4ffec 0%,var(--sign-a) 34%,var(--sign-b) 62%,#f4ffec 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:sign 32s linear infinite}
+.sign::before,.sign::after{content:attr(data-t);position:absolute;inset:0;pointer-events:none;
+  color:var(--sign-a);-webkit-text-fill-color:var(--sign-a);background:none;
+  -webkit-background-clip:border-box;background-clip:border-box}
+.sign::before{filter:blur(2px);opacity:.75;z-index:-1}
+.sign::after{filter:blur(14px);opacity:.30;z-index:-2}
+.dark .sign::before{opacity:.95;filter:blur(3px)}
+.dark .sign::after{opacity:.8;filter:blur(30px)}
+@keyframes sign{0%{background-position:0% 50%}100%{background-position:280% 50%}}
+@media (prefers-reduced-motion:reduce){.sign{animation:none}}
+@media (prefers-contrast:more){.sign::before,.sign::after{display:none}.sign{color:var(--foreground);
+  -webkit-text-fill-color:var(--foreground);background:none}}

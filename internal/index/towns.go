@@ -41,8 +41,12 @@ func (s *TownSet) Add(show model.Show) {
 		acc = &townAccumulator{country: countryOf(id), name: strings.TrimSpace(show.TownName)}
 		s.towns[id] = acc
 	}
-	if acc.name == "" {
-		acc.name = strings.TrimSpace(show.TownName)
+	// The label is the **shortest** one seen, not the first. A platform names a venue's district as often as the
+	// city — Tickster lists København, København Ø and København NV under one town id — and the first label wins
+	// the sign, which is how a board ends up titled after a postcode. A shorter label is the city the districts
+	// belong to, so it is the better name for the whole town.
+	if name := strings.TrimSpace(show.TownName); name != "" && (acc.name == "" || len(name) < len(acc.name)) {
+		acc.name = name
 	}
 	if show.Geo != nil {
 		acc.lat += show.Geo.Lat

@@ -1,0 +1,62 @@
+import { ArrowUpRight } from "./icons";
+import { dayNumber, dayOf, monthLong, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
+import type { Row } from "../lib/indexData";
+
+/**
+ * The board: month headers, then one row per show, oldest first.
+ *
+ * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
+ * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
+ */
+export default function Board({ rows }: { rows: Row[] }) {
+  let month = "";
+
+  return (
+    <div>
+      {rows.map((row) => {
+        const day = dayOf(row.d);
+        const monthName = monthLong(day).toUpperCase();
+        const header = monthName !== month ? monthName : null;
+        if (header) month = monthName;
+        const status = statusLabel(row.st);
+
+        return (
+          <div key={row.k}>
+            {header ? <div className="month">{header}</div> : null}
+            <a
+              className="row"
+              href={row.u}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-status={row.st}
+              aria-label={`${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
+            >
+              <span className="shot" />
+              <span className="when">
+                <span className="wd">{weekdayOf(day)}</span>
+                <span className="dd">
+                  {dayNumber(day)} {monthShort(day)}
+                </span>
+              </span>
+              <span className="who">
+                <span className="artist">{row.a}</span>
+                <span className="meta">
+                  <span className="venue">{row.v}</span>
+                  {status ? (
+                    <>
+                      <span className="dot">·</span>
+                      <span className="km">{status}</span>
+                    </>
+                  ) : null}
+                </span>
+              </span>
+              <span className="go">
+                <ArrowUpRight />
+              </span>
+            </a>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lineup — a season board</title>
+    <meta name="description" content="The artists you listen to, in rooms near you, in the next 120 days." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0d0b0f" />
+    <script>
+      // Pre-paint: the correct theme is on the element before the first frame, so neither theme flashes.
+      (function () {
+        try {
+          var stored = localStorage.getItem("lineup.theme");
+          var dark = stored ? stored === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
