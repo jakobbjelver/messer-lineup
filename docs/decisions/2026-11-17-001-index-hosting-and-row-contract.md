@@ -129,3 +129,17 @@ by the cross-runtime contract (one fixture file, one clock-free selector).
 | The storage provider's non-production subdomain (`r2.dev`) | no custom domain means no cache control, no WAF, no access exemption; documented as non-production |
 | D1 for the board | a read-only published index is a file; D1 stays for sessions and taste only |
 | Presigned URLs for shards | throws away the edge cache and the "cache forever" property that makes page views free |
+
+## Operational note (2026-11-18) — the index is served on a one-level host
+
+The bucket, lifecycle rule, cache headers and Access bypass this ADR specifies are all in place; the hostname is
+not. Universal SSL on this zone covers `*.messer.wtf`, which is one label deep, so a second-level name has no
+certificate: `data.lineup.messer.wtf` resolves, points at the bucket, and fails the TLS handshake. Advanced
+Certificate Manager — the product that would cover it — answers `1450 not granted for this zone`, and the R2
+custom domain's own certificate has been `ssl: pending` since creation.
+
+So the same bucket is also attached to **`lineup-data.messer.wtf`**, which `*.messer.wtf` covers, and that is the
+name the board should read until the canonical one has a certificate. Both records exist and both are in the
+zone's catch-all allowlist; nothing needs to change here when the certificate arrives. `PROJECT.yaml` records
+the substitution as a dated exception, and `docs/publishing.md` has the setup steps, including the catch-all
+rule that answers 302 before anything else if a host is missing from its list.
