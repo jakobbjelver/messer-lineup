@@ -124,7 +124,7 @@
 }
 /* inside the palette it takes the flow's own 16px inset, so the back control and the heading share one left edge */
 .palette__body > .backlink {
-  margin: 16px 16px 0;
+  margin: 16px 16px 14px;
 }
 .backlink svg {
   width: 16px;

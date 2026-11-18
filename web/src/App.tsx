@@ -7,7 +7,15 @@ import { CaretDown, Info } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
 import { useTheme } from "./lib/theme";
-import { readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
+import {
+  readNames,
+  readNamesParam,
+  readTasteParam,
+  toEntries,
+  writeNames,
+  writeTasteParam,
+  type TasteEntry,
+} from "./lib/taste";
 import {
   boardDay,
   previouslySeen,
@@ -38,7 +46,8 @@ type Phase =
 export default function App() {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [wantedTown, setWantedTown] = useState<string | null>(() => new URLSearchParams(location.search).get("town"));
-  const [taste, setTaste] = useState<TasteEntry[]>(() => toEntries(readTasteParam(location.search)));
+  // The URL carries keys; the browser remembers how the reader spells them, so "Björk" survives a reload.
+  const [taste, setTaste] = useState<TasteEntry[]>(() => toEntries(readTasteParam(location.search), [...readNames(), ...readNamesParam(location.search)]));
   const [filter, setFilter] = useState<"all" | "yours">("all");
   // The window is the URL's, clamped to whatever the manifest publishes. Until the manifest arrives it is the
   // published window itself, so nothing renders against a range the index does not cover.
@@ -68,6 +77,22 @@ export default function App() {
         const seen = previouslySeen(boardDay(manifest));
         setNewKeys(seen.size ? new Set(rows.filter((row) => !seen.has(row.k)).map((row) => row.k)) : new Set());
         rememberVisit(rows.map((row) => row.k), boardDay(manifest));
+        // When the index has a row by an artist in the list, its spelling wins: a pasted "bjork" becomes "Björk".
+        setTaste((current) => {
+          if (current.length === 0) return current;
+          const spelled = new Map(rows.map((row) => [Key(row.a), row.a]));
+          let changed = false;
+          const next = current.map((entry) => {
+            const name = spelled.get(entry.key);
+            if (name && name !== entry.name) {
+              changed = true;
+              return { ...entry, name };
+            }
+            return entry;
+          });
+          if (changed) writeNames(next);
+          return changed ? next : current;
+        });
         // The artist page's way back returns to this town, not to the first published one.
         try {
           sessionStorage.setItem("lineup.town", town.town);
@@ -148,10 +173,8 @@ export default function App() {
 
   const applyTaste = useCallback((entries: TasteEntry[]) => {
     setTaste(entries);
-    const next = writeTasteParam(
-      entries.map((entry) => entry.key),
-      location.href,
-    );
+    writeNames(entries);
+    const next = writeTasteParam(entries, location.href);
     history.replaceState(null, "", next);
     if (entries.length === 0) setFilter("all");
   }, []);

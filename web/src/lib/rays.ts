@@ -31,7 +31,7 @@ const FRAG = `precision highp float;
     vec2 sourceToCoord = coord - raySource;
     vec2 dirNorm = normalize(sourceToCoord);
     float cosAngle = dot(dirNorm, rayRefDirection);
-    float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
+    float distortedAngle = cosAngle + distortion * sin(iTime * 0.02 + length(sourceToCoord) * 0.01) * 0.2;
     float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
     float distance = length(sourceToCoord);
     float maxDistance = iResolution.x * rayLength;
@@ -58,7 +58,7 @@ const FRAG = `precision highp float;
               + rayStrength(rayPos2, dir2, coord, 17.3319, 24.1177, 0.90 * raysSpeed) * 0.34;
     vec3 rgb = key * raysColor + fill * fillColor;
     if (noiseAmount > 0.0){
-      float n = noise(coord * 0.008 + iTime * 0.06);
+      float n = noise(coord * 0.008 + iTime * 0.002);
       rgb *= (1.0 - noiseAmount + noiseAmount * n);
     }
     float brightness = 1.0 - (coord.y / iResolution.y);
@@ -159,8 +159,8 @@ export function createLamps(canvas: HTMLCanvasElement): Lamps {
   function frame(now: number) {
     if (!running || !gl) return;
     const t = (now - startedAt) / 1000;
-    smooth[0] += (mouse[0] - smooth[0]) * 0.06;
-    smooth[1] += (mouse[1] - smooth[1]) * 0.06;
+    smooth[0] += (mouse[0] - smooth[0]) * 0.015;
+    smooth[1] += (mouse[1] - smooth[1]) * 0.015;
     gl.uniform1f(uniforms.iTime, t);
     gl.uniform2f(uniforms.iResolution, canvas.width, canvas.height);
     gl.uniform2f(uniforms.rayPos, canvas.width * 0.21, -canvas.height * 0.3);
@@ -169,15 +169,15 @@ export function createLamps(canvas: HTMLCanvasElement): Lamps {
     gl.uniform2f(uniforms.rayDir2, -0.26, 1);
     gl.uniform3fv(uniforms.raysColor, tint);
     gl.uniform3fv(uniforms.fillColor, fill);
-    gl.uniform1f(uniforms.raysSpeed, 0.06); // almost still: the lamp breathes, it does not sweep
+    gl.uniform1f(uniforms.raysSpeed, 0.03); // almost still: the lamp breathes, it does not sweep
     gl.uniform1f(uniforms.lightSpread, 0.085);
     gl.uniform1f(uniforms.rayLength, 1.25);
     gl.uniform1f(uniforms.pulsating, 0);
     gl.uniform1f(uniforms.fadeDistance, 0.62);
     gl.uniform1f(uniforms.saturation, 1.0);
     gl.uniform2f(uniforms.mousePos, smooth[0] * canvas.width, smooth[1] * canvas.height);
-    gl.uniform1f(uniforms.mouseInfluence, 0.34);
-    gl.uniform1f(uniforms.noiseAmount, 0.06);
+    gl.uniform1f(uniforms.mouseInfluence, 0.18);
+    gl.uniform1f(uniforms.noiseAmount, 0);
     gl.uniform1f(uniforms.distortion, 0.16);
     gl.uniform1f(uniforms.exposure, 2.5);
     gl.drawArrays(gl.TRIANGLES, 0, 3);

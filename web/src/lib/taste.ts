@@ -42,6 +42,25 @@ export function parseTasteList(text: string): TasteEntry[] {
   return out;
 }
 
+/**
+ * `?n=key:Name,key:Name` → the spellings a key cannot carry.
+ *
+ * A key is a slug, so `a=bjork` reads back as "Bjork". Names that differ from their own key are written alongside as
+ * `n=`, and only those: a list whose names are plain ("bad-bunny") costs nothing extra, and a shared link spells
+ * "Björk" correctly on a device that has never seen it.
+ */
+export function readNamesParam(search: string): TasteEntry[] {
+  const raw = new URLSearchParams(search).get("n");
+  if (!raw) return [];
+  const out: TasteEntry[] = [];
+  for (const pair of raw.split(",")) {
+    const [key, name] = pair.split(":");
+    if (!key || !name) continue;
+    out.push({ key: key.trim(), name: decodeURIComponent(name).trim() });
+  }
+  return out;
+}
+
 /** `?a=key,key` → keys. A malformed parameter yields nothing rather than throwing. */
 export function readTasteParam(search: string): string[] {
   const raw = new URLSearchParams(search).get("a");
@@ -49,11 +68,21 @@ export function readTasteParam(search: string): string[] {
   return [...new Set(raw.split(",").map((k) => k.trim()).filter(Boolean))];
 }
 
-/** Writes the taste set into the URL, dropping the parameter entirely when the list is empty. */
-export function writeTasteParam(keys: string[], current: string): string {
+/**
+ * Writes the taste set into the URL — keys in `a`, and in `n` only the names the keys cannot spell. The parameter
+ * is dropped entirely when the list is empty, so clearing taste leaves no residue.
+ */
+export function writeTasteParam(entries: TasteEntry[], current: string): string {
   const url = new URL(current);
-  if (keys.length) url.searchParams.set("a", keys.join(","));
-  else url.searchParams.delete("a");
+  if (entries.length === 0) {
+    url.searchParams.delete("a");
+    url.searchParams.delete("n");
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+  url.searchParams.set("a", entries.map((entry) => entry.key).join(","));
+  const named = entries.filter((entry) => entry.name && entry.name !== labelFor(entry.key));
+  if (named.length) url.searchParams.set("n", named.map((e) => `${e.key}:${encodeURIComponent(e.name)}`).join(","));
+  else url.searchParams.delete("n");
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -63,6 +92,39 @@ export function labelFor(key: string): string {
     .split("-")
     .map((part) => (part.length <= 2 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(" ");
+}
+
+/**
+ * The names a paste or the index taught us, keyed by identity key.
+ *
+ * A URL carries keys because keys are the identity, but a key is a slug: read back on its own it turns "Björk"
+ * into "Bjork" and "Sigur Rós" into "Sigur Ros". So the display names live in the browser — they are the reader's
+ * own list, they are not secret, and losing them costs nothing but a spelling.
+ */
+const NAMES_KEY = "lineup.names";
+
+export function readNames(): TasteEntry[] {
+  try {
+    const raw = localStorage.getItem(NAMES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (entry): entry is TasteEntry =>
+        !!entry && typeof entry === "object" && typeof (entry as TasteEntry).key === "string" && typeof (entry as TasteEntry).name === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers the display names, capped so a huge paste cannot fill the quota. */
+export function writeNames(entries: TasteEntry[]): void {
+  try {
+    localStorage.setItem(NAMES_KEY, JSON.stringify(entries.slice(0, 400)));
+  } catch {
+    /* storage refused: chips fall back to the key, which is still a name */
+  }
 }
 
 export function toEntries(keys: string[], known: TasteEntry[] = []): TasteEntry[] {

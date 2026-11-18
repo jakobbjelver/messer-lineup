@@ -200,10 +200,7 @@ export default function Palette(props: Props) {
               </button>
               <div className="flow" style={{ paddingTop: 0 }}>
                 <h3>Type or paste artists</h3>
-                <p>
-                  One per line, or separated by commas. Nothing leaves the browser — the list lives in the URL, so
-                  the personalised board is a link you can keep.
-                </p>
+                <p>Tip: the list lives in the link — bookmark the board and it keeps your artists.</p>
                 <textarea
                   className="paste"
                   value={paste}
@@ -281,12 +278,6 @@ export default function Palette(props: Props) {
                 </span>
                 <span className="opt__tag plain">No account</span>
               </button>
-              <div className="flow" style={{ paddingTop: 12 }}>
-                <p className="hint">
-                  A music account and a Last.fm handle arrive with the taste backends — they need a server to hold
-                  the token, and neither exists yet. Pasting is the faster route anyway.
-                </p>
-              </div>
             </>
           ) : (
             <>
