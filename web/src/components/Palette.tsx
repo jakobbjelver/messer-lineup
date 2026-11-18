@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import DateRange from "./DateRange";
 import { ArrowLeft } from "./icons";
 import { parseTasteList, type TasteEntry } from "../lib/taste";
 import { townLabel, type Town, type TownEntry } from "../lib/indexData";
@@ -50,8 +51,6 @@ export default function Palette(props: Props) {
     onWindow,
   } = props;
   const [flow, setFlow] = useState<null | "manual" | "travel">(null);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
   const [paste, setPaste] = useState("");
   const [query, setQuery] = useState("");
   const [dropped, setDropped] = useState<Set<string>>(new Set());
@@ -87,15 +86,6 @@ export default function Palette(props: Props) {
   }, [open, flow, onClose]);
 
   const parsed = useMemo(() => parseTasteList(paste), [paste]);
-  // The travel flow's own validation, so the button can be absent rather than fail on click.
-  const travelProblem = (() => {
-    if (!fromDate || !toDate) return "Pick both days.";
-    if (fromDate > toDate) return "The first day is after the last one.";
-    if (published && (fromDate < published.from || toDate > published.to)) {
-      return `The index covers ${published.from} to ${published.to}.`;
-    }
-    return null;
-  })();
   const visibleTowns = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return towns;
@@ -147,50 +137,20 @@ export default function Palette(props: Props) {
               </button>
               <div className="flow" style={{ paddingTop: 0 }}>
                 <h3>Travel dates</h3>
-                <div className="field" style={{ marginTop: 10 }}>
-                  <input
-                    type="date"
-                    aria-label="First day"
-                    value={fromDate}
-                    min={published?.from}
-                    max={published?.to}
-                    onChange={(event) => setFromDate(event.target.value)}
+                {published ? (
+                  <DateRange
+                    from={dateWindow?.from ?? published.from}
+                    to={dateWindow?.to ?? published.to}
+                    bounds={published}
+                    onChange={(next, last) => onWindow({ from: next, to: last })}
                   />
-                  <span className="lab" style={{ alignSelf: "center" }}>
-                    to
-                  </span>
-                  <input
-                    type="date"
-                    aria-label="Last day"
-                    value={toDate}
-                    min={published?.from}
-                    max={published?.to}
-                    onChange={(event) => setToDate(event.target.value)}
-                  />
+                ) : null}
+                <div className="field" style={{ marginTop: 12 }}>
+                  {/* the picker already prints the range once; a second copy would read as two facts */}
+                  <button className="btn primary" onClick={onClose}>
+                    Done
+                  </button>
                 </div>
-                {travelProblem ? (
-                  <p className="hint" style={{ marginTop: 8 }}>{travelProblem}</p>
-                ) : (
-                  <div className="field" style={{ marginTop: 12 }}>
-                    <button
-                      className="btn primary"
-                      onClick={() => {
-                        onWindow({ from: fromDate, to: toDate });
-                        onClose();
-                      }}
-                    >
-                      Show these dates
-                    </button>
-                    {published ? (
-                      <button className="btn" onClick={() => { onWindow(published); onClose(); }}>
-                        Whole season
-                      </button>
-                    ) : null}
-                    <span className="lab" style={{ marginLeft: "auto", alignSelf: "center" }}>
-                      <span className="num">{daysBetween(fromDate, toDate) + 1}</span> days
-                    </span>
-                  </div>
-                )}
               </div>
             </>
           ) : flow === "manual" ? (
@@ -283,11 +243,7 @@ export default function Palette(props: Props) {
             <>
               <button
                 className="opt"
-                onClick={() => {
-                  setFlow("travel");
-                  setFromDate(dateWindow?.from ?? published?.from ?? "");
-                  setToDate(dateWindow?.to ?? published?.to ?? "");
-                }}
+                onClick={() => setFlow("travel")}
               >
                 <span className="opt__ic">⌖</span>
                 <span className="opt__t">
@@ -335,10 +291,3 @@ export default function Palette(props: Props) {
   );
 }
 
-/** Whole days between two `YYYY-MM-DD` days; 0 when either is unreadable. */
-function daysBetween(from: string, to: string): number {
-  const a = new Date(`${from}T12:00:00Z`).getTime();
-  const b = new Date(`${to}T12:00:00Z`).getTime();
-  if (Number.isNaN(a) || Number.isNaN(b) || b < a) return 0;
-  return Math.round((b - a) / 86_400_000);
-}
