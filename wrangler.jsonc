@@ -10,7 +10,10 @@
   // creates a labelled stub so the Worker can be exercised before the board exists.
   "assets": {
     "directory": "./web/dist",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Bound so `app.notFound` can hand a document route back to the asset layer instead of 404ing it. Assets are
+    // still served before the script; this only makes the fallback reachable from inside the script.
+    "binding": "ASSETS"
   },
   "main": "src/worker.ts",
   "routes": [{ "pattern": "lineup.messer.wtf", "custom_domain": true }],

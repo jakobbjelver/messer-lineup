@@ -18,6 +18,12 @@ import { Hono } from "hono";
 export interface Env {
   /** `https://lineup-data.messer.wtf` — where the built index is published. Read only by /readyz. */
   DATA_BASE: string;
+  /**
+   * The static assets, bound so the one client route can be resolved without moving page views onto the script.
+   * `/a/<artist key>` has no file behind it; the asset layer's `single-page-application` rule answers it with
+   * index.html once the script asks it to.
+   */
+  ASSETS: Fetcher;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -82,10 +88,17 @@ app.all("/calendar/*", (c) =>
   ),
 );
 
-app.notFound((c) =>
-  // Assets are handled before the script, so reaching this means the path is neither a file nor a route.
-  c.json(errorBody("not_found", "no such route"), 404),
-);
+app.notFound((c) => {
+  // Assets are served before the script, so reaching this means the path is neither a file nor an API route. Two
+  // different things can be true: a document route the SPA renders (`/a/<key>`), or a path that does not exist.
+  // Hand the request back to the asset layer and let its `single-page-application` rule decide — it answers with
+  // index.html for a client route and with the 404 page for a path that is genuinely nothing.
+  const method = c.req.method;
+  if (method === "GET" || method === "HEAD") {
+    return c.env.ASSETS.fetch(c.req.raw);
+  }
+  return c.json(errorBody("not_found", "no such route"), 404);
+});
 
 app.onError((err, c) => {
   console.error("worker error", err instanceof Error ? err.stack : err);
