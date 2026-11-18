@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CaretDown } from "./icons";
+import { ArrowLeft } from "./icons";
 import { parseTasteList, type TasteEntry } from "../lib/taste";
 import { townLabel, type Town, type TownEntry } from "../lib/indexData";
 import type { Window as DateWindow } from "../lib/state";
@@ -136,24 +136,17 @@ export default function Palette(props: Props) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <kbd>esc</kbd>
           </div>
         ) : null}
 
         <div className="palette__body">
           {flow === "travel" ? (
             <>
-              <button className="back" onClick={() => setFlow(null)}>
-                <CaretDown /> All options
+              <button className="backlink" onClick={() => setFlow(null)}>
+                <ArrowLeft /> All options
               </button>
               <div className="flow" style={{ paddingTop: 0 }}>
                 <h3>Travel dates</h3>
-                <p>
-                  Narrow the board to a trip. The window can only be as wide as the index — the miner publishes
-                  {" "}
-                  <span className="num">{published ? daysBetween(published.from, published.to) : 0}</span> days, and
-                  nothing outside them exists to show.
-                </p>
                 <div className="field" style={{ marginTop: 10 }}>
                   <input
                     type="date"
@@ -202,8 +195,8 @@ export default function Palette(props: Props) {
             </>
           ) : flow === "manual" ? (
             <>
-              <button className="back" onClick={() => setFlow(null)}>
-                <CaretDown /> All options
+              <button className="backlink" onClick={() => setFlow(null)}>
+                <ArrowLeft /> All options
               </button>
               <div className="flow" style={{ paddingTop: 0 }}>
                 <h3>Type or paste artists</h3>
@@ -344,11 +337,6 @@ export default function Palette(props: Props) {
         </div>
 
         <div className="palette__foot">
-          <span>
-            {tab === "taste"
-              ? "Taste only sharpens the board — it never gates it."
-              : "The board works without any of this."}
-          </span>
           <span className="esc">esc</span>
         </div>
       </div>

@@ -201,10 +201,22 @@ export default function App() {
 
   const body = (() => {
     if (phase.kind === "loading") {
+      // A skeleton of the board itself, in the board's own grid: the page does not jump when the rows arrive,
+      // and a first visit reads as "loading", not as "empty". No spinner, no sentence.
       return (
-        <div className="state">
-          <h2>Reading the index…</h2>
-          <p>The manifest first, then one shard for this town. A page view costs nothing to serve.</p>
+        <div className="skeleton" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Reading the index…</span>
+          <div className="sk-line sk-line--sign" />
+          <div className="sk-line sk-line--ribbon" />
+          {Array.from({ length: 8 }, (_, index) => (
+            <div className="sk-row" key={index}>
+              <div className="sk-line sk-line--day" />
+              <div className="sk-stack">
+                <div className="sk-line sk-line--artist" />
+                <div className="sk-line sk-line--venue" />
+              </div>
+            </div>
+          ))}
         </div>
       );
     }
@@ -257,7 +269,7 @@ export default function App() {
     return <Board rows={shown} tasteKeys={tasteKeys} newKeys={newKeys} />;
   })();
 
-  const townName = ready ? townLabel(ready.town, ready.loaded.towns) : "…";
+  const townName = ready ? townLabel(ready.town, ready.loaded.towns) : "";
   const sourceCount = ready ? new Set(ready.rows.flatMap((row) => row.src)).size : 0;
 
   return (
@@ -292,26 +304,31 @@ export default function App() {
           <div className="head">
             <div className="eyebrow">
               <span className="lab">
-                {dateWindow && published && dateWindow.from !== published.from ? "Travel" : "Season"} board ·{" "}
-                <span className="num">
-                  {dateWindow && published
+                {dateWindow && published && dateWindow.from !== published.from ? "Travel" : "Season"} board
+                {phase.kind === "ready" ? " · " : ""}
+                {phase.kind === "ready" ? (
+                  <span className="num">
+                    {dateWindow && published
                     ? Math.round(
                         (new Date(`${dateWindow.to}T12:00:00Z`).getTime() -
                           new Date(`${dateWindow.from}T12:00:00Z`).getTime()) /
                           86_400_000,
                       ) + 1
-                    : (manifest?.window.days ?? 0)}
-                </span>{" "}
-                days
+                      : (manifest?.window.days ?? 0)}
+                  </span>
+                ) : null}
+                {phase.kind === "ready" ? " days" : ""}
               </span>
-              <span className="r">
-                <span className="lab">As of</span>{" "}
-                <span className="num" style={{ fontSize: 11, color: "var(--text-2)" }}>
-                  {manifest ? stampLabel(manifest.built_at) : "—"}
+              {manifest ? (
+                <span className="r">
+                  <span className="lab">As of</span>{" "}
+                  <span className="num" style={{ fontSize: 11, color: "var(--text-2)" }}>
+                    {stampLabel(manifest.built_at)}
+                  </span>
                 </span>
-              </span>
+              ) : null}
             </div>
-            <div className="h1row">
+            <div className="h1row" hidden={phase.kind !== "ready"}>
               <h1>
                 <button
                   className="townbtn"
@@ -322,14 +339,12 @@ export default function App() {
                     className="sign"
                     data-t={townName}
                     style={{
-                      ["--sign-a" as string]: theme === "dark" ? "oklch(.88 .20 132)" : "oklch(.44 .17 128)",
-                      ["--sign-b" as string]: theme === "dark" ? "oklch(.74 .18 170)" : "oklch(.52 .15 150)",
+                      // One green: both stops are the accent's hue. The old pair ran to 170 (teal) and 150 (success).
+                      ["--sign-a" as string]: theme === "dark" ? "oklch(.88 .20 128)" : "oklch(.44 .17 128)",
+                      ["--sign-b" as string]: theme === "dark" ? "oklch(.74 .18 128)" : "oklch(.52 .15 128)",
                     }}
                   >
                     {townName}
-                  </span>
-                  <span className="approx" hidden={phase.kind !== "ready"}>
-                    {ready?.rows.some((r) => r.g) ? "exact" : "approx."}
                   </span>
                   <CaretDown />
                 </button>

@@ -3,7 +3,8 @@
  *
  * `lineup.css` is the mockup's stylesheet verbatim — it is the design, and it is not edited here. This file adds
  * only what the mockup did not need: a textarea for a pasted list, chips that are buttons (tappable to drop), an
- * inline text link, and one quiet hint paragraph. Every value comes from the design's tokens.
+ * inline text link, loader skeletons, the canon's way back, and one quiet hint line. Every value comes from
+ * the design's tokens. The owner's amendments to the design itself are recorded at the top of `lineup.css`.
  */
 
 .paste {
@@ -85,4 +86,128 @@
     border-right: 0;
     border-bottom: 0;
   }
+}
+
+.chip.on {
+  box-shadow:
+    0 0 1px color-mix(in oklab, var(--primary) 80%, transparent),
+    0 0 12px color-mix(in oklab, var(--primary) 26%, transparent);
+}
+
+/* ── the way back: canon §20 — one 32px outlined control, one arrow, the destination ─────────────── */
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--foreground);
+  font: 500 14px/1 var(--font-golos);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.backlink:hover {
+  background: var(--surface-2);
+}
+.backlink:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* inside the palette it takes the flow's own 16px inset, so the back control and the heading share one left edge */
+.palette__body > .backlink {
+  margin: 16px 16px 0;
+}
+.backlink svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+/* ── skeletons: the board's own grid, so nothing jumps when the rows land ────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skeleton {
+  padding-bottom: 40px;
+}
+.sk-line {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  /* the same tempo as the haze: it breathes, it does not sweep */
+  animation: sk 7s ease-in-out infinite alternate;
+}
+@keyframes sk {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 0.92;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-line {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+.sk-line--eyebrow {
+  margin: 24px 20px 0;
+  width: 190px;
+  height: 10px;
+}
+.sk-line--sign {
+  margin: 16px 20px 0;
+  width: min(340px, 62%);
+  height: 36px;
+}
+.sk-line--ribbon {
+  margin: 22px 20px 0;
+  height: 44px;
+}
+.sk-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 16px;
+  column-gap: 14px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid color-mix(in oklab, var(--foreground) 9%, var(--surface));
+}
+.sk-stack {
+  display: grid;
+  gap: 7px;
+}
+.sk-line--day {
+  height: 11px;
+  width: 34px;
+}
+.sk-line--artist {
+  height: 14px;
+  width: min(240px, 62%);
+}
+.sk-line--venue {
+  height: 11px;
+  width: min(170px, 40%);
+}
+/* three widths, so eight bars do not read as a barcode */
+.sk-row:nth-child(4n + 5) .sk-line--artist {
+  width: min(300px, 74%);
+}
+.sk-row:nth-child(4n + 6) .sk-line--artist {
+  width: min(180px, 48%);
+}
+.sk-row:nth-child(4n + 7) .sk-line--venue {
+  width: min(210px, 52%);
 }

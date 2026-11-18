@@ -169,7 +169,7 @@ export function createLamps(canvas: HTMLCanvasElement): Lamps {
     gl.uniform2f(uniforms.rayDir2, -0.26, 1);
     gl.uniform3fv(uniforms.raysColor, tint);
     gl.uniform3fv(uniforms.fillColor, fill);
-    gl.uniform1f(uniforms.raysSpeed, 0.3);
+    gl.uniform1f(uniforms.raysSpeed, 0.06); // almost still: the lamp breathes, it does not sweep
     gl.uniform1f(uniforms.lightSpread, 0.085);
     gl.uniform1f(uniforms.rayLength, 1.25);
     gl.uniform1f(uniforms.pulsating, 0);
