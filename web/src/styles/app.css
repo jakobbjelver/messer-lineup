@@ -215,3 +215,145 @@
 .sk-row:nth-child(4n + 7) .sk-line--venue {
   width: min(210px, 52%);
 }
+
+/* ── coverage: the line, and the panel behind its i ──────────────────────────────────────────────────── */
+.coverage {
+  position: relative;
+  margin-top: 18px;
+}
+/* The design gives the coverage band `z-index: 1`, which is its own stacking context: the panel's own z-index
+   cannot lift it over the rows until the band itself does. */
+.coverage:has(.coverage__panel) {
+  z-index: 40;
+}
+.coverage__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 20px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: 600 10.5px/1 var(--font-golos);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+}
+.coverage__line:hover {
+  background: var(--surface-2);
+}
+.coverage__line .g {
+  color: var(--text-3);
+  font-weight: 400;
+}
+.coverage__line .i {
+  margin-left: auto;
+  color: var(--text-2);
+  display: inline-flex;
+}
+.coverage__panel {
+  position: absolute;
+  z-index: 30;
+  left: 20px;
+  right: 20px;
+  top: calc(100% + 6px);
+  padding: 14px 16px 16px;
+  /* one surface step away from the sheet, in the direction each theme has room to step: elevation without a shadow */
+  background: var(--background);
+  border: 1px solid var(--border-strong);
+  /* the band above it is uppercase 10.5 mono; the panel is prose and figures, so it resets both */
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+.dark .coverage__panel {
+  background: var(--surface-2);
+}
+.coverage__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 48px;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  font: 400 12.5px/1.35 var(--font-golos);
+  border-bottom: 1px solid var(--border);
+}
+.coverage__row--head {
+  font: 600 10px/1 var(--font-golos);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+/* a source id is machine meta: uppercase, tracked, but not as loud as the column heading */
+.coverage__row > span:first-child {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+}
+.coverage__row .num {
+  font: 400 12px var(--font-mono);
+  color: var(--foreground);
+  text-align: right;
+}
+.coverage__row .g {
+  color: var(--text-3);
+}
+.coverage__row .ok {
+  color: var(--text-2);
+}
+.coverage__row .bad {
+  color: var(--destructive);
+}
+.coverage__facts {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+.coverage__facts div {
+  display: flex;
+  gap: 10px;
+  font: 400 12px/1.4 var(--font-golos);
+}
+.coverage__facts dt {
+  min-width: 62px;
+  font: 600 10px/1.9 var(--font-golos);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.coverage__facts dd {
+  margin: 0;
+  color: var(--text-2);
+}
+.coverage__forget {
+  margin-top: 14px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--foreground);
+  font: 500 12px/1 var(--font-golos);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.coverage__forget:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.coverage__forget:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.coverage__note {
+  margin: 8px 0 0;
+  color: var(--text-3);
+  font: 400 11.5px/1.45 var(--font-golos);
+  max-width: 46ch;
+}

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Board from "./components/Board";
+import Coverage from "./components/Coverage";
 import Palette, { type PaletteTab } from "./components/Palette";
 import Ribbon from "./components/Ribbon";
 import TopBar from "./components/TopBar";
-import { CaretDown, Info } from "./components/icons";
+import { CaretDown } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
 import { useTheme } from "./lib/theme";
@@ -178,6 +179,20 @@ export default function App() {
     history.replaceState(null, "", next);
     if (entries.length === 0) setFilter("all");
   }, []);
+  const forgetEverything = useCallback(() => {
+    applyTaste([]);
+    try {
+      localStorage.removeItem("lineup.seen");
+      localStorage.removeItem("lineup.visited");
+      localStorage.removeItem("lineup.names");
+      sessionStorage.removeItem("lineup.town");
+    } catch {
+      /* a browser that refuses storage has nothing to forget */
+    }
+    setNewKeys(new Set());
+    history.replaceState(null, "", location.pathname);
+  }, [applyTaste]);
+
 
   const retry = useCallback(() => {
     setPhase({ kind: "loading" });
@@ -397,25 +412,13 @@ export default function App() {
                 rows={inWindow}
                 builtOn={dayOf(manifest.built_at)}
               />
-              <button
-                className="coverage"
-                title={
-                  manifest.sources
-                    .map((s) => `${s.id}: ${s.ok ? `${s.rows ?? 0} rows` : "failed"}${s.note ? ` — ${s.note}` : ""}`)
-                    .join("\n") || "no sources reported"
-                }
-              >
-                <span>
-                  <span className="num">{inWindow.length}</span> shows
-                </span>
-                <span className="g">·</span>
-                <span className="g">
-                  <span className="num">{sourceCount}</span> {sourceCount === 1 ? "source" : "sources"}
-                </span>
-                <span className="i">
-                  <Info />
-                </span>
-              </button>
+              <Coverage
+                manifest={manifest}
+                shows={inWindow.length}
+                sourceCount={sourceCount}
+                onForget={forgetEverything}
+                canForget={taste.length > 0 || newKeys.size > 0}
+              />
             </>
           ) : null}
 

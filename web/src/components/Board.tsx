@@ -61,7 +61,7 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
               </span>
               <span className="who">
                 {linkArtist ? (
-                  <a className="artist artist--link" href={`/a/${Key(row.a)}`} title={row.a}>
+                  <a className="artist artist--link" href={`/a/${Key(row.a)}`}>
                     {row.a}
                   </a>
                 ) : (
