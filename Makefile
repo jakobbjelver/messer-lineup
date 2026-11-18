@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-dev worker-dev worker-check contract
+.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check contract
 
 all: build
 
@@ -35,6 +35,11 @@ serve: build
 # The board. `make serve` must be running: the dev server proxies the three index paths to it.
 web:
 	@cd web && npm run --silent build
+
+# The edge build: the index is on its own host, so the board must be told where. Deploy this one, never the
+# same-origin build — that one asks the Worker for /manifest.json, which is not a file and not a route.
+web-edge:
+	@cd web && VITE_DATA_BASE=$${DATA_BASE:-https://lineup-data.messer.wtf} npm run --silent build
 
 web-dev:
 	@cd web && npm run dev

@@ -82,21 +82,33 @@ assertion grows with the implementation instead of being rewritten around it.
 
 ```
 npm install
-make worker-check           # tsc --noEmit
-npx wrangler deploy         # after web/dist exists: the assets ARE the board
+make worker-check                                 # tsc --noEmit
+make web-edge                                     # assets built with VITE_DATA_BASE at the bucket
+npx wrangler deploy                               # the assets ARE the board
 ```
 
-**Deploy only with a real `web/dist`.** Without one the Worker has no assets and every page view is the SPA
-fallback's 404 — and `make worker-dev` creates a labelled stub precisely so that stub can never reach the
-public host by accident. The publish order for the index is separate and documented in
-[`publishing.md`](publishing.md): shards first, `manifest.json` last.
+**Deploy the edge build, not the same-origin one.** They differ only in `VITE_DATA_BASE`, and the difference is
+fatal to the wrong choice: a same-origin build asks the Worker for `/manifest.json`, which is neither a file nor
+a route, so the board renders its error state. `make web-edge` is the one that goes up.
+
+**Three things must be true before the host answers, and two of them are not in this repo.** All three failed in
+turn on the first deploy, each with a different symptom:
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `302` to `https://messer.wtf/?from=lineup.messer.wtf` | the zone's catch-all does not know the host | add it to `~/Repos/messer-site` `scripts/sync-catchall.mjs` (and the live ruleset) |
+| `401 {"error":"invalid_token"}` | the `Private Admin Apps` Access app covers `*.messer.wtf` | a self-hosted Access app for `lineup.messer.wtf/*` with a `Bypass Everyone` policy |
+| the board renders "The index could not be read" | a same-origin build was deployed | `make web-edge` |
+
+The first two are the same pair the index needed — see `publishing.md` — because the estate's default posture is
+private and this product is public. The publish order for the index is separate: shards first,
+`manifest.json` last.
 
 ## What is not verified yet
 
-- **The board on the real host.** The production-shaped build (data from the bucket, assets from a static
-  server) renders all 37 Copenhagen rows with no console errors, and the same build served from a foreign
-  origin correctly shows its error state instead. What has *not* happened is a deploy: `lineup.messer.wtf` is
-  still the catch-all redirect.
+- **Assets-first in production.** It is *observed* (a page GET returns the document, and the script's own routes
+  answer separately) but not *counted*: the claim that a page view costs zero Worker invocations needs the
+  analytics counter read before and after one page view.
 - **Assets-first in production.** Locally, `/` returns the asset and `/api/v1/*` returns the script, which is
   the right split — but the claim that a page view costs *zero* Worker invocations is only provable from the
   Worker's analytics after a deploy: one page GET, then zero new invocations on the counter.
