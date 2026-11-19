@@ -134,7 +134,7 @@ export default function Palette(props: Props) {
       >
         <TabKit.List label="Town and taste">
           <TabKit.Tab value="town">Town</TabKit.Tab>
-          <TabKit.Tab value="taste">Your taste</TabKit.Tab>
+          <TabKit.Tab value="taste">Taste</TabKit.Tab>
         </TabKit.List>
 
         {tab === "town" && !flow ? (

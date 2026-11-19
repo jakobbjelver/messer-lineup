@@ -444,12 +444,6 @@ export default function App() {
                     <span className="div" aria-hidden="true" />
                   </>
                 ) : null}
-                <button
-                  className={tasteKeys.size > 0 ? "taste-cta linked" : "taste-cta"}
-                  onClick={() => setPalette({ open: true, tab: "taste" })}
-                >
-                  <span>{tasteKeys.size > 0 ? `${tasteKeys.size} artists` : "Set taste"}</span>
-                </button>
               </div>
             </div>
           </div>
@@ -505,13 +499,16 @@ export default function App() {
       </main>
 
       {/* The board's own action, in reach of a thumb: taste is something you do to the whole board, not to the town. */}
-      <Fab
-        onClick={() => setPalette({ open: true, tab: "taste" })}
-        badge={tasteKeys.size > 0 ? String(tasteKeys.size) : undefined}
-        label={tasteKeys.size > 0 ? `Set taste, ${tasteKeys.size} artists` : "Set taste"}
-      >
-        Set taste
-      </Fab>
+      {/* The control that opens the sheet is not offered while the sheet is open: behind a scrim it is a dead button. */}
+      {palette.open ? null : (
+        <Fab
+          onClick={() => setPalette({ open: true, tab: "taste" })}
+          badge={tasteKeys.size > 0 ? String(tasteKeys.size) : undefined}
+          label={tasteKeys.size > 0 ? `Set taste, ${tasteKeys.size} artists` : "Set taste"}
+        >
+          Set taste
+        </Fab>
+      )}
 
       <Palette
         open={palette.open}

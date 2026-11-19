@@ -95,24 +95,41 @@
   background: var(--surface-2);
 }
 
-/* Tabs: one row, a rule under the active one, never a filled pill. */
+/* Tabs: one row, centred, a lit rule under the active one — never a filled pill. */
 .ui-tabs {
   display: flex;
-  gap: 4px;
-  padding: 0 12px;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 12px 0;
   border-bottom: 1px solid var(--border);
 }
 
 .ui-tab {
-  height: 36px;
-  padding: 0 12px;
-  font: 500 13px/1 var(--font-golos);
-  color: var(--text-2);
+  position: relative;
+  height: 46px;
+  padding: 0 22px;
+  font: 600 15px/1 var(--font-golos);
+  letter-spacing: .01em;
+  color: var(--text-3);
   background: none;
   border: 0;
-  border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+  transition: color .14s ease, background-color .14s ease;
+}
+
+/* the active rule is a lamp: the 2px bar and its own bloom, in the accent, not a grey underline */
+.ui-tab[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -1px;
+  height: 2px;
+  background: var(--primary);
+  box-shadow:
+    0 0 6px color-mix(in oklab, var(--primary) 85%, transparent),
+    0 0 16px color-mix(in oklab, var(--primary) 60%, transparent),
+    0 2px 22px -4px color-mix(in oklab, var(--primary) 55%, transparent);
 }
 
 .ui-tab:hover {
@@ -122,7 +139,6 @@
 
 .ui-tab[data-state="active"] {
   color: var(--foreground);
-  border-bottom-color: var(--primary);
 }
 
 .ui-tab:focus-visible {
@@ -209,8 +225,8 @@
 }
 
 @media (min-width: 721px) {
-  /* On a wide screen there is room for the action where actions live: no floating control over a board that is read. */
+  /* the same control on a wide screen: one action, one shape, wherever the board is open */
   .fab {
-    display: none;
+    bottom: 28px;
   }
 }

@@ -193,18 +193,6 @@ body[data-lit] .stage__lift{opacity:.7}
 .seg .u{padding:0 7px 0 8px;height:30px;display:inline-flex;align-items:center;
   font:400 10px var(--font-mono);color:var(--text-3);border-left:1px solid var(--border)}
 .actions .div{width:1px;height:20px;background:var(--border-strong);margin:0 4px}
-/* the one taste affordance on the page */
-.taste-cta{height:32px;padding:0 12px;display:inline-flex;align-items:center;gap:8px;
-  border:1px solid var(--primary);color:var(--primary);font:600 11px/1 var(--font-golos);
-  letter-spacing:.08em;text-transform:uppercase;background:transparent;position:relative}
-.taste-cta svg{width:14px;height:14px}
-.taste-cta:hover{background:color-mix(in oklab,var(--primary) 14%,transparent)}
-.taste-cta.linked{border-color:var(--border-strong);color:var(--text-2);background:transparent}
-.taste-cta.linked:hover{color:var(--foreground);border-color:var(--primary)}
-.taste-cta{margin-left:4px}
-:root:not(.dark) .taste-cta{box-shadow:0 0 14px color-mix(in oklab,var(--primary) 22%,transparent)}
-.dark .taste-cta{box-shadow:0 0 1px var(--primary),0 0 12px color-mix(in oklab,var(--primary) 38%,transparent),
-  0 0 30px color-mix(in oklab,var(--primary) 18%,transparent)}
 .approx{font:400 10px var(--font-mono);color:var(--text-3);border:1px solid var(--border-strong);
   padding:3px 5px;align-self:center}
 
@@ -409,8 +397,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .ribbon--wk{display:grid}
   .bar__row{padding:0 16px;gap:8px}
   .brand b{display:none}
-  /* the head has no room for the action on a phone: it is the floating control there */
-  .taste-cta{display:none}
+
   /* the sheet tucks under the bar: a 12px slot of page background read as a gap between the header and the content */
   .page{padding:0 0 96px}
   .sheet{border-left:0;border-right:0}
