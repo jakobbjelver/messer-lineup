@@ -82,8 +82,7 @@ board.
 
 ## Unattended runs
 
-`scripts/nightly.sh` (wrapped for the scheduler as `cron-messer-lineup.sh`) does the whole cycle and writes one
-ledger line:
+`scripts/nightly.sh` does the whole cycle and writes one ledger line:
 
 ```
 make build -> lineup mine --town $LINEUP_TOWNS --report .lineup-index/sweep-<day>.json
@@ -98,8 +97,13 @@ make build -> lineup mine --town $LINEUP_TOWNS --report .lineup-index/sweep-<day
   because the scheduler delivers stdout verbatim.
 - A refusal is a normal outcome and is recorded as one: the published index stays, and the ledger says so.
 
-Scheduled as the Hermes cron job `Messer Lineup nightly` (`10 4 * * *`, Europe/Stockholm, `no_agent` — the script
-is the job, no model is involved).
+**Scheduled on the host, by PM2, at `10 4 * * *`** (`pm2 start scripts/nightly.sh --interpreter bash --name
+lineup-nightly --cron-restart "10 4 * * *" --no-autorestart`; `pm2 save` afterwards). Not a Hermes cron job: the
+scheduler runs **inside the Hermes container**, which has no `/Users` tree — the repo, Go and rclone are all on the
+host, so a container-side job fails with exit 127 before the miner starts. A cron job that cannot see its own script is
+worse than no cron job, because the failure arrives as a daily notification instead of a missing line in the ledger.
+
+`pm2 logs lineup-nightly` shows the one line per run; the run's own log and the ledger are unchanged.
 
 ## One-time setup (already done, recorded for the next person)
 
