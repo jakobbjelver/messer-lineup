@@ -162,6 +162,11 @@ body[data-lit] .stage__lift{opacity:.7}
   box-shadow:0 0 2px var(--primary),
     0 0 16px color-mix(in oklab,var(--primary) 52%,transparent),
     0 0 40px color-mix(in oklab,var(--primary) 26%,transparent)}
+/* Done is quiet: an accent icon and an accent hairline, no bloom. A glow that outlives the action is a lie. */
+.iconbtn[data-located]{color:var(--primary);
+  border-color:color-mix(in oklab,var(--primary) 30%,var(--border-strong));box-shadow:none}
+.iconbtn[data-located]:hover{background:color-mix(in oklab,var(--primary) 8%,transparent);box-shadow:none}
+.iconbtn[aria-busy="true"]{opacity:.62}
 
 /* ── sheet ───────────────────────────────────────────────────────────────── */
 .page{position:relative;z-index:1;max-width:var(--narrow);margin:0 auto;padding:28px var(--pad) 64px}

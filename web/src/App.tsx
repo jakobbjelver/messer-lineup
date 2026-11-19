@@ -318,6 +318,23 @@ export default function App() {
     if (near && near.town.id !== ready.town.town) chooseTown(near.town.id);
   }, [position, wantedTown, ready, chooseTown]);
 
+  /* The bar's button asks once. A refusal is a state, not a dead end, so the palette opens on the town tab where the
+     sentence explaining it already lives; nothing is retried on its own and the button stops glowing. */
+  const askedFromBar = useRef(false);
+  const locateFromBar = useCallback(() => {
+    askedFromBar.current = true;
+    locate();
+  }, [locate]);
+  useEffect(() => {
+    if (!askedFromBar.current) return;
+    if (position.state === "denied" || position.state === "unavailable") {
+      askedFromBar.current = false;
+      setPalette({ open: true, tab: "town" });
+    } else if (position.state === "granted") {
+      askedFromBar.current = false;
+    }
+  }, [position]);
+
   const body = (() => {
     if (phase.kind === "loading") {
       // A skeleton of the board itself, in the board's own grid: the page does not jump when the rows arrive,
@@ -474,7 +491,16 @@ export default function App() {
       </div>
       <canvas id="rays" ref={canvas} aria-hidden="true" />
 
-      <TopBar theme={theme} onToggle={toggleTheme} />
+      <TopBar
+        theme={theme}
+        onToggle={toggleTheme}
+        location={{
+          state: position.state,
+          canLocate: locationSupported(),
+          onLocate: locateFromBar,
+          onExplain: () => setPalette({ open: true, tab: "town" }),
+        }}
+      />
 
       <main className="page">
         <section className="sheet">
