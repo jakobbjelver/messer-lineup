@@ -15,17 +15,44 @@ https://lineup.messer.wtf/?town=stockholm-se&from=2026-12-01&to=2026-12-31&a=boi
 | `town` | the town id from the manifest | the first published town |
 | `from` / `to` | a travel window, `YYYY-MM-DD`, clamped to what the index publishes | the miner's whole window |
 | `a` | the taste list, as identity keys | no taste: the full board, no `yours` filter |
+| `reach` | a distance in km from the visitor, one of `5`, `15`, `50` | anywhere in the town |
 
-Everything else is derived. `reach=<km>` and `mute=<key>` are specified in the plan and deliberately absent until
-there is something honest behind them: distance needs venue coordinates (Tickster publishes none) and mute needs
-a per-source taste model (P5).
+Everything else is derived. `mute=<key>` is specified in the plan and deliberately absent until there is something
+honest behind it: a per-source taste model is P5. `reach` used to be in that sentence for the same reason, and is not
+any more — see below.
 
 Two rules the parameters follow:
 
 - **A parameter is dropped when it matches the default.** Selecting the whole season removes `from`/`to` rather
-  than writing them, so a shared link is as short as the choice it represents.
-- **A malformed window is ignored, not corrected.** `?from=2027-13-45` and `?from` after `to` both fall back to
-  the published window; the board never invents a range.
+  than writing them, and "anywhere" removes `reach`, so a shared link is as short as the choice it represents.
+- **A malformed window is ignored, not corrected.** `?from=2027-13-45` and `?from` after `to` both fall back to the
+  published window; the board never invents a range. A `reach` that is not one of the three stops is ignored the same
+  way — the stops are the whole vocabulary, so a link cannot carry a distance the panel cannot display.
+
+## Distance, and the one thing it needs
+
+Rows print kilometres only when the board knows **both ends**: the venue's own position, and where the reader is.
+
+- **The far end is the row's, and it is optional.** A venue position is published by some sources and not others
+  (measured 2026-11-19: 23 of 37 Copenhagen rows, 355 of 693 Stockholm). A row without one prints its venue and
+  nothing after it — the same rule the Go side already follows when it marshals `g`: *a row without coordinates
+  prints no distance instead of a wrong one.*
+- **The near end is a device fix, never a guess.** Browser GPS is the only signal that knows where a person is, so it
+  is the only origin a distance is measured from. The town's own point (the mean of its venues) chooses a *town*; it
+  never prints kilometres, because "2.4 km from the middle of Copenhagen" is not a sentence anyone asked for.
+- **The fix is never stored.** It lives in the tab's memory and dies with it: nothing writes it to `localStorage`, the
+  URL or a request. There is no prompt on load — the palette's `Use my location` row is the only trigger, and it is
+  absent entirely in a non-secure context, where the browser cannot answer.
+- **A refusal is a state.** `denied` is reported in the panel in one sentence, nothing retries on its own, and the
+  town list is still the answer.
+
+`reach=` narrows the board to what can be proven inside the distance. That has one consequence the board must say out
+loud: a row with no position cannot be judged, so it leaves the view and is **counted** rather than kept as if it had
+passed — the coverage panel prints "14 more have no venue position, so no distance can be measured for them", and the
+line above the board counts what the reach left ("23 shows · 1 source · within 5 km").
+
+A link can carry a reach to a device that has not granted a fix. The board then shows the whole town and says so in
+the line — `<n> km reach needs your location` — rather than printing a count that looks filtered and is not.
 
 ## In the browser
 
@@ -83,6 +110,11 @@ from Stockholm, and `CF-IPCountry` calls both `SE`. The hint is only ever a gues
 want — once they have, the board remembers, and a wrong guess can never become sticky. Only an explicit pick is stored:
 the hint is re-asked on every first visit, because a remembered guess would be indistinguishable from a remembered
 choice.
+
+**A guess wears `approx.`** — the small chip beside the town name, present exactly while rows 3 and 4 of that table
+answered. A fix from `Use my location` clears it, and the page then opens on the nearest published town computed from
+the fix itself; a link that named a town keeps it, because the visitor asked for that town and that outranks where they
+are standing.
 
 ### What the hint can and cannot know
 

@@ -159,10 +159,18 @@ export async function loadArtistRows(manifest: Manifest, key: string): Promise<A
  * The edge knows the country from the request; the board cannot. So the board asks once, with its published town ids,
  * and gets back the one whose country suffix matches — or the first, which is what the board used to do unasked. A
  * failure here is not an error: no answer simply means the first town, exactly as before.
+ *
+ * The answer carries its **basis**, because a guess and a choice read differently: `distance` and `country` are the
+ * edge's best effort and the town name wears `approx.`, while `fallback` (no edge header, or a country the index does
+ * not cover) is a default and says nothing. A plain string could not tell the page which one it received.
  */
-export async function defaultTown(manifest: Manifest, towns: Town[]): Promise<string | null> {
+export async function defaultTown(
+  manifest: Manifest,
+  towns: Town[],
+): Promise<{ town: string | null; basis: "distance" | "country" | "fallback" }> {
   const ids = manifest.towns.map((entry) => entry.town);
-  if (ids.length < 2) return ids[0] ?? null;
+  const first = ids[0] ?? null;
+  if (ids.length < 2) return { town: first, basis: "fallback" };
 
   // Each town goes with whatever point the index knows for it — the mean of the venue positions its shows publish —
   // so the edge can answer with the nearest one. A town without a position still competes on its country.
@@ -176,11 +184,14 @@ export async function defaultTown(manifest: Manifest, towns: Town[]): Promise<st
     .join("&");
   try {
     const res = await fetch(`/where?${query}`);
-    if (!res.ok) return ids[0] ?? null;
-    const body = (await res.json()) as { town?: unknown };
-    return typeof body.town === "string" && ids.includes(body.town) ? body.town : (ids[0] ?? null);
+    if (!res.ok) return { town: first, basis: "fallback" };
+    const body = (await res.json()) as { town?: unknown; basis?: unknown };
+    const basis = body.basis === "distance" || body.basis === "country" ? body.basis : "fallback";
+    return typeof body.town === "string" && ids.includes(body.town)
+      ? { town: body.town, basis }
+      : { town: first, basis: "fallback" };
   } catch {
-    return ids[0] ?? null;
+    return { town: first, basis: "fallback" };
   }
 }
 
