@@ -8,6 +8,8 @@ import Fab from "./components/ui/Fab";
 import { CaretDown } from "./components/icons";
 import { createLamps, type Lamps } from "./lib/rays";
 import { Key } from "./lib/key";
+import { distanceKm, nearestTown, pointOf, type Origin } from "./lib/geo";
+import { locationSupported, useDevicePosition } from "./lib/location";
 import { useTheme } from "./lib/theme";
 import {
   readNames,
@@ -22,9 +24,12 @@ import {
   boardDay,
   previouslySeen,
   publishedWindow,
+  reachFromURL,
+  reachToURL,
   rememberVisit,
   windowFromURL,
   windowToURL,
+  REACH_STEPS,
   type Window as DateWindow,
 } from "./lib/state";
 import {
@@ -60,6 +65,12 @@ export default function App() {
   // published window itself, so nothing renders against a range the index does not cover.
   const [dateWindow, setWindow] = useState<DateWindow | null>(null);
   const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
+  // A reach is a distance from the reader, so it means nothing until the reader has said where they are: a
+  // `?reach=` that arrives on a device without a fix opens the full board rather than a false empty one.
+  const [reach, setReach] = useState<number | null>(() => reachFromURL(location.search));
+  // Whether the town on screen is the edge's guess, so its name can wear `approx.` — a fix removes it.
+  const [approx, setApprox] = useState(false);
+  const { position, request: locate } = useDevicePosition();
   const [palette, setPalette] = useState<{ open: boolean; tab: PaletteTab }>({ open: false, tab: "town" });
   const { theme, toggle: toggleTheme } = useTheme();
   const lamps = useRef<Lamps | null>(null);
@@ -73,11 +84,19 @@ export default function App() {
         const { manifest, towns } = await loadIndex();
         // A town in the URL wins, then the one this visitor picked before, then the edge's country hint, then the
         // first published town. The memory outranks the hint on purpose: a border is not a preference.
-        const chosen = wantedTown ?? rememberedTown() ?? (await defaultTown(manifest, towns));
+        const picked = wantedTown ?? rememberedTown();
+        let chosen = picked;
+        let guessed = false;
+        if (!chosen) {
+          const hint = await defaultTown(manifest, towns);
+          chosen = hint.town;
+          guessed = hint.basis !== "fallback";
+        }
         const town = manifest.towns.find((t) => t.town === chosen) ?? manifest.towns[0];
         const rows = await loadShard(town.shard);
         if (!live) return;
         setPhase({ kind: "ready", loaded: { manifest, towns }, rows, town });
+        setApprox(guessed);
 
         // Two things happen once, when the board first has rows: the travel window is resolved against what is
         // published, and the visitor's previous visit is compared with what is here now.
@@ -234,9 +253,42 @@ export default function App() {
       return day >= dateWindow.from && day <= dateWindow.to;
     });
   }, [ready, dateWindow]);
+  // Where distances are measured from: only a device fix, because it is the only end that is a person. The town's
+  // own point is used to *choose* a town, never to print kilometres.
+  const origin = useMemo<Origin | null>(
+    () => (position.state === "granted" ? { basis: "device", point: position.point } : null),
+    [position],
+  );
+  const distanceFor = useMemo(
+    () =>
+      (row: Row): number | null => {
+        if (!origin) return null;
+        const point = pointOf(row);
+        return point ? distanceKm(origin.point, point) : null;
+      },
+    [origin],
+  );
+  // A reach narrows by distance, and a row without a position cannot be judged by it: those rows leave the view and
+  // are counted instead, never kept as though they had passed the test.
+  const scoped = useMemo(() => {
+    if (!origin || reach === null) return { rows: inWindow, unplaced: 0, beyond: 0 };
+    const rows: Row[] = [];
+    let unplaced = 0;
+    let beyond = 0;
+    for (const row of inWindow) {
+      const point = pointOf(row);
+      if (!point) {
+        unplaced += 1;
+        continue;
+      }
+      if (distanceKm(origin.point, point) <= reach) rows.push(row);
+      else beyond += 1;
+    }
+    return { rows, unplaced, beyond };
+  }, [inWindow, origin, reach]);
   const shown = useMemo(() => {
-    return filter === "yours" && mineKeys.size > 0 ? inWindow.filter((row) => mineKeys.has(row.k)) : inWindow;
-  }, [filter, mineKeys, inWindow]);
+    return filter === "yours" && mineKeys.size > 0 ? scoped.rows.filter((row) => mineKeys.has(row.k)) : scoped.rows;
+  }, [filter, mineKeys, scoped]);
 
   // A window is only worth writing down once it differs from what the manifest publishes.
   const published = ready ? publishedWindow(ready.loaded.manifest) : null;
@@ -249,6 +301,22 @@ export default function App() {
     },
     [published],
   );
+
+  // The reach lives in the URL like every other choice, and is dropped when it is "anywhere".
+  const applyReach = useCallback((km: number | null) => {
+    setReach(km);
+    history.replaceState(null, "", reachToURL(km, location.href));
+  }, []);
+
+  /* A granted fix answers what the edge could only guess: the nearest published town, and a distance for every row.
+     A link that named a town keeps it — the visitor asked for that town, and that outranks where they are standing. */
+  useEffect(() => {
+    if (position.state !== "granted") return;
+    setApprox(false);
+    if (wantedTown || !ready) return;
+    const near = nearestTown(ready.loaded.towns, position.point);
+    if (near && near.town.id !== ready.town.town) chooseTown(near.town.id);
+  }, [position, wantedTown, ready, chooseTown]);
 
   const body = (() => {
     if (phase.kind === "loading") {
@@ -335,6 +403,34 @@ export default function App() {
         </div>
       );
     }
+    // A reach that leaves nothing is a distance question, not a taste one: offer the next stop up, then everywhere.
+    if (shown.length === 0 && origin && reach !== null && scoped.rows.length === 0) {
+      const wider = REACH_STEPS.find((km) => km > reach) ?? null;
+      return (
+        <div className="state">
+          <h2>Nothing within {reach} km of you.</h2>
+          <p>
+            <span className="num">{scoped.beyond}</span> {scoped.beyond === 1 ? "show is" : "shows are"} further out
+            {scoped.unplaced > 0 ? (
+              <>
+                , and <span className="num">{scoped.unplaced}</span> have no venue position to measure
+              </>
+            ) : null}
+            . Nothing is broken — the town has them either way.
+          </p>
+          <div className="cta">
+            {wider ? (
+              <button className="btn primary" onClick={() => applyReach(wider)}>
+                Within {wider} km
+              </button>
+            ) : null}
+            <button className={wider ? "btn" : "btn primary"} onClick={() => applyReach(null)}>
+              Anywhere in town
+            </button>
+          </div>
+        </div>
+      );
+    }
     if (shown.length === 0) {
       return (
         <div className="state">
@@ -356,7 +452,13 @@ export default function App() {
     }
     const boardTown = ready ? townLabel(ready.town, ready.loaded.towns) : "";
     return (
-      <Board rows={shown} tasteKeys={tasteKeys} newKeys={newKeys} townForRow={() => boardTown} />
+      <Board
+        rows={shown}
+        tasteKeys={tasteKeys}
+        newKeys={newKeys}
+        townForRow={() => boardTown}
+        distanceFor={distanceFor}
+      />
     );
   })();
 
@@ -429,6 +531,8 @@ export default function App() {
                   <CaretDown />
                 </button>
               </h1>
+              {/* A guessed town says so, beside its name: an unlabelled guess is a lie. The chip is the sheet's own. */}
+              {approx ? <span className="approx">approx.</span> : null}
               <div className="spacer" />
               <div className="actions">
                 {tasteKeys.size > 0 ? (
@@ -473,6 +577,10 @@ export default function App() {
                 town={ready?.town.town ?? ""}
                 dateWindow={dateWindow ?? published ?? manifest.window}
                 artistNames={taste.map((entry) => entry.name)}
+                reach={reach}
+                unplaced={scoped.unplaced}
+                located={origin !== null}
+                shown={scoped.rows.length}
               />
               </>
             ) : (
@@ -525,6 +633,11 @@ export default function App() {
         taste={taste}
         onTaste={applyTaste}
         onBoard={(key) => (ready ? ready.rows.some((row) => Key(row.a) === key) : false)}
+        position={position}
+        canLocate={locationSupported()}
+        onLocate={locate}
+        reach={reach}
+        onReach={applyReach}
       />
     </>
   );

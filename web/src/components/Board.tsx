@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import { ArrowUpRight, CalendarPlus } from "./icons";
 import { eventLink } from "../lib/calendar";
 import { Key } from "../lib/key";
+import { formatKm } from "../lib/geo";
 import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
 import type { Row } from "../lib/indexData";
 
@@ -17,6 +18,11 @@ type Props = {
   linkArtist?: boolean;
   /** The town a row is in, for the event link's `LOCATION`. A page that spans towns answers per row. */
   townForRow?: (row: Row) => string;
+  /**
+   * How far the show is from the visitor, when the board knows both ends. `null` means the row has no position —
+   * and a row with no position prints no number rather than a wrong one.
+   */
+  distanceFor?: (row: Row) => number | null;
 };
 
 /**
@@ -25,7 +31,7 @@ type Props = {
  * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
  * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
  */
-export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true, townForRow }: Props) {
+export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true, townForRow, distanceFor }: Props) {
   let month = "";
   const hasTaste = (tasteKeys?.size ?? 0) > 0;
 
@@ -37,6 +43,7 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
         const header = monthName !== month ? monthName : null;
         if (header) month = monthName;
         const status = statusLabel(row.st);
+        const distance = distanceFor?.(row) ?? null;
         const mine = hasTaste && tasteKeys?.has(Key(row.a));
         const isNew = newKeys?.has(row.k) ?? false;
         // A row with no town label has nowhere to say it is, so it offers no calendar link rather than half of one.
@@ -74,7 +81,14 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
                 )}
                 <span className="meta">
                   <span className="venue">{row.v}</span>
-                  {townOf?.get(row.k) ? (
+                  {distance !== null ? (
+                    <>
+                      <span className="dot">·</span>
+                      <span className="km">
+                        <b>{formatKm(distance)}</b> km
+                      </span>
+                    </>
+                  ) : townOf?.get(row.k) ? (
                     <>
                       <span className="dot">·</span>
                       <span className="venue town">{townOf.get(row.k)}</span>
@@ -83,7 +97,7 @@ export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = t
                   {status ? (
                     <>
                       <span className="dot">·</span>
-                      <span className="km">{status}</span>
+                      <span className="status">{status}</span>
                     </>
                   ) : null}
                 </span>

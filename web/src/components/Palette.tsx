@@ -5,7 +5,8 @@ import * as TabKit from "./ui/Tabs";
 import { ArrowLeft } from "./icons";
 import { parseTasteList, type TasteEntry } from "../lib/taste";
 import { townLabel, type Town, type TownEntry } from "../lib/indexData";
-import type { Window as DateWindow } from "../lib/state";
+import type { Position } from "../lib/location";
+import { REACH_STEPS, type Window as DateWindow } from "../lib/state";
 
 export type PaletteTab = "town" | "taste";
 
@@ -26,6 +27,15 @@ type Props = {
   onWindow: (next: DateWindow) => void;
   /** How many artists on the list have a show on the current board — the curation order. */
   onBoard: (key: string) => boolean;
+  /** The browser's answer about where the reader is. `idle` means nothing has been asked yet. */
+  position: Position;
+  /** Whether this browser could grant a fix at all: GPS needs a secure context, so the row is absent without one. */
+  canLocate: boolean;
+  onLocate: () => void;
+  /** How far a show may be, in km; `null` is "anywhere". Only offered once a fix exists, because a reach is a
+   *  distance from a person and nobody has said where the person is. */
+  reach: number | null;
+  onReach: (km: number | null) => void;
 };
 
 /**
@@ -51,8 +61,13 @@ export default function Palette(props: Props) {
     dateWindow,
     published,
     onWindow,
+    position,
+    canLocate,
+    onLocate,
+    reach,
+    onReach,
   } = props;
-  const [flow, setFlow] = useState<null | "manual" | "travel">(null);
+  const [flow, setFlow] = useState<null | "manual" | "travel" | "reach">(null);
   const [paste, setPaste] = useState("");
   const [query, setQuery] = useState("");
   const [dropped, setDropped] = useState<Set<string>>(new Set());
@@ -173,6 +188,34 @@ export default function Palette(props: Props) {
                 </div>
               </div>
             </>
+          ) : flow === "reach" ? (
+            <>
+              <button className="backlink" onClick={() => setFlow(null)}>
+                <ArrowLeft /> All options
+              </button>
+              <div className="flow" style={{ paddingTop: 0 }}>
+                <h3>Within reach</h3>
+                <p>
+                  Measured from where your browser put you, in memory only — nothing about your position is stored or
+                  sent. Rows with no venue position have no distance, so the board counts them separately.
+                </p>
+                <div className="seg" role="group" aria-label="Reach">
+                  <button aria-pressed={reach === null} onClick={() => onReach(null)}>
+                    anywhere
+                  </button>
+                  {REACH_STEPS.map((km) => (
+                    <button key={km} aria-pressed={reach === km} onClick={() => onReach(km)}>
+                      <span className="num">{km}</span> km
+                    </button>
+                  ))}
+                </div>
+                <div className="field" style={{ marginTop: 14 }}>
+                  <button className="btn primary" onClick={onClose}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            </>
           ) : flow === "manual" ? (
             <>
               <button className="backlink" onClick={() => setFlow(null)}>
@@ -261,6 +304,51 @@ export default function Palette(props: Props) {
             </>
           ) : (
             <>
+              {/* Ranked: the browser's own fix first, because it is the only precise signal — and it is only
+                  offered where it can work (a secure context). Nothing is asked for on load. */}
+              {canLocate ? (
+                <button
+                  className="opt"
+                  onClick={onLocate}
+                  aria-disabled={position.state === "asking" ? true : undefined}
+                  data-located={position.state === "granted" ? "" : undefined}
+                >
+                  <span className="opt__ic">⌖</span>
+                  <span className="opt__t">
+                    <b>{position.state === "granted" ? "Using your location" : "Use my location"}</b>
+                    <span>
+                      {position.state === "granted"
+                        ? "Distances are measured from here · kept in memory only"
+                        : position.state === "asking"
+                          ? "Asking your browser…"
+                          : "Browser GPS · one tap · never stored"}
+                    </span>
+                  </span>
+                  <span className="opt__tag plain">{position.state === "granted" ? "located" : "Most precise"}</span>
+                </button>
+              ) : null}
+              {position.state === "denied" ? (
+                <div className="flow" style={{ padding: "0 16px 8px" }}>
+                  <p className="hint">
+                    Your browser blocked location. The town list is still the answer, and nothing is retried on its own.
+                  </p>
+                </div>
+              ) : null}
+              {position.state === "unavailable" ? (
+                <div className="flow" style={{ padding: "0 16px 8px" }}>
+                  <p className="hint">Location is not available here — it needs a secure connection. Pick a town instead.</p>
+                </div>
+              ) : null}
+              {position.state === "granted" ? (
+                <button className="opt" onClick={() => setFlow("reach")}>
+                  <span className="opt__ic">⟷</span>
+                  <span className="opt__t">
+                    <b>Within reach</b>
+                    <span>{reach === null ? "Anywhere this town has a show" : `Within ${reach} km of you`}</span>
+                  </span>
+                  <span className="opt__tag plain">{reach === null ? "all" : `${reach} km`}</span>
+                </button>
+              ) : null}
               <button
                 className="opt"
                 onClick={() => setFlow("travel")}

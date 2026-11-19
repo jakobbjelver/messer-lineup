@@ -18,15 +18,22 @@ import { dayOf, stampLabel, type Manifest } from "../lib/indexData";
 export default function Coverage({
   manifest,
   shows,
+  shown,
   sourceCount,
   onForget,
   canForget,
   town,
   dateWindow,
   artistNames,
+  reach,
+  unplaced,
+  located,
 }: {
   manifest: Manifest;
+  /** Rows in the published window, before the reach narrows them. */
   shows: number;
+  /** Rows the reach left — the panel states both numbers when a reach is on. */
+  shown: number;
   sourceCount: number;
   onForget: () => void;
   canForget: boolean;
@@ -34,9 +41,20 @@ export default function Coverage({
   town: string;
   dateWindow: { from: string; to: string };
   artistNames: string[];
+  /** A reach in km, or `null` for "anywhere". Inert without a fix, and the line says so. */
+  reach: number | null;
+  /** Rows the reach could not judge, because their source published no venue position. */
+  unplaced: number;
+  located: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  // A reach needs an origin to mean anything. A link can carry one to a device that has not granted a fix, and the
+  // line must say that plainly instead of printing a count that looks filtered and is not.
+  const reachOn = reach !== null && located;
+  const reachPending = reach !== null && !located;
+  // What the line counts: the reach is a narrowing of the board, so the number is what the reach left.
+  const shownCount = reachOn ? shown : shows;
   // The feed for exactly what is on screen: this town, this window, this taste list.
   const links = calendarLink(town, dateWindow, artistNames);
 
@@ -56,12 +74,28 @@ export default function Coverage({
       <Popover.Trigger asChild>
       <button className="coverage__line" aria-label="Where this board comes from">
         <span>
-          <span className="num">{shows}</span> {shows === 1 ? "show" : "shows"}
+          <span className="num">{shownCount}</span> {shownCount === 1 ? "show" : "shows"}
         </span>
         <span className="g">·</span>
         <span className="g">
           <span className="num">{sourceCount}</span> {sourceCount === 1 ? "source" : "sources"}
         </span>
+        {reachOn ? (
+          <>
+            <span className="g">·</span>
+            <span>
+              within <span className="num">{reach}</span> km
+            </span>
+          </>
+        ) : null}
+        {reachPending ? (
+          <>
+            <span className="g">·</span>
+            <span>
+              <span className="num">{reach}</span> km reach needs your location
+            </span>
+          </>
+        ) : null}
         <span className="i">
           <Info />
         </span>
@@ -111,7 +145,38 @@ export default function Coverage({
               <dt>Towns</dt>
               <dd className="num">{manifest.towns.length}</dd>
             </div>
+            {reachOn ? (
+              <div>
+                <dt>Reach</dt>
+                <dd>
+                  <span className="num">{shown}</span> of <span className="num">{shows}</span> within{" "}
+                  <span className="num">{reach}</span> km of you
+                </dd>
+              </div>
+            ) : null}
+            {reachPending ? (
+              <div>
+                <dt>Reach</dt>
+                <dd>
+                  <span className="num">{reach}</span> km, from the link — it needs your location, which only{" "}
+                  <em>Use my location</em> can give
+                </dd>
+              </div>
+            ) : null}
+            {located ? (
+              <div>
+                <dt>Position</dt>
+                <dd>from this device, in memory only</dd>
+              </div>
+            ) : null}
           </dl>
+
+          {reachOn && unplaced > 0 ? (
+            <p className="coverage__note">
+              <span className="num">{unplaced}</span> more have no venue position, so no distance can be measured for
+              them.
+            </p>
+          ) : null}
 
           <div className="coverage__cal">
             <a className="coverage__cal-link" href={links.webcal}>

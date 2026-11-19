@@ -65,6 +65,38 @@ function normaliseDay(value: string | null): string | null {
   return isoDay(parsed);
 }
 
+/* ── reach: how far from the visitor a show may be ──────────────────────────────────────────────────────── */
+
+/**
+ * The distance stops the board offers. Three, because a reach is a choice about a walk, a ride or a train — not a
+ * slider someone has to tune. They are also the whole vocabulary of `?reach=`, so a link cannot carry a number the
+ * panel cannot display.
+ */
+export const REACH_STEPS = [5, 15, 50] as const;
+
+/**
+ * A reach from the URL, or `null` for "anywhere".
+ *
+ * Anything that is not one of the stops is ignored rather than corrected — the same rule the travel window follows.
+ * A reach also needs an origin to mean anything, so a link that carries one on a device without a fix still opens
+ * the full board: the parameter describes a distance from the reader, and a reader who has not said where they are
+ * has no distance to give.
+ */
+export function reachFromURL(search: string): number | null {
+  const raw = new URLSearchParams(search).get("reach");
+  if (!raw) return null;
+  const km = Number(raw);
+  return (REACH_STEPS as readonly number[]).includes(km) ? km : null;
+}
+
+/** Writes the reach into the URL, dropping the parameter when there is none: a default is not worth a character. */
+export function reachToURL(reach: number | null, current: string): string {
+  const url = new URL(current);
+  if (reach === null) url.searchParams.delete("reach");
+  else url.searchParams.set("reach", String(reach));
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 /* ── the visitor's memory ─────────────────────────────────────────────────────────────────────────────── */
 
 type Memory = { seen: string[]; visited: string };

@@ -269,7 +269,9 @@ body[data-lit] .stage__lift{opacity:.7}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .row .km{font:400 11.5px/1 var(--font-mono);color:var(--foreground);white-space:nowrap}
 .row .km b{font-weight:500}
-:root:not(.dark) .row .venue,:root:not(.dark) .row .km{color:var(--text)}
+/* A status is a fact about the ticket, not a distance: same size, same mono, never dimmed. */
+.row .status{font:400 11.5px/1 var(--font-mono);color:var(--foreground);white-space:nowrap}
+:root:not(.dark) .row .venue,:root:not(.dark) .row .km,:root:not(.dark) .row .status{color:var(--text)}
 /* Two actions, one cell: the arrow still owns the edge, the calendar sits a step inside it. */
 .row .acts{display:flex;align-items:center;gap:10px;justify-self:end}
 .row .cal{color:var(--text-2);display:inline-flex;align-items:center;opacity:.62;
@@ -332,6 +334,8 @@ body[data-lit] .stage__lift{opacity:.7}
   color:var(--primary);border:1px solid color-mix(in oklab,var(--primary) 45%,transparent);padding:4px 6px}
 .opt__tag.plain{color:var(--text-3);border-color:var(--border-strong)}
 .opt__check{color:var(--primary);display:inline-flex}
+/* A location that has been granted stops asking for attention: accent icon, no bloom. */
+.opt[data-located] .opt__ic{color:var(--primary);border-color:color-mix(in oklab,var(--primary) 38%,var(--border-strong))}
 .opt[aria-disabled="true"]{opacity:.45;pointer-events:none}
 .flow{padding:16px}
 .flow h3{margin:0 0 4px;font:600 15px/1.25 var(--font-golos)}
@@ -423,6 +427,7 @@ body[data-lit] .stage__lift{opacity:.7}
   .row .when{align-self:start;padding-top:2px}
   .row .venue{color:var(--text-2)}
   .row .km{font-size:11px}
+  .row .status{font-size:11px}
   /* the arrow sits on the portrait band: a chip gives it a surface to sit on */
   /* The sheet is full-bleed on a phone, so an opaque card hid the whole room behind it and the magenta survived only
      as a band under the bar. Let the haze through at the top and wash the head in the room's own colour. */
