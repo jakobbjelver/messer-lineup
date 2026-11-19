@@ -136,33 +136,58 @@
   z-index: 20;
   left: 50%;
   translate: -50% 0;
-  bottom: calc(18px + env(safe-area-inset-bottom));
+  bottom: calc(22px + env(safe-area-inset-bottom));
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 44px;
-  padding: 0 22px;
+  gap: 11px;
+  /* 56px: a thumb, not a pointer. This is the one control that is always in reach, so it is the one control that is
+     allowed to be big. */
+  height: 60px;
+  padding: 0 30px 0 24px;
   /* the border is the page's own background, so the control reads as a hole in the sheet rather than a card on it */
-  border: 2px solid var(--background);
+  border: 3px solid var(--background);
   background: var(--background);
   color: var(--foreground);
-  font: 600 15px/1 var(--font-golos);
-  letter-spacing: .01em;
+  font: 600 17px/1 var(--font-golos);
+  letter-spacing: .003em;
   cursor: pointer;
-  box-shadow: 0 0 0 1px var(--border-strong), 0 10px 30px -12px oklch(0 0 0 / .55),
-    0 0 22px -2px color-mix(in oklab, var(--primary) 55%, transparent);
-  transition: box-shadow .18s ease, background-color .18s ease, color .18s ease;
+  /* a hairline so the cut edge is legible on paper, the drop that lifts it off the rows, and the room's own light */
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--border-strong) 80%, transparent),
+    0 14px 34px -14px oklch(0 0 0 / .6),
+    0 0 24px -4px color-mix(in oklab, var(--primary) 60%, transparent),
+    0 0 60px -16px color-mix(in oklab, var(--primary) 45%, transparent);
+  transition: box-shadow .2s ease, background-color .14s ease, color .14s ease, scale .12s ease;
 }
 
 .fab:hover {
   background: var(--surface-2);
-  box-shadow: 0 0 0 1px var(--border-strong), 0 14px 34px -12px oklch(0 0 0 / .6),
-    0 0 30px 0 color-mix(in oklab, var(--primary) 70%, transparent);
+  box-shadow:
+    0 0 0 1px var(--border-strong),
+    0 18px 40px -16px oklch(0 0 0 / .65),
+    0 0 30px -2px color-mix(in oklab, var(--primary) 78%, transparent),
+    0 0 78px -14px color-mix(in oklab, var(--primary) 55%, transparent);
+}
+
+/* a press you can feel on a phone, and nothing on a pointer */
+.fab:active {
+  scale: .975;
 }
 
 .fab:focus-visible {
   outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+.fab__ic {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary);
+}
+
+.fab__ic svg {
+  width: 25px;
+  height: 25px;
 }
 
 .fab__t {
@@ -171,8 +196,16 @@
 }
 
 .fab__n {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklab, var(--primary) 45%, transparent);
   color: var(--primary);
-  font: 500 12px/1 var(--font-jetbrains);
+  font: 500 11.5px/1 var(--font-jetbrains);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (min-width: 721px) {

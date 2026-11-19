@@ -36,6 +36,15 @@ export function ArrowUpRight() {
   );
 }
 
+/** The taste mark: four chunky bars over a baseline, drawn to hold its own against a 700-weight label. */
+export function Taste() {
+  return (
+    <svg {...base}>
+      <path d="M224,192H32a8,8,0,0,1,0-16h24V96a8,8,0,0,1,8-8H80a8,8,0,0,1,8,8v80h24V56a8,8,0,0,1,8-8h16a8,8,0,0,1,8,8V176h24V112a8,8,0,0,1,8-8h16a8,8,0,0,1,8,8v64h24a8,8,0,0,1,0,16Z" />
+    </svg>
+  );
+}
+
 export function CalendarPlus() {
   return (
     <svg {...base}>
