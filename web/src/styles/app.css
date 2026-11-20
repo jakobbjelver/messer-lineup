@@ -358,27 +358,41 @@ a.show__artist:hover {
 /* A face on its way. The box is already the right shape, so the row does not move when the picture lands — only
    the shimmer stops. */
 .avatar--pending {
-  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  background: color-mix(in oklch, var(--foreground) 11%, transparent);
   box-shadow: none;
+  animation: avatar-pulse 1.6s ease-in-out infinite;
 }
+/* The band is part of the background and the background *moves*, so there is ink inside the circle at every
+   instant — translating a full-width element instead leaves the box empty between passes, which a still reads as
+   an empty grey disc. */
 .avatar--pending::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     100deg,
-    transparent 24%,
-    color-mix(in oklch, var(--foreground) 9%, transparent) 50%,
-    transparent 76%
+    color-mix(in oklch, var(--foreground) 4%, transparent) 0%,
+    color-mix(in oklch, var(--foreground) 20%, transparent) 46%,
+    color-mix(in oklch, var(--foreground) 4%, transparent) 92%
   );
+  background-size: 220% 100%;
   animation: avatar-sweep 1.15s linear infinite;
+}
+@keyframes avatar-pulse {
+  0%,
+  100% {
+    background-color: color-mix(in oklch, var(--foreground) 11%, transparent);
+  }
+  50% {
+    background-color: color-mix(in oklch, var(--foreground) 5%, transparent);
+  }
 }
 @keyframes avatar-sweep {
   from {
-    translate: -100% 0;
+    background-position: 120% 0;
   }
   to {
-    translate: 100% 0;
+    background-position: -20% 0;
   }
 }
 .avatar img {
