@@ -114,6 +114,13 @@ button {
   outline-offset: 2px;
   box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 22%, transparent);
 }
+/* A field draws its own ring once, around the whole control. The input inside it is a canvas, not a control. */
+.field input:focus,
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 
 /* ── base ─────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -278,14 +285,18 @@ img {
   background: var(--surface);
   transition: border-color 0.12s linear, box-shadow 0.12s linear;
 }
+/* The ring sits outside the box with a gap: a tinted border *inside* an input reads as a colour cast on the
+   field, and mixing the accent with a neutral grey is what turned it teal. Pure accent, outside, one ring. */
 .field:focus-within {
-  border-color: color-mix(in oklch, var(--primary) 55%, var(--border-strong));
-  box-shadow: var(--glow-1), 0 0 0 3px color-mix(in oklch, var(--primary) 12%, transparent);
+  border-color: var(--border-strong);
+  outline: 1px solid var(--primary-line);
+  outline-offset: 3px;
 }
 .field input {
   flex: 1;
   min-width: 0;
   border: 0;
+  border-color: transparent;
   outline: none;
   background: none;
   font: 400 15px/1 var(--font);
@@ -389,7 +400,7 @@ img {
 .loader i {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: 1px;
   background: var(--primary);
   opacity: 0.16;
   animation: loader-dot 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;

@@ -56,6 +56,7 @@ func Handler(opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /manifest.json", s.manifestFile)
 	mux.HandleFunc("GET /towns.json", s.townsFile)
 	mux.HandleFunc("GET /towns/", s.shard)
+	mux.HandleFunc("GET /artists/", s.artistsFile)
 	mux.HandleFunc("GET /data/", s.townData)
 	mux.HandleFunc("GET /where", s.where)
 	mux.HandleFunc("GET /event/", s.event)
@@ -108,6 +109,18 @@ func (s *server) manifestFile(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) townsFile(w http.ResponseWriter, r *http.Request) {
 	s.serveFile(w, r, "towns.json", "application/json; charset=utf-8", metaCache)
+}
+
+// artistsFile serves the portraits artifact (and nothing else) with the same immutable header the bucket sets, so
+// a local run and the edge hand the board the same bytes. An allowlist, not a directory: the index directory also
+// holds reports and state, and a static handler over it would publish whatever a run happened to leave behind.
+func (s *server) artistsFile(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimPrefix(r.URL.Path, "/artists/")
+	if name != "portraits.json" {
+		writeError(w, http.StatusNotFound, "unknown_artifact", "that artifact is not published")
+		return
+	}
+	s.serveFile(w, r, filepath.Join("artists", name), "application/json; charset=utf-8", shardCache)
 }
 
 // shard serves one immutable shard. The name is content-addressed, so the path is checked against the manifest

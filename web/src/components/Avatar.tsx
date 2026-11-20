@@ -4,8 +4,8 @@ import { initials, portraitFor, type PortraitMap } from "../lib/portraits";
 type Props = {
   name: string;
   portraits?: PortraitMap;
-  /** `row` is 40 px; the artist page uses 96, the calendar 22 or 16. */
-  size?: "row" | 96 | 22 | 16;
+  /** `row` is 40 px; the artist page uses 96, the calendar 22, a search result 28, a badge 18. */
+  size?: "row" | 96 | 28 | 22 | 18 | 16;
   /** A row by an artist in the reader's list, while the board is showing everyone. */
   mine?: boolean;
 };
@@ -28,7 +28,7 @@ export default function Avatar({ name, portraits, size = "row", mine }: Props) {
       ) : (
         // One letter below 24 px: two letters at a legible size do not fit, and a single glyph reads as an avatar
         // rather than as a truncated monogram.
-        (size === 22 || size === 16 ? initials(name).slice(0, 1) : initials(name))
+        (size === 22 || size === 16 || size === 18 ? initials(name).slice(0, 1) : initials(name))
       )}
     </span>
   );

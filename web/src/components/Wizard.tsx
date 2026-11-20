@@ -7,12 +7,14 @@ import { useNearestTown } from "../lib/useNearestTown";
 import type { Town, TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 import type { TasteEntry } from "../lib/taste";
+import type { PortraitMap } from "../lib/portraits";
 
 type Props = {
   posts: TownEntry[];
   names: Town[];
   taste: TasteEntry[];
   onTaste: (entries: TasteEntry[]) => void;
+  portraits?: PortraitMap;
   town: string;
   onTown: (id: string) => void;
   position: Position;
@@ -37,6 +39,7 @@ export default function Wizard({
   names,
   taste,
   onTaste,
+  portraits,
   town,
   onTown,
   position,
@@ -74,7 +77,7 @@ export default function Wizard({
         </h1>
 
         {step === 1 ? (
-          <ArtistPicker value={taste} onChange={onTaste} />
+          <ArtistPicker value={taste} onChange={onTaste} portraits={portraits} />
         ) : (
           <TownPicker
             posts={posts}

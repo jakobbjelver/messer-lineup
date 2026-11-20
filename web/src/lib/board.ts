@@ -37,7 +37,8 @@ export function mineKeys(rows: Row[], tasteKeys: Set<string>): Set<string> {
 }
 
 export function filterMine(rows: Row[], mine: Set<string>): Row[] {
-  if (mine.size === 0) return rows;
+  // No artists is an empty answer, not "show everything": the reader asked for their list, and a list they have
+  // not built yet is a prompt to build it.
   return rows.filter((row) => mine.has(row.k));
 }
 
@@ -46,18 +47,31 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((dateOf(to).getTime() - dateOf(from).getTime()) / 86_400_000) + 1;
 }
 
-/** Every day of a month, in the Monday-first grid a European calendar uses. */
-export function monthCells(month: string): { day: string; inMonth: boolean }[] {
+/**
+ * The month grid, Monday-first, as six rows at most.
+ *
+ * `anchor` is the reader's today. For the **current** month the grid starts on the Monday of the anchor's week
+ * instead of the 1st, so opening the calendar shows this week and five weeks of future rather than a month that
+ * is mostly gone; every other month starts on its own first week. Cells before the shown month are blank — a
+ * calendar that opens on the 26th of last month reads as a month out of date.
+ */
+export function monthCells(month: string, anchor?: string): { day: string; inMonth: boolean; blank: boolean }[] {
   const [year, mon] = month.split("-").map(Number);
-  const first = Date.UTC(year!, mon! - 1, 1, 12);
-  const offset = (new Date(first).getUTCDay() + 6) % 7; // Monday = 0
-  const start = first - offset * 86_400_000;
-  const cells: { day: string; inMonth: boolean }[] = [];
+  const firstMs = Date.UTC(year!, mon! - 1, 1, 12);
+  const firstIso = `${month}-01`;
+  const sameMonth = (anchor ?? "").slice(0, 7) === month;
+  const anchorMs = sameMonth ? Date.parse(`${anchor}T12:00:00Z`) : Number.NaN;
+  const base = Number.isFinite(anchorMs) && anchorMs > firstMs ? anchorMs : firstMs;
+  const offset = (new Date(base).getUTCDay() + 6) % 7; // Monday = 0
+  const start = base - offset * 86_400_000;
+
+  const cells: { day: string; inMonth: boolean; blank: boolean }[] = [];
   for (let i = 0; i < 42; i += 1) {
     const d = new Date(start + i * 86_400_000);
-    cells.push({ day: d.toISOString().slice(0, 10), inMonth: d.getUTCMonth() === mon! - 1 });
+    const day = d.toISOString().slice(0, 10);
+    cells.push({ day, inMonth: d.getUTCMonth() === mon! - 1, blank: day < firstIso });
   }
-  // A six-week grid with a whole empty trailing week is a month that looks broken; trim it.
+  // A trailing row with nothing in the shown month is a month that looks broken; five rows is still a grid.
   while (cells.length > 35 && cells.slice(35).every((cell) => !cell.inMonth)) cells.splice(35);
   return cells;
 }

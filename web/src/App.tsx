@@ -207,7 +207,7 @@ export default function App() {
   const mine = useMemo(() => computeMine(rows ?? [], tasteKeys), [rows, tasteKeys]);
   const visible = useMemo(() => {
     if (!rows) return [];
-    return filter === "mine" && mine.size > 0 ? filterMine(rows, mine) : rows;
+    return filter === "mine" ? filterMine(rows, mine) : rows;
   }, [rows, filter, mine]);
   const days = useMemo(() => groupByDay(visible), [visible]);
   const sheetRows = useMemo(
@@ -219,7 +219,7 @@ export default function App() {
   const shownMonth = month ?? firstMonth;
 
   const hasTaste = taste.length > 0;
-  const mineMode = filter === "mine" && mine.size > 0;
+  const mineMode = filter === "mine";
 
   const finishSetup = useCallback(
     (entries: TasteEntry[]) => {
@@ -252,34 +252,15 @@ export default function App() {
         </button>
       </h1>
       {rows ? (
-        <p className="count">
-          <span>
-            <span className="num">{visible.length}</span> {visible.length === 1 ? "show" : "shows"}
-          </span>
-          {hasTaste ? (
-            <>
-              <span className="dot" aria-hidden="true">
-                ·
-              </span>
-              <button className="count__swap" onClick={() => setFilter(mineMode ? "all" : "mine")}>
-                {mineMode ? (
-                  <>
-                    all <span className="num">{rows.length}</span>
-                  </>
-                ) : (
-                  <>
-                    yours <span className="num">{mine.size}</span>
-                  </>
-                )}
-              </button>
-            </>
-          ) : null}
-        </p>
-      ) : (
-        <p className="count" aria-hidden="true">
-          <span className="sk__count" style={{ display: "inline-block", margin: 0 }} />
-        </p>
-      )}
+        <div className="seg" role="group" aria-label="Whose shows">
+          <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
+            yours <span className="num">{mine.size}</span>
+          </button>
+          <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+            all <span className="num">{rows.length}</span>
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 
@@ -312,12 +293,19 @@ export default function App() {
       );
     }
     if (visible.length === 0) {
-      return (
+      return hasTaste ? (
         <Empty
           title="None of your artists play here."
           detail={`${rows.length} shows are on the board.`}
           action={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
           secondary={{ label: "Add artists", onClick: () => openPanel("taste") }}
+        />
+      ) : (
+        <Empty
+          title="No artists yet."
+          detail="Pick the ones you go see, and this becomes your list."
+          action={{ label: "Add artists", onClick: () => openPanel("taste") }}
+          secondary={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
         />
       );
     }
@@ -390,6 +378,7 @@ export default function App() {
               names={loaded.towns}
               taste={taste}
               onTaste={setTaste}
+              portraits={portraits}
               town={town.town}
               onTown={applyTown}
               position={position}
@@ -415,6 +404,7 @@ export default function App() {
             onTown={applyTown}
             posts={loaded.manifest.towns}
             names={loaded.towns}
+            portraits={portraits}
             position={position}
             canLocate={canLocate}
             onLocate={locate}

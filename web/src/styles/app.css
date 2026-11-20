@@ -19,12 +19,23 @@
   margin: 0 auto;
   padding: 0 12px 0 16px;
 }
+/* The mark is a lit tile: a dark key with a white glyph, in both themes. It is the one element that keeps the
+   neon in daylight — a green glow around a black chip reads on paper and in a dark room alike. */
 .bar__mark {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  color: var(--foreground);
+  width: 30px;
+  height: 30px;
+  border-radius: 2px;
+  background: #0b0b0d;
+  color: #ffffff;
+  box-shadow: 0 0 1px var(--primary), 0 0 9px -1px color-mix(in oklch, var(--primary) 55%, transparent),
+    0 0 22px -6px color-mix(in oklch, var(--primary) 45%, transparent);
+  transition: box-shadow 0.15s linear;
+}
+.bar__mark:hover {
+  box-shadow: 0 0 1px var(--primary), 0 0 12px -1px var(--primary),
+    0 0 30px -6px color-mix(in oklch, var(--primary) 65%, transparent);
 }
 .bar__name {
   display: none;
@@ -99,16 +110,44 @@
   font: 400 12.5px/1.2 var(--font);
   color: var(--text-2);
 }
-.count__swap {
-  color: var(--text-2);
-  border-bottom: 1px solid color-mix(in oklch, var(--text-3) 55%, transparent);
-  padding-bottom: 1px;
-  transition: color 0.12s linear, border-color 0.12s linear;
+/* The one filter: two segments, always there, one at a time. Selected is an accent tint plus a 2px rule —
+   never a filled row (§11). */
+.seg {
+  display: inline-flex;
+  height: 32px;
+  margin-top: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  overflow: hidden;
 }
-.count__swap:hover {
+.seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  font: 500 12.5px/1 var(--font);
+  color: var(--text-2);
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: color 0.12s linear, background 0.12s linear, box-shadow 0.12s linear;
+}
+.seg button + button {
+  border-left: 1px solid var(--border);
+}
+.seg button:hover {
   color: var(--foreground);
-  border-color: var(--primary);
-  box-shadow: 0 2px 0 -1px color-mix(in oklch, var(--primary) 45%, transparent);
+  background: var(--surface-2);
+}
+.seg button[aria-pressed="true"] {
+  color: var(--foreground);
+  background: color-mix(in oklch, var(--primary) 9%, transparent);
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+.seg .num {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.seg button[aria-pressed="true"] .num {
+  color: var(--primary);
 }
 .count .num {
   font-size: 12px;
@@ -142,8 +181,8 @@
 .day__label {
   display: inline-flex;
   align-items: baseline;
-  gap: 12px;
-  padding-bottom: 6px;
+  gap: 16px;
+  padding: 0 2px 7px;
 }
 .day__head .day__dd {
   font-size: 11px;
@@ -162,9 +201,17 @@
 /* The rule is the label's own width — a fixed 28 px underline under a wider word was a line that stopped
    mid-word. The glow rides on the label, so it can be any length. */
 .day--today .day__label {
-  border-bottom: 2px solid var(--primary-line);
-  box-shadow: 0 2px 0 -1px color-mix(in oklch, var(--primary) 45%, transparent),
-    0 6px 14px -6px color-mix(in oklch, var(--primary) 55%, transparent);
+  position: relative;
+}
+.day--today .day__label::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 2px;
+  background: var(--primary-line);
+  box-shadow: 0 0 4px var(--primary), 0 0 10px var(--primary), 0 0 22px color-mix(in oklch, var(--primary) 55%, transparent);
 }
 
 .show {
@@ -284,6 +331,14 @@ a.show__artist:hover {
   --size: 96px;
   font-size: 26px;
 }
+.avatar--28 {
+  --size: 28px;
+  font-size: 10px;
+}
+.avatar--18 {
+  --size: 18px;
+  font-size: 9px;
+}
 .avatar--22 {
   --size: 22px;
   font-size: 10px;
@@ -378,22 +433,28 @@ a.show__artist:hover {
 
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */
 
+/* §20, exactly as Messer Paste draws it: 32px, `--surface`, one square hairline, one bold arrow at 16px,
+   and the destination in sentence case. The box is the affordance; there is no underline. */
 .backlink {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 44px;
+  gap: 8px;
+  width: fit-content;
+  height: 32px;
   margin-top: 18px;
-  padding: 0 16px 0 10px;
+  padding: 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 2px;
-  font: 600 13.5px/1 var(--font);
-  color: var(--text-2);
-  transition: color 0.12s linear, background 0.12s linear;
+  border-radius: 0;
+  background: var(--surface);
+  font: 500 14px/1 var(--font);
+  color: var(--foreground);
+  transition: background 0.15s linear, border-color 0.15s linear, color 0.15s linear;
 }
 .backlink:hover {
-  color: var(--foreground);
   background: var(--surface-2);
+}
+.backlink svg {
+  flex: none;
 }
 .artist {
   display: flex;
@@ -464,15 +525,11 @@ a.show__artist:hover {
   }
   .day {
     display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    column-gap: 28px;
+    grid-template-columns: 164px minmax(0, 1fr);
+    column-gap: 40px;
   }
   .day__label {
     display: block;
-  }
-  .day--today .day__label {
-    border-bottom: 0;
-    box-shadow: none;
   }
   .day__head {
     grid-column: 1;
@@ -480,8 +537,9 @@ a.show__artist:hover {
     align-self: start;
     display: block;
     position: sticky;
-    top: calc(var(--bar) + 16px);
-    padding: 22px 0 0;
+    top: calc(var(--bar) + 20px);
+    padding: 26px 0 0;
+    letter-spacing: 0.12em;
     border-bottom: 0;
     background: none;
     backdrop-filter: none;
@@ -489,32 +547,22 @@ a.show__artist:hover {
   }
   .day__head .day__dd {
     display: block;
-    margin: 8px 0 2px;
-    font-size: 26px;
+    margin: 12px 0 2px;
+    font-size: 34px;
     line-height: 0.9;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     color: var(--text-2);
   }
   .day__head .day__n {
     display: block;
-    margin: 10px 0 0;
+    width: 46px;
+    margin: 16px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
     font-size: 10px;
   }
   .day--today .day__head .day__dd {
     color: var(--primary);
-  }
-  .day--today::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 22px;
-    width: 2px;
-    height: 44px;
-    background: var(--primary);
-    box-shadow: var(--glow-1), var(--glow-2);
-  }
-  .day--today .day__head::after {
-    display: none;
   }
   .day > .show {
     grid-column: 2;

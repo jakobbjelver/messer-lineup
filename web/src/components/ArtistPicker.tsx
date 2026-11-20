@@ -1,15 +1,19 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import Loader from "./Loader";
+import Avatar from "./Avatar";
 import { importFrom, searchArtists, type ArtistHit } from "../lib/artistSearch";
 import { Key } from "../lib/key";
 import { labelFor, type TasteEntry } from "../lib/taste";
+import type { PortraitMap } from "../lib/portraits";
 
 type Props = {
   value: TasteEntry[];
   onChange: (entries: TasteEntry[]) => void;
   /** The sheet's compact spacing; the wizard gets the roomier one. */
   compact?: boolean;
+  /** Faces where the published file has one; initials everywhere else. */
+  portraits?: PortraitMap;
 };
 
 const DEBOUNCE_MS = 380;
@@ -37,7 +41,7 @@ function merge(current: TasteEntry[], names: string[]): TasteEntry[] {
  * MusicBrainz's will never fully agree, and a picker that cannot add what you typed is a wall. The
  * list is the feedback — every choice is a badge you can see and remove.
  */
-export default function ArtistPicker({ value, onChange, compact }: Props) {
+export default function ArtistPicker({ value, onChange, compact, portraits }: Props) {
   const baseId = useId();
   const input = useRef<HTMLInputElement | null>(null);
   const listId = `${baseId}-list`;
@@ -205,6 +209,13 @@ export default function ArtistPicker({ value, onChange, compact }: Props) {
               }}
               onMouseEnter={() => setActive(index)}
             >
+              {option.kind === "add" ? (
+                <span className="result__add" aria-hidden="true">
+                  +
+                </span>
+              ) : (
+                <Avatar name={option.name} portraits={portraits} size={28} />
+              )}
               <span className="result__name">{option.kind === "add" ? `Add “${option.name}”` : option.name}</span>
               {option.meta ? <span className="result__meta">{option.meta}</span> : null}
             </li>
@@ -214,12 +225,11 @@ export default function ArtistPicker({ value, onChange, compact }: Props) {
         <p className="hint">Search is busy — keep typing, or add the name as it is.</p>
       ) : null}
 
-      <div className="badges">
-        {value.length === 0 ? (
-          <span className="badges__empty">No artists yet — the board will show everything.</span>
-        ) : (
-          value.map((entry) => (
+      {value.length ? (
+        <div className="badges">
+          {value.map((entry) => (
             <span className="chip" key={entry.key}>
+              <Avatar name={entry.name || labelFor(entry.key)} portraits={portraits} size={18} />
               {entry.name || labelFor(entry.key)}
               <button
                 type="button"
@@ -229,9 +239,9 @@ export default function ArtistPicker({ value, onChange, compact }: Props) {
                 <X size={12} />
               </button>
             </span>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
       {mode === null ? (
         <div className="import">
