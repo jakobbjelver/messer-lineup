@@ -198,8 +198,12 @@ func NonMusicForm(title string) string {
 // formTokens are event forms that are never a gig. Every entry was measured against the live index on
 // 2026-11-20: each one names an event that is not music, and no entry drops a title that is a gig. See the
 // package comment for the two that must never be added.
+//
+// "tasting" was the one form the Swedish tokens missed: Wine Mechanics' Göteborg listing carries four
+// "The Wine Mechanics Tasting" rows beside real concerts ("Jakob Hellman - Live i Vineriet"), so the room is
+// music and the tasting is the form — the same split "provning" already made in Swedish.
 var formTokens = []string{
-	"julbord", "buffe", "brunch", "middag", "provning", "workshop", "kurs", "kollo",
+	"julbord", "buffe", "brunch", "middag", "provning", "tasting", "workshop", "kurs", "kollo",
 	"forelasning", "seminarium", "konferens", "visning", "guidning", "vandring",
 	"standup", "stand-up", "komedi", "humor", "quiz", "bingo", "karaoke",
 	"forestallning", "musikal", "vernissage", "utstallning", "loppis", "marknad",

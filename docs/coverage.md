@@ -87,32 +87,47 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_tickster · measured · 2026-11-20T15:49:23Z_
+_tickster · measured · 2026-11-20T17:15:28Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 49 | 24 | 12 | 0 | 0 | 29 |
-| stockholm | tickster | 979 | 331 | 441 | 0 | 0 | 546 |
-| **total** | | **1028** | **355** | **453** | **0** | **0** | |
+| copenhagen | tickster | 49 | 24 | 12 | 0 | 0 | 27 |
+| gothenburg | tickster | 698 | 275 | 256 | 0 | 0 | 414 |
+| stockholm | tickster | 978 | 331 | 441 | 0 | 0 | 550 |
+| **total** | | **1725** | **630** | **709** | **0** | **0** | |
 
-Music policy: **453** rows dropped (form:fotboll 2, form:frukost 1, form:humor 1, form:julbord 1, form:kidz 1, form:marknad 1, form:stand-up 1, form:vendors 1, form:wrestling 1, venue 443).
+Music policy: **709** rows dropped (form:buffe 1, form:fotboll 3, form:frukost 1, form:humor 2, form:julbord 1, form:kidz 1, form:marknad 1, form:middag 11, form:musikal 2, form:provning 33, form:quiz 3, form:stand-up 3, form:standup 2, form:vendors 1, form:wrestling 3, venue 641).
 
-Merged: **355** rows → **335** shows, duplicate rate **5.6 %**. Towns discovered: **2**.
-Index: **2** shard(s), 335 rows published, 0 outside the window, 0 refused, 20 582 bytes.
+Merged: **630** rows → **608** shows, duplicate rate **3.5 %**. Towns discovered: **3**.
+Index: **3** shard(s), 608 rows published, 0 outside the window, 0 refused, 36 990 bytes.
 <!-- mine:end -->
 
-## Two towns, one platform, and what the merge actually found
+## The hit rate, measured after three towns
 
-The run above is the nightly shape: `--town copenhagen,stockholm` at a 2 s interval (robots asks for
-`Crawl-delay: 2`): **1 028 candidates → 355 rows → 335 published**, two shards, 20 582 bytes, duplicate rate
-**5.6 %**. Stockholm lists **979 events** on its city page; the full walk is ~10 minutes and is the nightly's job.
+| List | Artists | Rows matched |
+|---|---|---:|
+| Last.fm `messeratgalten`, top artists (12 months *and* lifetime) | 42 | **0** |
+| ListenBrainz `jakob1337`, top artists this year | 17 | **0** |
 
-**The merge found 20 duplicates (5.6 %) with only one source.** They are not cross-platform matches — every row
+Three towns, 608 rows, 552 distinct artists — and two real taste lists match **nothing**. That is the coverage gap
+stated as a number rather than an adjective: every room on this index arrives through Tickster, and Tickster's
+inventory is the mid-size Nordic promoter layer, not the clubs and concert halls that book the artists a listener
+actually plays. No list length, cap or UI change moves this; a second source per town does. Re-measure with
+`scripts/inventory.py --index .lineup-index` and the same diff against a provider's top-N.
+
+## Three towns, one platform, and what the merge actually found
+
+The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg` at a 2 s interval (robots
+asks for `Crawl-delay: 2`): **1 725 candidates → 630 rows → 608 published**, three shards, 36 990 bytes,
+duplicate rate **3.5 %**. Stockholm lists **979 events** on its city page and Gothenburg **698**; the full walk is
+~16 minutes and is the nightly's job.
+
+**The merge found 22 duplicates (3.5 %) with only one source.** They are not cross-platform matches — every row
 came from Tickster — they are the same artist, venue and date listed twice on the platform itself (a series with
 separate ticket types, or a duplicated listing). That is a different and smaller claim than the plan's gate
 made: a single source can prove the merge *runs* and that duplicates exist under the 8 % cap, but only a second
 source covering the same town can prove the merge *finds* the same gig twice. Which is why the merge is also
-asserted by fixtures (ADR-003), and why Copenhagen's published source count is one.
+asserted by fixtures (ADR-003), and why each town's published source count is one.
 
 ## What a sweep costs, measured
 
