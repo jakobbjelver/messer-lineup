@@ -65,7 +65,6 @@ func commands() []command {
 		{"publish", "copy a verified index into the public bucket", runPublish},
 		{"serve", "serve the index (and the board, once it is built) locally", runServe},
 		{"portraits", "resolve artist portraits (MusicBrainz → Wikimedia Commons) into the index", runPortraits},
-		{"findings", "emit the parser findings an agent acts on (P8)", notWired("P8", "the autonomous warden")},
 		{"version", "print the build stamp", runVersion},
 	}
 }
@@ -112,8 +111,6 @@ func usage(only string) string {
 	return b.String()
 }
 
-// notWired is how a command the plan has not reached yet behaves: it says which phase fills it and
-// exits non-zero, so a script that depends on it fails loudly instead of reading an empty success.
 func runServe(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("lineup serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -266,13 +263,6 @@ func envOr(key, fallback string) string {
 		return value
 	}
 	return fallback
-}
-
-func notWired(phase, what string) func([]string, io.Writer, io.Writer) int {
-	return func(args []string, stdout, stderr io.Writer) int {
-		fmt.Fprintf(stderr, "lineup: this command is not wired yet — %s arrives in %s.\n", what, phase)
-		return exitRefused
-	}
 }
 
 // flags bundles what every reading command accepts, so --json and --now mean the same thing everywhere.

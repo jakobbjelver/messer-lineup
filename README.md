@@ -6,11 +6,11 @@
 
 **A season board for the artists you actually listen to.**
 
-`MIT` · `Go` · `SQLite` · `pre-release`
+`MIT` · `Go` · `static index` · `pre-release`
 <!-- /messer:hero -->
 
-Lineup has no account. Your taste comes from a music service you already use, or from a list you paste;
-the board itself is public, and a fresh visitor still gets the town board.
+Lineup has no account. Your taste is a list you paste, pick from the acts playing near you, or import from
+ListenBrainz; the board itself is public, and a fresh visitor still gets the town board.
 
 ## Run
 
@@ -30,7 +30,8 @@ self-host. Mining never happens in the board's runtime.
 |---|---|
 | **Artists you actually listen to** | imported from a music service, or a list you paste |
 | **Rooms near a point you choose** | distance in kilometres on the row, not a map you have to read |
-| **A date window** | the season you are planning, not everything ever announced |
+| **A music board** | concerts and music festivals only — theatre, dinner shows and workshops never reach the index |
+| **A published season** | the next 120 days, day by day, with the same rows as a month calendar |
 | **Ticket link** | every row links out to the seller; the board never pretends to sell |
 | **No account** | the board is public; the taste is local |
 
@@ -52,8 +53,8 @@ The board is a React app served beside a small API; mining never happens there.
 | Path | What |
 |---|---|
 | `cmd/lineup/` | the one binary: miner, publisher, local server |
-| `internal/` | model (rows, identity), fetch, sources, board selection, index writer |
-| `sources/` | the source registry — data only, one file per country |
+| `internal/` | model (rows, identity), fetch, sources, the music policy, index writer |
+| `sources/` | the registry — data only: the classified rooms (`venues/<market>.json`) |
 | `web/` | the board (React), built to `web/dist` and served as static assets |
 | `internal/model/testdata/keys.json` | the identity contract: 30 vectors both runtimes must agree on |
 
@@ -83,9 +84,10 @@ file rather than to prose.
 
 ## Status
 
-**P0.** The skeleton, the identity contract, the fetch profile and the first source adapters are being
-built; `lineup` currently answers `version` only. `docs/coverage.md` carries the measured state of each
-source as it lands.
+The board is live at `lineup.messer.wtf` with two towns (Copenhagen, Stockholm), a nightly miner and a
+published index at `lineup-data.messer.wtf`. `docs/coverage.md` is the measured state of every source;
+`docs/state.md` is what a board is a function of. The road to v1 — coverage, the taste tail, the nightly's
+honesty, shipping — is kept outside this public tree with the rest of the build plan.
 
 ## License
 

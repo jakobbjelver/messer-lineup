@@ -16,8 +16,8 @@
  *   kind: "error"  both must answer the same status with the same `error.code`. The message is free text and
  *                  names its runtime on purpose; the code is the contract.
  *
- * Five of the six routes answer 501 until the taste providers land (P5). When one becomes real, flip its entry
- * to "body" — the assertion grows with the implementation, which is the point of a contract test.
+ * The API is the two artist routes and the calendar feed. Every other /api/v1 path answers the same 501 envelope on
+ * both runtimes — an honest "not mine", and the only stub assertion this file needs.
  *
  * Usage: node scripts/contract.mjs [goBase] [workerBase]
  */
@@ -55,45 +55,15 @@ const halfWindowToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk", f
   .replace(/\//g, "_")
   .replace(/=+$/, "");
 
-/** base64url of one row, written by hand so this file depends on neither implementation. */
-const eventToken = Buffer.from(
-  JSON.stringify({
-    v: 1,
-    k: "opeth|pumpehuset|2027-02-13",
-    a: "Opeth",
-    v2: "Pumpehuset",
-    d: "2027-02-13T20:00:00+01:00",
-    u: "https://www.tickster.com/dk/da/events/abc/2027-02-13/opeth-pumpehuset",
-    n: "København",
-  }),
-  "utf8",
-)
-  .toString("base64")
-  .replace(/\+/g, "-")
-  .replace(/\//g, "_")
-  .replace(/=+$/, "");
-
 const REQUESTS = [
   // Liveness: the clock is the whole point, so only its presence is compared.
   { method: "GET", path: "/healthz", compare: { kind: "shape", keys: ["ok", "as_of"] } },
   // Readiness reads a live index; the two runtimes answer from different sources (a local directory vs R2).
   { method: "GET", path: "/readyz", compare: { kind: "shape", keys: ["ok"] } },
 
-  // The six (§5.6). All still stubs.
-  {
-    method: "GET",
-    path: "/api/v1/taste/handle?p=lastfm&u=four-tet",
-    compare: { kind: "error", code: "not_implemented", status: 501 },
-  },
-  { method: "GET", path: "/api/v1/auth/spotify/start", compare: { kind: "error", code: "not_implemented", status: 501 } },
-  { method: "GET", path: "/api/v1/taste/me", compare: { kind: "error", code: "not_implemented", status: 501 } },
-  {
-    method: "POST",
-    path: "/api/v1/taste/curate",
-    body: { drop: ["four-tet|vega|2026-12-02"] },
-    compare: { kind: "error", code: "not_implemented", status: 501 },
-  },
-  { method: "DELETE", path: "/api/v1/session", compare: { kind: "error", code: "not_implemented", status: 501 } },
+  // A path this build does not serve: one honest 501 in the contract's envelope, not a 404. The API is the two
+  // artist routes and the calendar feed; there is no account, no session and no taste provider beyond Last.fm.
+  { method: "GET", path: "/api/v1/not-a-route", compare: { kind: "error", code: "not_implemented", status: 501 } },
   // The artist picker's search is real in both runtimes: one query that matches nothing, so the assertion is the
   // shape (an `artists` array) rather than an upstream result that could change between two calls.
   {
@@ -119,16 +89,6 @@ const REQUESTS = [
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
   // Half a window is refused, not completed: that rule is the one a client-side encoder must not violate either.
   { method: "GET", path: `/calendar/${halfWindowToken}.ics`, compare: { kind: "error", code: "invalid_calendar", status: 400 } },
-  // One show, from a token that carries the whole event: same VEVENT lines on both runtimes.
-  { method: "GET", path: `/event/${eventToken}.ics`, compare: { kind: "ics", contains: ["BEGIN:VEVENT", "UID:opeth|pumpehuset|2027-02-13@lineup.messer.wtf", "DTSTART:20270213T190000Z"] } },
-  { method: "GET", path: "/event/not-a-token.ics", compare: { kind: "error", code: "invalid_event", status: 400 } },
-  // Which town a visitor lands on. Both runtimes answer from the same header, so the shape (and the fallback) agree.
-  {
-    method: "GET",
-    path: "/where?t=copenhagen-dk@55.6761,12.5683&t=stockholm-se@59.3293,18.0686",
-    compare: { kind: "shape", keys: ["town", "basis", "km"] },
-  },
-  { method: "GET", path: "/where", compare: { kind: "error", code: "bad_request", status: 400 } },
 ];
 
 async function call(base, req) {

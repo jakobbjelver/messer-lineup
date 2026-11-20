@@ -21,7 +21,7 @@ https://lineup.messer.wtf/?town=anywhere&a=opeth&view=calendar
 
 `anywhere` is a **scope, not a town**: every published shard, deduped by row key, each row labelled with the town it
 is actually in. It has no shard of its own, so it can only ever be asked for explicitly — by a link or a pick. Nothing
-infers it: the first published town is the fallback, and `/where` (when a client asks it) only knows published towns.
+infers it: the first published town is the fallback.
 
 Two rules the parameters follow:
 
@@ -39,12 +39,9 @@ Two rules the parameters follow:
 | 2 | the visitor's own last pick | `localStorage` `lineup.town` |
 | 3 | the first published town | a first visit |
 
-Row 3 is the whole of it today: **the SPA does not call `/where`**. The route exists, both runtimes answer it, and the
-contract holds them together — but nothing on the page asks, so a first visit opens the first published town
-(Copenhagen, at two towns) with no `approx.` chip. Measured 2026-11-20 in a browser: a clean load shows København.
-
-That is why a remembered pick is the only persistence a town gets: the guess it used to be compared against is not
-part of the page any more.
+Row 3 is the whole of it: there is **no edge hint and no IP guess** — `/where` was removed on 2026-11-20 because
+nothing asked it, and a country is not a distance anyway. A first visit meets the gate, which asks for a town; the
+first published town is only the fallback for a link with no `?town` and no stored pick.
 
 ## Anywhere, and distance
 

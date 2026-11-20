@@ -13,10 +13,10 @@ kind: "repo"                      # repo | embedded
 skill: "messer-lineup"            # one project skill, frontmatter repo: ~/Repos/messer-lineup
 
 stack:
-  backend: "go"                   # the miner and the local server: one Go binary, SQLite
+  backend: "go"                   # the miner and the local server: one Go binary, a state file, no database
   frontend: "react-vite"          # the board; assets served by the Worker, never invoked by it
-  router: "tanstack-router"       # query-parameter routes (ADR-001 §1), so a page view is assets only
-  data: "sqlite"                  # miner-side store; the public index is R2 objects, not a database
+  router: "query-params"          # ?town/?a/?view/?panel (ADR-001 §1), so a page view is assets only
+  data: "static-index"            # R2 objects + a JSON state file; nothing in the read path is a database
   ui: "messer-ui"
   brand: "lineup"                 # messer-ui brand id ("stage in neon smoke")
   port: 1                         # 1 = React + shadcn; 2 = static .m-* atoms; 3 = native
@@ -28,7 +28,7 @@ deploy:
 
 dev:
   command: "make dev"
-  ports: [3016, 8016]
+  ports: [3000, 8016]
   pm2: "messer-lineup-dev"
   action: "actions/actions.json"  # local only: a public repo does not ship Portal actions
 

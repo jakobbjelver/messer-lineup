@@ -80,6 +80,11 @@ Two deliberate reductions of the plan's §5.8 list:
 never set it**: the nightly job does not, which is why a broken parser means a quiet night rather than a quiet
 board.
 
+**A policy change is the other kind of real drop.** Adding the music filter on 2026-11-20 took the index from 754
+rows to 335 (−56 %), so the guard refused the publish — correctly. The operator reads the run report and the
+coverage record (both say 453 rows went, and why), publishes once with `--force`, and the next night compares
+against the new baseline. If the drop cannot be explained row by row, it is a parser break, not a policy change.
+
 ## Unattended runs
 
 `scripts/nightly.sh` does the whole cycle and writes one ledger line:

@@ -1,7 +1,7 @@
 # Messer Lineup
 
-> A season board for the artists you actually listen to: the shows near a point you choose, inside a
-> date window, with the distance in kilometres and the ticket link on the row.
+> A season board for the artists you actually listen to: music shows in the towns you pick, from the
+> published 120-day window, with the distance in kilometres and the ticket link on the row.
 
 Read this before changing anything. `AGENTS.md` is the contract; `docs/coverage.md` is the measured
 state of every source.
@@ -31,7 +31,9 @@ make check     # gofmt + vet + tests + the public-tree scan
    A test proves a full-fidelity record cannot leak one through.
 3. **The index is an advertisement, never an archive.** 120-day window, every row links out, robots and
    takedown requests are honoured.
-4. **Two runtimes, one contract.** The edge serves; the miner runs where the crawl runs. Both read the
+4. **The index is music only.** A room that does not programme music is dropped, and so is an event form that is
+   never a gig; `internal/venues` decides, `sources/venues/<market>.json` is the data.
+5. **Two runtimes, one contract.** The edge serves; the miner runs where the crawl runs. Both read the
    same index files.
 
 ## Do not
