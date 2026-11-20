@@ -150,21 +150,21 @@
   max-height: 296px;
   overflow-y: auto;
 }
+/* Centre, not baseline: a 28px avatar (or the dashed add box) beside 14px text has no shared baseline, so
+   `baseline` hung both boxes below the line they belong on. */
 .result {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   width: 100%;
   min-height: 52px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
   transition: background 0.1s linear;
 }
 .result:last-child {
   border-bottom: 0;
-}
-.result {
-  cursor: pointer;
 }
 .result:hover,
 .result[aria-selected="true"] {
@@ -173,6 +173,8 @@
 .result[aria-selected="true"] {
   box-shadow: inset 2px 0 0 var(--primary);
 }
+/* A square box with a real glyph in it, not a `+` character: a text glyph keeps its own baseline inside the box
+   and reads a pixel low however carefully the box is centred. */
 .result__add {
   display: grid;
   place-items: center;
@@ -182,7 +184,9 @@
   border: 1px dashed var(--border-strong);
   border-radius: 0;
   color: var(--text-3);
-  font: 400 15px/1 var(--font);
+}
+.result__add svg {
+  display: block;
 }
 .result__name {
   font: 600 14px/1.2 var(--font);
@@ -197,17 +201,6 @@
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-.result--add .result__add {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  border: 1px dashed var(--border-strong);
-  border-radius: 0;
-  color: var(--text-3);
-  font: 400 15px/1 var(--font);
 }
 .result__name {
   font-weight: 400;

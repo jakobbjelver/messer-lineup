@@ -355,6 +355,32 @@ a.show__artist:hover {
   letter-spacing: 0.02em;
   user-select: none;
 }
+/* A face on its way. The box is already the right shape, so the row does not move when the picture lands — only
+   the shimmer stops. */
+.avatar--pending {
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  box-shadow: none;
+}
+.avatar--pending::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 24%,
+    color-mix(in oklch, var(--foreground) 9%, transparent) 50%,
+    transparent 76%
+  );
+  animation: avatar-sweep 1.15s linear infinite;
+}
+@keyframes avatar-sweep {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
 .avatar img {
   position: absolute;
   inset: 0;

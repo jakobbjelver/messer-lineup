@@ -77,6 +77,12 @@ const REQUESTS = [
     path: "/api/v1/artists/search?q=zzzzqqq",
     compare: { kind: "shape", keys: ["artists"] },
   },
+  // On-demand portraits: no names is an empty answer on both, and neither runtime may reach upstream for it.
+  {
+    method: "GET",
+    path: "/api/v1/artists/portraits",
+    compare: { kind: "body" },
+  },
   // The one document route: both runtimes must answer an artist link with the SPA's document, not a 404. On the
   // Worker this goes script → ASSETS → `single-page-application`; on the Go server it is the history fallback.
   { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },

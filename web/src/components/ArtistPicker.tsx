@@ -1,11 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import Loader from "./Loader";
 import Avatar from "./Avatar";
 import { importFrom, searchArtists, type ArtistHit } from "../lib/artistSearch";
 import { Key } from "../lib/key";
 import { labelFor, type TasteEntry } from "../lib/taste";
-import type { PortraitMap } from "../lib/portraits";
+import { faceSettled, resolvePortraits, type PortraitMap } from "../lib/portraits";
 
 type Props = {
   value: TasteEntry[];
@@ -80,6 +80,9 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
   const [unavailable, setUnavailable] = useState(false);
   const [settled, setSettled] = useState("");
   const [announce, setAnnounce] = useState("");
+  /** Faces fetched on demand for the hits on screen, and the names still in flight (their box shimmers). */
+  const [faces, setFaces] = useState<PortraitMap>(new Map());
+  const [waiting, setWaiting] = useState<string[]>([]);
 
   const [mode, setMode] = useState<null | "listenbrainz" | "lastfm">(null);
   const [handle, setHandle] = useState("");
@@ -118,6 +121,36 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
       window.clearTimeout(timer);
     };
   }, [query]);
+
+  /**
+   * A search hit is usually an artist the published file has no portrait for — the picker is the one surface whose
+   * rows are not the index's rows. So the names on screen are asked for once, as a batch, and the rows hold a
+   * skeleton until each one is settled (a picture, or a confirmed none).
+   */
+  useEffect(() => {
+    if (hits.length === 0) {
+      setFaces(new Map());
+      setWaiting([]);
+      return;
+    }
+    const unknown = hits.map((hit) => hit.name).filter((name) => !portraits?.has(Key(name)));
+    const unanswered = unknown.filter((name) => !faceSettled(name));
+    setWaiting(unanswered.map((name) => Key(name)));
+    if (unknown.length === 0) return;
+    let live = true;
+    resolvePortraits(unknown)
+      .then((next) => {
+        if (!live) return;
+        setFaces(next);
+        setWaiting([]);
+      })
+      .catch(() => {
+        if (live) setWaiting([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [hits, portraits]);
 
   /**
    * Escape closes the list before it closes the sheet.
@@ -232,14 +265,20 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
 
   };
 
+  /** The published file wins; the on-demand faces fill the gaps it leaves. */
+  const shownPortraits = useMemo<PortraitMap>(
+    () => new Map([...(portraits ?? []), ...faces]),
+    [portraits, faces],
+  );
+
   const showList = open && options.length > 0;
   const typed = query.trim();
   const note =
     typed.length >= 2 && settled === typed && !busy
       ? unavailable
-        ? "Search is unavailable — the name you typed can still be added."
+        ? "Search is unavailable."
         : hits.length === 0
-          ? "No match in MusicBrainz — the name you typed can still be added."
+          ? "No match."
           : ""
       : "";
 
@@ -307,10 +346,15 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
             >
               {option.kind === "add" ? (
                 <span className="result__add" aria-hidden="true">
-                  +
+                  <Plus size={14} />
                 </span>
               ) : (
-                <Avatar name={option.name} portraits={portraits} size={28} />
+                <Avatar
+                  name={option.name}
+                  portraits={shownPortraits}
+                  pending={option.kind === "hit" && waiting.includes(Key(option.name))}
+                  size={28}
+                />
               )}
               <span className="result__name">
                 {option.kind === "add" ? `Add “${option.name}”` : <Highlight text={option.name} query={typed} />}
@@ -325,7 +369,7 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
         <div className="badges">
           {value.map((entry) => (
             <span className="chip" key={entry.key}>
-              <Avatar name={entry.name || labelFor(entry.key)} portraits={portraits} size={18} />
+              <Avatar name={entry.name || labelFor(entry.key)} portraits={shownPortraits} size={18} />
               {entry.name || labelFor(entry.key)}
               <button
                 type="button"
