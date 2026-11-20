@@ -67,7 +67,7 @@
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 20px 96px;
+  padding: 0 24px 96px;
 }
 .page[data-view="calendar"] {
   max-width: 960px;
@@ -154,6 +154,19 @@
 .seg button[aria-pressed="true"] .num {
   color: var(--primary);
 }
+.seg--icons {
+  height: 28px;
+  margin-top: 0;
+}
+.seg--icons button {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  color: var(--text-3);
+}
+.seg--icons button[aria-pressed="true"] {
+  color: var(--primary);
+}
 .count .num {
   font-size: 12px;
   color: var(--foreground);
@@ -164,14 +177,13 @@
 .board {
   margin-top: 0;
 }
-/* A day is a section, so its boundary is a stronger rule than the hairline between two shows, with air on
-   both sides of it. The last row of a day carries no border, so a boundary is always exactly one line. */
+/* A day is a section, marked by air rather than by a rule: the rows already carry a hairline each, and a second
+   heavier line at every boundary was one divider too many. */
 .day {
   position: relative;
-  border-top: 1px solid var(--border-strong);
 }
-.day:first-child {
-  border-top: 0;
+.day + .day {
+  margin-top: 24px;
 }
 .day__head {
   position: sticky;
@@ -180,9 +192,9 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 18px 0 6px;
-  /* Opaque: a pinned header that lets the row underneath show through reads as an overlap, not a header. The
-     group carries no padding above the header — a transparent strip there ghosts the previous row under the bar. */
+  /* Symmetric: 18px above and 6px below read as a text block sitting too low in its own bar. The group carries
+     no padding above the header — a transparent strip there ghosts the previous row under the bar. */
+  padding: 12px 0;
   background: var(--background);
   font: 600 11px/1 var(--font);
   letter-spacing: 0.1em;
@@ -202,6 +214,7 @@
 }
 .day__head .day__n {
   margin-left: auto;
+  padding-right: 2px;
   font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--text-3);
@@ -371,7 +384,8 @@ a.show__artist:hover {
 .state {
   display: grid;
   gap: 10px;
-  justify-items: start;
+  justify-items: center;
+  text-align: center;
   padding: 64px 0;
   animation: rise 0.18s var(--ease) both;
 }
@@ -380,7 +394,7 @@ a.show__artist:hover {
   line-height: 1.25;
 }
 .state p {
-  margin: 0;
+  margin: 0 auto;
   color: var(--text-2);
   font-size: 13.5px;
   max-width: 42ch;
@@ -388,6 +402,7 @@ a.show__artist:hover {
 .state__acts {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   margin-top: 6px;
 }
@@ -504,8 +519,8 @@ a.show__artist:hover {
     font-size: 10.5px;
   }
   .day__head .day__dd {
-    display: inline;
-    margin: 12px 8px 2px 0;
+    display: block;
+    margin: 12px 0 2px;
     font-size: 34px;
     line-height: 0.9;
     letter-spacing: -0.03em;

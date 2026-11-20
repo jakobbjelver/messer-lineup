@@ -44,7 +44,12 @@ export default function Preferences(props: Props) {
   useNearestTown(position, posts, names, onTown);
 
   return (
-    <ResponsiveDialog open={open} onOpenChange={(next) => (next ? undefined : onClose())} label="Artists and town">
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={(next) => (next ? undefined : onClose())}
+      label="Artists and town"
+      className="ui-dialog--settings"
+    >
       <Tabs.Root value={tab} onValueChange={(next) => onTab(next as Panel)} className="panel">
         <Tabs.List className="ui-tabs" aria-label="Artists and town">
           <Tabs.Trigger className="ui-tab" value="taste">

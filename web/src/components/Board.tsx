@@ -89,7 +89,7 @@ export default function Board({
               </span>
               <span className="day__n">
                 <span className="num">{group.rows.length}</span>
-                <span className="day__nword"> shows</span>
+                <span className="day__nword"> {group.rows.length === 1 ? "show" : "shows"}</span>
               </span>
             </h2>
             {group.rows.map((row) => (

@@ -54,6 +54,16 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Two sheet sizes: the settings sheet holds a list and a search, the day sheet holds a handful of rows. */
+.ui-dialog[data-medium="sheet"].ui-dialog--settings {
+  min-height: min(52dvh, 430px);
+}
+.ui-dialog[data-medium="sheet"].ui-dialog--day {
+  min-height: min(24dvh, 210px);
+  /* A day's sheet is a peek, not a page: half the screen, scrolling inside. */
+  max-height: min(50dvh, 460px);
+}
+
 /* Tabs: two words, one lit rule under the active one — never a filled pill. */
 .ui-tabs {
   display: flex;
