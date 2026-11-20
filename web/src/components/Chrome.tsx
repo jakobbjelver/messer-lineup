@@ -21,14 +21,14 @@ export default function Chrome({ onPanel }: Props) {
       <div className="bar__row">
         <a className="bar__brand" href="/" aria-label="Messer Lineup">
           <span className="bar__mark">
-            <Mark />
+            <Mark size={30} />
           </span>
           <span className="bar__name">Lineup</span>
         </a>
         <div className="bar__actions">
           {onPanel ? (
             <button className="iconbtn" aria-label="Artists and town" onClick={onPanel}>
-              <SlidersHorizontal size={16} />
+              <SlidersHorizontal size={20} />
             </button>
           ) : null}
         </div>

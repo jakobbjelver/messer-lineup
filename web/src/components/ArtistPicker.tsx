@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import Loader from "./Loader";
 import Avatar from "./Avatar";
-import { importFrom, searchArtists, type ArtistHit } from "../lib/artistSearch";
+import { importFrom, LASTFM_NOT_READY, searchArtists, type ArtistHit } from "../lib/artistSearch";
 import { Key } from "../lib/key";
 import { labelFor, type TasteEntry } from "../lib/taste";
 import { faceSettled, resolvePortraits, type PortraitMap } from "../lib/portraits";
@@ -89,6 +89,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [imported, setImported] = useState<number | null>(null);
+  /** Last.fm's route is the P5 stub: once it has said so, the control stops being offered. */
+  const [lastfmOff, setLastfmOff] = useState(false);
 
   useEffect(() => {
     const q = query.trim();
@@ -238,7 +240,13 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
         setHandle("");
       }
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : "The import did not answer.");
+      const message = err instanceof Error ? err.message : "The import did not answer.";
+      if (message === LASTFM_NOT_READY) {
+        setLastfmOff(true);
+        setMode(null);
+        setHandle("");
+      }
+      setImportError(message);
     } finally {
       setImporting(false);
     }
@@ -366,21 +374,31 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
       ) : null}
 
       {value.length ? (
-        <div className="badges">
-          {value.map((entry) => (
-            <span className="chip" key={entry.key}>
-              <Avatar name={entry.name || labelFor(entry.key)} portraits={shownPortraits} size={18} />
-              {entry.name || labelFor(entry.key)}
-              <button
-                type="button"
-                aria-label={`Remove ${entry.name}`}
-                onClick={() => onChange(value.filter((item) => item.key !== entry.key))}
-              >
-                <X size={12} />
+        <>
+          <div className="badges">
+            {value.map((entry) => (
+              <span className="chip" key={entry.key}>
+                <Avatar name={entry.name || labelFor(entry.key)} portraits={shownPortraits} size={18} />
+                {entry.name || labelFor(entry.key)}
+                <button
+                  type="button"
+                  aria-label={`Remove ${entry.name}`}
+                  onClick={() => onChange(value.filter((item) => item.key !== entry.key))}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+          {/* Only once removing them one by one has become a chore: one badge is a chip, four is a list. */}
+          {value.length > 2 ? (
+            <div className="badges__actions">
+              <button type="button" className="ghostbtn" onClick={() => onChange([])}>
+                Clear all
               </button>
-            </span>
-          ))}
-        </div>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {mode === null ? (
@@ -389,9 +407,12 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
           <button type="button" onClick={() => { setMode("listenbrainz"); setImportError(null); }}>
             ListenBrainz
           </button>
-          <button type="button" onClick={() => { setMode("lastfm"); setImportError(null); }}>
-            Last.fm
-          </button>
+          {lastfmOff ? null : (
+            <button type="button" onClick={() => { setMode("lastfm"); setImportError(null); }}>
+              Last.fm
+            </button>
+          )}
+          {importError ? <span className="import__error">{importError}</span> : null}
         </div>
       ) : (
         <div className="import">
