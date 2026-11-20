@@ -4,12 +4,12 @@ Two hosts, two jobs. They never overlap, and that separation is the whole cost m
 
 | Host | What it is | What it answers | Cost |
 |---|---|---|---|
-| `lineup-data.messer.wtf` | R2 bucket `messer-lineup-index` | `manifest.json`, `towns.json`, `towns/<sha>.jsonl.gz` | R2 reads + egress; no compute |
-| `lineup.messer.wtf` | one Worker: static assets + a small script | the built board, `/healthz`, `/readyz`, `/api/v1/*`, `/calendar/*.ics` | asset requests free and unmetered; only the script is metered |
+| `lineup-data.messer.wtf` | R2 bucket `messer-lineup-index` | `manifest.json`, `towns.json`, `towns/<sha>.jsonl.gz`, `artists/portraits.json` | R2 reads + egress; no compute |
+| `lineup.messer.wtf` | one Worker: static assets + a small script | the built board, `/healthz`, `/readyz`, `/api/v1/artists/*`, `/calendar/*.ics` | asset requests free and unmetered; only the script is metered |
 
 **The index is not proxied.** The board fetches the manifest and one shard straight from the bucket, so a
-shard never travels through a Worker and never costs CPU. The Worker's only reads of the bucket are
-`/readyz`'s one manifest fetch, on demand.
+shard never travels through a Worker and never costs CPU. The Worker's only read of the bucket is `/readyz`'s
+one manifest fetch, on demand.
 
 **Assets are served first, and the script is never forced.** `wrangler.jsonc` must not grow a
 `run_worker_first` (or `assets.run_worker_first: true`): with it, every request — including a page view —
@@ -19,27 +19,28 @@ Without it, a page view is an asset request: free, unmetered, and not counted ag
 
 ## The route table
 
-| Route | Today | Later |
-|---|---|---|
-| `GET /healthz` | 200 `{ok, as_of}` | unchanged |
-| `GET /readyz` | 200 when the bucket's `manifest.json` is reachable, 503 with a `detail` when it is not | unchanged |
-| `GET /api/v1/taste/handle` | 501 `not_implemented` | Last.fm / ListenBrainz handle → artist keys (P5) |
-| `GET /api/v1/auth/<provider>/start` · `/callback` | 501 | Spotify PKCE, Google OAuth (P5) |
-| `GET /api/v1/taste/me` | 501 | linked accounts → keys (P5) |
-| `POST /api/v1/taste/curate` | 501 | the post-import drop list (P5) |
-| `DELETE /api/v1/session` | 501 | forget everything (P5) |
-| `GET /calendar/<spec>.ics` | 501 | the feed (P5) |
-| everything else | the assets, or the SPA document | unchanged |
+Every route below has a consumer. There is no account, no session and no taste provider beyond Last.fm, so
+there is no `/auth/*`, no `/session`, no `/taste/me` and no `/taste/curate` — a path this build does not serve
+answers the contract's 501 envelope, which is an honest "not mine".
 
-The 501s are honest answers in the contract's envelope — `{"error":{"code":"not_implemented","message":…}}`
-— so a client can tell "not mine" from "not yet", and so the envelope is under test before the routes exist.
-`message` is free text and names its runtime; `code` and the status are the contract.
+| Route | Answer | Read by |
+|---|---|---|
+| `GET /healthz` | 200 `{ok, as_of}` | the deploy check, the dev server's readiness probe |
+| `GET /readyz` | 200 when the bucket's `manifest.json` is reachable, 503 with a `detail` when it is not | uptime |
+| `GET /api/v1/artists/search?q=` | MusicBrainz search, serialised and cached at the edge; `unavailable` instead of an empty lie | the artist picker's combobox |
+| `GET /api/v1/artists/portraits?n=…` | up to 8 names → Deezer faces, keyed by the name that was sent | the picker's avatars |
+| `GET /calendar/<token>.ics` | the feed for a board (town or `anywhere`, optional taste snapshot or live ListenBrainz source) | a calendar client's subscription |
+| everything else | the assets, or the SPA document | the board |
+
+`/towns.json`, `/manifest.json` and `/towns/<sha>` are served by `lineup serve` from a local index and by R2 in
+production — same bytes, same headers, and the board does not care which host it is talking to.
 
 ## The board
 
-The SPA is `web/` (Vite + React). It fetches **two** things, both from the bucket: `manifest.json`, then the one
-shard for the town it is showing. Nothing is proxied through the Worker, and the shard's name is its own digest,
-so the browser cache holds it forever while the manifest — five minutes — is the only thing that moves.
+The SPA is `web/` (Vite + React). It fetches **two** things, both from the index host: `manifest.json`, then the
+one shard for the scope it is showing (`anywhere` is the union of every shard, deduped by row key). Nothing is
+proxied through the Worker, and the shard's name is its own digest, so the browser cache holds it forever while
+the manifest — five minutes — is the only thing that moves.
 
 That cross-origin fetch is why the bucket carries a CORS policy:
 
@@ -56,34 +57,35 @@ Two builds, one difference:
 
 ```
 make web                                         # VITE_DATA_BASE unset → same origin → for `lineup serve`
-VITE_DATA_BASE=https://lineup-data.messer.wtf npm run build   # the edge build: assets on the Worker, data on R2
+make web-edge                                    # VITE_DATA_BASE=https://lineup-data.messer.wtf → what ships
 ```
 
-`npm run dev` proxies `/manifest.json`, `/towns.json` and `/towns` to `lineup serve` on 8016, so HMR works
-against a local index and localhost never needs a CORS exemption on the bucket.
+`npm run dev` proxies `/manifest.json`, `/towns.json`, `/towns`, `/artists` and `/calendar` to
+`lineup serve` on 8016, so HMR works against a local index and localhost never needs a CORS exemption on the
+bucket.
 
 ## One contract, two runtimes
 
-`lineup serve` (Go) and the Worker answer the same six routes with the same statuses and the same envelope.
+`lineup serve` (Go) and the Worker answer the same routes with the same statuses and the same envelope.
 `make contract` sends the same requests to both and diffs them:
 
 ```
-make serve          # terminal 1: Go, 127.0.0.1:8016, against .lineup-index
-make worker-dev     # terminal 2: the Worker, 127.0.0.1:8788, against a stub board until P4
-make contract       # diffs the two
+make serve          # terminal 1: Go, 127.0.0.1:8016, with `--web web/dist` so /a/<key> has a document
+make worker-dev     # terminal 2: the Worker, 127.0.0.1:8788
+make contract       # diffs the two — 11 cases, all agreeing
 ```
 
 What is compared depends on the route: a deterministic route must match byte for byte after parsing
-(`kind: "body"`); a route carrying a clock must match on the listed keys (`kind: "shape"`); a stub must match
-on status and `error.code` (`kind: "error"`). When a route becomes real, its entry flips to `body` — the
-assertion grows with the implementation instead of being rewritten around it.
+(`kind: "body"`); a route carrying a clock must match on the listed keys (`kind: "shape"`); a document route
+must answer `text/html` with `#root` (`kind: "document"`); a feed must be structurally valid ICS with unique
+UIDs (`kind: "ics"`); a path that is not a route must match status and `error.code` (`kind: "error"`).
 
 ## Deploying
 
 ```
 npm install
-make worker-check                                 # tsc --noEmit
-make web-edge                                     # assets built with VITE_DATA_BASE at the bucket
+npm run check                                     # tsc --noEmit for the Worker
+make web-edge                                     # the assets, built against the bucket
 npx wrangler deploy                               # the assets ARE the board
 ```
 
@@ -104,29 +106,10 @@ The first two are the same pair the index needed — see `publishing.md` — bec
 private and this product is public. The publish order for the index is separate: shards first,
 `manifest.json` last.
 
-## What is not verified yet
+## Verified, and not
 
-- **Assets-first in production.** It is *observed* (a page GET returns the document, and the script's own routes
-  answer separately) but not *counted*: the claim that a page view costs zero Worker invocations needs the
-  analytics counter read before and after one page view.
-- **Assets-first in production.** Locally, `/` returns the asset and `/api/v1/*` returns the script, which is
-  the right split — but the claim that a page view costs *zero* Worker invocations is only provable from the
-  Worker's analytics after a deploy: one page GET, then zero new invocations on the counter.
-- **`lineup.messer.wtf` today** answers the zone's catch-all redirect (302 to the front door). It becomes the
-  board when the Worker is deployed with assets.
-
-## `GET /where`
-
-`/where?t=<id>@<lat>,<lon>&t=…` — repeated parameters, because Go's query parser refuses an unencoded `;` and a
-separator the server cannot parse is a trap. Each entry is a published town and, optionally, its point.
-
-| Answer | `basis` | Cache |
-|---|---|---|
-| the nearest town to the visitor's IP position | `distance` | `private, max-age=86400` |
-| the town whose country suffix matches `CF-IPCountry` | `country` | `public, max-age=86400`, `vary: CF-IPCountry` |
-| the first published town | `fallback` | `public, max-age=86400`, `vary: CF-IPCountry` |
-
-`km` is the measured distance for `distance` and `null` otherwise. `(0, 0)` is treated as "no position", not the Gulf of
-Guinea: the index publishes it for any town whose venues have not stated one. A missing `t` is a 400 — the route will
-not guess a town list.
-
+- **Assets-first in production is observed, not counted.** A page GET returns the document while `/api/v1/*`
+  reaches the script, but the claim that a page view costs *zero* Worker invocations needs the analytics counter
+  read before and after one page view.
+- **Both runtimes are held to 11 contract cases**, run by hand (`make contract`); CI runs the Go gate and the
+  board build, not the two-runtime diff.

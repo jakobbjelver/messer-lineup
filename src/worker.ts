@@ -14,8 +14,8 @@
  */
 
 import { Hono } from "hono";
-import { buildEvent, buildIcs, type CalendarRow } from "./calendar/ics";
-import { decodeEvent, decodeSpec, ANYWHERE } from "./calendar/spec";
+import { buildIcs, type CalendarRow } from "./calendar/ics";
+import { decodeSpec, ANYWHERE } from "./calendar/spec";
 // The identity key is the client's own implementation, imported rather than re-implemented: a third copy of a
 // normalisation rule is a third place for it to drift, and `make keycheck` already proves this one against
 // `internal/model/testdata/keys.json`.
@@ -72,109 +72,8 @@ app.get("/readyz", async (c) => {
   }
 });
 
-/**
- * `/where?towns=a-dk,b-se` — which town a visitor should land on.
- *
- * The board is static, so it cannot know a country; the edge can, for free. The client sends the published town ids
- * and gets back the one whose country suffix matches `CF-IPCountry` (every id is `<slug>-<cc>` by construction), or the
- * first one when nothing matches. No index read, no state, and the answer is cached per country for a day — so this
- * costs one Worker invocation per country per day, not per visitor.
- */
-/**
- * `/where?t=<id>@<lat>,<lon>&t=<id>@<lat>,<lon>` — which town a visitor should land on.
- *
- * The board is static, so it cannot know where a request came from; the edge can. Each entry is a published town and,
- * when the index knows it, that town's own point (the mean of the venue positions its shows publish). With a point for
- * the visitor and a point for each town, the answer is the nearest one — because a country is not a distance: an address
- * in Malmö is 28 km from Copenhagen and 500 km from Stockholm, and `CF-IPCountry` calls both `SE`.
- *
- * Without coordinates (no geo header, or a town whose venues never stated a position) the country suffix decides, then
- * the first published town. And because a nearest answer is about one visitor, it must never be cached for another:
- * `public` only when the answer did not depend on where the request came from.
- */
-app.get("/where", (c) => {
-  const entries = (c.req.queries("t") ?? [])
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0)
-    .slice(0, 50)
-    .map(parseTownEntry)
-    .filter((entry): entry is TownEntry => entry !== null);
-  if (entries.length === 0) {
-    return c.json(errorBody("bad_request", "t is required: the published towns, as id@lat,lon"), 400);
-  }
-
-  const cf = c.req.raw.cf as { country?: string; latitude?: string; longitude?: string } | undefined;
-  const country = (cf?.country ?? c.req.header("cf-ipcountry") ?? "").toLowerCase();
-  const here = point(Number(cf?.latitude), Number(cf?.longitude));
-
-  let chosen: TownEntry = entries[0]!;
-  let basis = "fallback";
-  if (here) {
-    let best = Number.POSITIVE_INFINITY;
-    for (const entry of entries) {
-      if (!entry.at) continue;
-      const distance = haversine(here, entry.at);
-      if (distance < best) {
-        best = distance;
-        chosen = entry;
-        basis = "distance";
-      }
-    }
-  }
-  if (basis === "fallback" && country) {
-    const match = entries.find((entry) => entry.id.endsWith(`-${country}`));
-    if (match) {
-      chosen = match;
-      basis = "country";
-    }
-  }
-
-  const headers: Record<string, string> =
-    basis === "distance"
-      ? { "cache-control": "private, max-age=86400" }
-      : { "cache-control": "public, max-age=86400", vary: "CF-IPCountry" };
-  return c.json(
-    {
-      town: chosen.id,
-      country: country || null,
-      basis,
-      km: basis === "distance" ? Math.round(haversine(here!, chosen.at!) / 100) / 10 : null,
-    },
-    200,
-    headers,
-  );
-});
-
-interface TownEntry {
-  id: string;
-  at: { lat: number; lon: number } | null;
-}
-
-function parseTownEntry(raw: string): TownEntry | null {
-  const [id, coords] = raw.split("@");
-  if (!id || id.length > 64) return null;
-  return { id, at: coords ? point(Number(coords.split(",")[0]), Number(coords.split(",")[1])) : null };
-}
-
-function point(lat: number, lon: number): { lat: number; lon: number } | null {
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-  if (lat === 0 && lon === 0) return null; // "unknown", not the Gulf of Guinea
-  return { lat, lon };
-}
-
-/** Great-circle distance in metres. */
-function haversine(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const R = 6_371_000;
-  const rad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * rad;
-  const dLon = (b.lon - a.lon) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-// The five JSON routes from plan §5.6, plus the calendar feed. Until P5 they answer honestly rather than
-// pretending to be a 404: the board can tell "not mine" from "not yet".
+// Every route that exists has a consumer: the two JSON routes the board calls, the feed a calendar client
+// subscribes to, and the 501 wildcard below for anything else (an honest "not mine", not a 404 lie).
 // Registered before the 501 wildcard below: Hono matches in order, so a specific route declared after it is
 // unreachable — the wildcard answers first and the search looks like a stub that was never built.
 app.get("/api/v1/artists/search", async (c) => {
@@ -353,34 +252,6 @@ app.all("/api/v1/*", (c) =>
  * shard per town per request, all cacheable for fifteen minutes — a daily refresh across a handful of subscribers is
  * not a load.
  */
-/**
- * `/event/<token>.ics` — one show, as a calendar file.
- *
- * The token carries the event itself, so this route reads nothing: no manifest, no shard, no town lookup. It is the same
- * `VEVENT` the feed writes for that row, with the same `UID`, so a show taken from a row and the same show arriving
- * through a subscription are one event to the client rather than two.
- */
-app.get("/event/:file", (c) => {
-  const file = c.req.param("file");
-  if (!file.endsWith(".ics")) {
-    return c.json(errorBody("not_found", "a single event is /event/<token>.ics"), 404);
-  }
-  const spec = decodeEvent(file.slice(0, -4));
-  if (!spec) {
-    return c.json(errorBody("invalid_event", "that link is not a show"), 400);
-  }
-  const ics = buildEvent(
-    { k: spec.k, a: spec.a, v: spec.v2, d: spec.d, u: spec.u, st: "o" },
-    { townId: "", townLabel: spec.n, builtAt: new Date().toISOString(), origin: new URL(c.req.url).origin },
-  );
-  return c.body(ics, 200, {
-    "content-type": "text/calendar; charset=utf-8",
-    // The event is in the URL, so the answer can never change for that URL.
-    "cache-control": "public, max-age=3600",
-    "content-disposition": `attachment; filename="${file.replace(/\.ics$/, "")}.ics"`,
-  });
-});
-
 app.get("/calendar/:file", async (c) => {
   const file = c.req.param("file");
   if (!file.endsWith(".ics")) {

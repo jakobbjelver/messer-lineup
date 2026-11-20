@@ -49,6 +49,6 @@ every unknown artist to every other one.
 - **No curation weighting for pasted lists.** A provider list arrives ordered by listening weight; a pasted one
   has no weight to invent, so every chip counts the same and the chips with a show on the current board are
   marked instead (`{n} on this board`). Inventing weights would make the affinity hairline a decoration.
-- **No server round-trip.** `POST /api/v1/taste/curate` exists in the contract for provider imports, where the
-  server is the only party that knows the full list. It answers `501` until P5.
-- **No "new since last visit"** yet — that needs a stored visit, which is the same P5 session work.
+- **No server round-trip.** There is no session, no taste row and no `/taste/curate`: the list lives in the URL
+  and in localStorage, and the only server route a taste import uses is `GET /api/v1/taste/lastfm`.
+- **No "new since last visit"** — the marker was retired with the 2026-11-20 rethink; nothing stores a visit.

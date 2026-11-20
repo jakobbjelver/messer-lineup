@@ -1,11 +1,10 @@
 // Package server serves a built index the way the edge does, so the board can be developed and tested against
 // the same bytes a visitor will fetch.
 //
-// What it serves is deliberately narrow. The index files are served with the headers the bucket sets (a year and
-// `immutable` for a shard, five minutes for the manifest), `/data/<town>.json` is a convenience for the SPA that
-// is built from the shard rather than from anything else, and health is answered from the index itself. The six
-// `/api/v1` routes and the calendar feed need accounts and taste providers (P5); until then they answer with the
-// contract's error envelope and a 501, which is a truthful answer and keeps the shape tested.
+// What it serves is deliberately narrow: the index files with the headers the bucket sets (a year and `immutable`
+// for a shard, five minutes for the manifest), health from the index itself, the two artist routes the board calls,
+// and the calendar feed. Every route here has a consumer; a path that does not exist gets the contract's 501
+// envelope, which is an honest "not mine" rather than a 404 that reads like a broken index.
 package server
 
 import (
@@ -69,9 +68,6 @@ func Handler(opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /towns.json", s.townsFile)
 	mux.HandleFunc("GET /towns/", s.shard)
 	mux.HandleFunc("GET /artists/", s.artistsFile)
-	mux.HandleFunc("GET /data/", s.townData)
-	mux.HandleFunc("GET /where", s.where)
-	mux.HandleFunc("GET /event/", s.event)
 	mux.HandleFunc("GET /api/v1/artists/search", s.artistSearch)
 	// Registered above the wildcard like every specific route: Go's mux would route it correctly anyway, but the
 	// order is the habit that keeps the Hono side honest.
@@ -153,40 +149,11 @@ func (s *server) shard(w http.ResponseWriter, r *http.Request) {
 	writeError(w, http.StatusNotFound, "unknown_shard", "that shard is not in the manifest")
 }
 
-// townData is the SPA's convenience view: one town's rows as a JSON array, decoded from the same shard the client
-// would fetch. It exists so a browser can render without a gzip decoder in its fetch path.
-func (s *server) townData(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/data/"), ".json")
-	var entry *model.Index
-	for i := range s.manifest.Towns {
-		if s.manifest.Towns[i].Town == id {
-			entry = &s.manifest.Towns[i]
-		}
-	}
-	if entry == nil {
-		writeError(w, http.StatusNotFound, "unknown_town", fmt.Sprintf("%q is not a published town", id))
-		return
-	}
-	rows, err := index.ReadShard(filepath.Join(s.opts.IndexDir, filepath.FromSlash(entry.Shard)))
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "shard_unreadable", err.Error())
-		return
-	}
-	w.Header().Set("Cache-Control", metaCache)
-	writeJSON(w, http.StatusOK, map[string]any{
-		"format":   s.manifest.Format,
-		"town":     entry.Town,
-		"sources":  entry.Sources,
-		"built_at": entry.BuiltAt,
-		"rows":     rows,
-	})
-}
-
 // apiNotYet answers the routes that need accounts. The envelope is the contract, so it is worth getting right
 // even when the status is 501: a client written against it will not need changing when the route is real.
 func (s *server) apiNotYet(w http.ResponseWriter, r *http.Request) {
 	writeError(w, http.StatusNotImplemented, "not_implemented",
-		fmt.Sprintf("%s arrives with the taste providers (P5); this build serves the index only", r.URL.Path))
+		fmt.Sprintf("%s is not a route this build serves; the API is the two artist routes and the calendar feed", r.URL.Path))
 }
 
 // web serves the board when there is one. Without assets every other path is a 404 that says why, rather than a

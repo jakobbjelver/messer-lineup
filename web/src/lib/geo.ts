@@ -12,7 +12,7 @@
 
 export type Point = { lat: number; lon: number };
 
-// The same radius the edge's `/where` uses (`internal/server/where.go`): one product, one earth.
+// One radius for every distance the product prints, in the browser and in the miner's own geo maths.
 const EARTH_KM = 6371;
 
 /** Great-circle distance in kilometres. */

@@ -63,24 +63,6 @@ export function buildIcs(rows: CalendarRow[], meta: Meta): string {
   return finish(lines);
 }
 
-/**
- * One show as a calendar file: the same `VEVENT` the feed would write for it, and nothing else. Same `UID`, so a show
- * added from a row and the same show arriving through a subscription are one event to the client, not two.
- */
-export function buildEvent(row: CalendarRow, meta: Meta): string {
-  const stamp = toStamp(new Date(meta.builtAt)) ?? toStamp(new Date())!;
-  const event = vevent(row, meta, stamp) ?? [];
-  return finish([
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Messer//Lineup//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    ...event,
-    "END:VCALENDAR",
-  ]);
-}
-
 /** The lines of one event, or `null` for a row whose date cannot be read — which is not an event. */
 function vevent(row: CalendarRow, meta: Meta, stamp: string): string[] | null {
   const start = new Date(row.d);

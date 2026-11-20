@@ -173,36 +173,13 @@ func TestAParentPathNeverReachesAFileRead(t *testing.T) {
 	}
 }
 
-func TestTownDataIsBuiltFromTheShard(t *testing.T) {
-	handler := newServer(t, buildIndex(t))
-	rec := get(t, handler, "/data/copenhagen-dk.json")
-	if rec.Code != 200 {
-		t.Fatalf("town data = %d: %s", rec.Code, rec.Body.String())
-	}
-	var body struct {
-		Town string      `json:"town"`
-		Rows []model.Row `json:"rows"`
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if body.Town != "copenhagen-dk" || len(body.Rows) != 2 {
-		t.Fatalf("body = %+v", body)
-	}
-	if body.Rows[0].K == "" || body.Rows[0].U == "" {
-		t.Fatalf("row is incomplete: %+v", body.Rows[0])
-	}
-	if rec := get(t, handler, "/data/atlantis-dk.json"); rec.Code != 404 {
-		t.Fatalf("unknown town = %d", rec.Code)
-	}
-}
-
-func TestTheRoutesThatNeedAccountsSaySo(t *testing.T) {
+// The wildcard is the contract's "not mine": a path this build does not serve answers 501 in the envelope, never a
+// 404 that reads like a broken index and never a route that half-exists.
+func TestAnUnknownAPIPathIsAnHonest501(t *testing.T) {
 	handler := newServer(t, buildIndex(t))
 	for _, path := range []string{
-		"/api/v1/taste/me",
+		"/api/v1/nope",
 		"/api/v1/taste/handle?p=lastfm&u=x",
-		"/api/v1/auth/spotify/start",
 	} {
 		rec := get(t, handler, path)
 		if rec.Code != http.StatusNotImplemented {

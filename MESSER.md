@@ -57,6 +57,14 @@ Credit: the artist page links the source under the name; the footer carries
 
 ## What the board does not do
 
-No season window, no travel dates, no reach, no "forget everything", no account, no OAuth, no calendar
-subscription in the UI (the `.ics` endpoints remain as an API). The first-run gate is escapable: back or
-Escape commits a guest profile rather than trapping a shared link.
+No season window, no travel dates, no reach, no "forget everything", no account, no OAuth. The calendar
+subscription is offered from the calendar view, the artist panel and the town panel. The first-run gate is
+escapable: back or Escape commits a guest profile rather than trapping a shared link.
+
+## What the board shows
+
+Music only. A room that does not programme music (a theatre, a cinema, a museum hall, a restaurant with a stage)
+is dropped at ingest, and so is an event form that is never a gig (julbord, a tasting, a workshop, stand-up, a
+quiz). The rule is `internal/venues` and its data is `sources/venues/<market>.json`; a room the registry does not
+know is published and counted in `docs/coverage.md` until it is classified. Measured 2026-11-20: 754 published
+rows → 335, with 443 dropped by room and 10 by form.

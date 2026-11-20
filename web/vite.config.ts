@@ -18,16 +18,13 @@ export default defineConfig({
     allowedHosts: [".messer.wtf", ".local"],
     // `npm run dev` needs the index on its own origin. `lineup serve` holds it, so the dev server proxies the
     // index paths rather than the app growing a second data source (and rather than a CORS policy being
-    // needed for localhost on the bucket). Portraits, /where and the ICS links are on the same origin in
+    // needed for localhost on the bucket). Portraits and the ICS link are on the same origin in
     // production, so they are proxied too — otherwise a face 404s in dev only.
     proxy: {
       "/manifest.json": "http://127.0.0.1:8016",
       "/towns.json": "http://127.0.0.1:8016",
       "/towns": "http://127.0.0.1:8016",
-      "/data": "http://127.0.0.1:8016",
       "/artists": "http://127.0.0.1:8016",
-      "/where": "http://127.0.0.1:8016",
-      "/event": "http://127.0.0.1:8016",
       "/calendar": "http://127.0.0.1:8016",
       // The artist picker asks the same edge the live board asks; `lineup serve` answers the route too.
       "/api": "http://127.0.0.1:8016",

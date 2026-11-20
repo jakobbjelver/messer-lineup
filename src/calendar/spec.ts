@@ -111,52 +111,6 @@ export function decodeSpec(token: string): CalendarSpec | null {
   };
 }
 
-/**
- * One show, as a link.
- *
- * A subscribed feed has to fetch the index, because a week of a town is too much to put in a URL. A single event is not:
- * the row is nine short strings, so the whole event travels in the token and the route answers without reading anything.
- * That is why the town's *label* is in here rather than its id — `LOCATION` needs the name a person reads, and looking
- * one up would turn a free route into an index read.
- */
-export type EventSpec = {
-  v: 1;
-  /** The row key: `artist|venue|date`, and the `UID` — the same event in a feed and in a single invite. */
-  k: string;
-  a: string;
-  v2: string;
-  d: string;
-  u: string;
-  n: string;
-};
-
-export function encodeEvent(event: EventSpec): string {
-  return base64urlEncode(new TextEncoder().encode(JSON.stringify(event)));
-}
-
-export function decodeEvent(token: string): EventSpec | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(new TextDecoder().decode(base64urlDecode(token)));
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== "object") return null;
-  const spec = parsed as Record<string, unknown>;
-  if (spec.v !== 1) return null;
-  const textField = (value: unknown, max: number): string | null =>
-    typeof value === "string" && value.length > 0 && value.length <= max ? value : null;
-  const k = textField(spec.k, 128);
-  const a = textField(spec.a, 160);
-  const v2 = textField(spec.v2, 160);
-  const n = textField(spec.n, 80);
-  const url = textField(spec.u, 512);
-  if (!k || !a || !v2 || !n || !url) return null;
-  if (!/^https?:\/\//.test(url)) return null;
-  if (typeof spec.d !== "string" || Number.isNaN(new Date(spec.d).getTime())) return null;
-  return { v: 1, k, a, v2, d: spec.d, u: url, n };
-}
-
 function isDay(value: unknown): boolean {
   if (typeof value !== "string" || !DAY.test(value)) return false;
   const date = new Date(`${value}T12:00:00Z`);
