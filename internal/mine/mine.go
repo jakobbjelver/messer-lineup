@@ -20,6 +20,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
+	"github.com/jakobbjelver/messer-lineup/internal/venues"
 )
 
 // Adapter is the whole contract a platform has to meet. The miner does not care which platform it is talking
@@ -53,6 +54,10 @@ type Options struct {
 	// YieldFloor is the fraction of a town's median a sweep may fall below before the run is flagged as a
 	// likely parser break (plan 1.7): a quarter is the plan's own line.
 	YieldFloor float64
+
+	// Venues is the music policy: the rooms that do not programme music, and the event forms that are never a
+	// gig. Nil means no filter — a measurement of a market before its rooms are curated.
+	Venues *venues.Registry
 }
 
 // Run sweeps, merges and (unless DryRun) writes an index. It always returns a report when it returns at all: a
@@ -214,10 +219,39 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 					src.Outside++
 					continue
 				}
+				// The music policy runs last, after the window: a room that never programmes music is a fact
+				// about the room, but the count is only interesting for shows this town would have published.
+				unclassified := ""
+				if opts.Venues != nil {
+					switch verdict := opts.Venues.Decide(show.VenueKey, show.Artist); {
+					case !verdict.Keep:
+						src.NotMusic++
+						if src.Why == nil {
+							src.Why = map[string]int{}
+						}
+						src.Why[verdict.Reason]++
+						if verdict.Reason == "venue" {
+							if src.DroppedVenues == nil {
+								src.DroppedVenues = map[string]int{}
+							}
+							src.DroppedVenues[show.Venue]++
+						}
+						continue
+					case verdict.Reason == "unclassified":
+						unclassified = show.Venue
+					}
+				}
 				if len(show.Sources) == 0 {
 					show.Sources = []string{adapter.ID()}
 				}
 				src.Rows++
+				if unclassified != "" {
+					src.Unclassified++
+					if src.UnclassifiedVenues == nil {
+						src.UnclassifiedVenues = map[string]int{}
+					}
+					src.UnclassifiedVenues[unclassified]++
+				}
 				shows = append(shows, show)
 				townSet.Add(show)
 			}
@@ -234,8 +268,8 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 				})
 			}
 			town.Sources = append(town.Sources, src)
-			logf("%-14s %-10s %2d candidates → %2d rows, %2d filtered, %2d failures, %.0fs",
-				slug, src.ID, src.Candidates, src.Rows, src.Filtered, failures(src), src.Seconds)
+			logf("%-14s %-10s %2d candidates → %2d rows (%2d not music), %2d filtered, %2d failures, %.0fs",
+				slug, src.ID, src.Candidates, src.Rows, src.NotMusic, src.Filtered, failures(src), src.Seconds)
 		}
 		report.Towns = append(report.Towns, town)
 	}
@@ -317,6 +351,17 @@ type SourceReport struct {
 	Elsewhere   int            `json:"other_town"`
 	Seconds     float64        `json:"seconds"`
 	Error       string         `json:"error,omitempty"`
+
+	// NotMusic is what the music policy dropped, and Why says by which rule: "venue" for a room whose
+	// programme is not music, "form:<token>" for an event form that is never a gig.
+	NotMusic int            `json:"not_music,omitempty"`
+	Why      map[string]int `json:"not_music_why,omitempty"`
+	// DroppedVenues is the curation list: which rooms lost rows to the venue rule, and how many.
+	DroppedVenues map[string]int `json:"dropped_venues,omitempty"`
+	// Unclassified is rows kept at a room the registry has never seen. They are published, and they are the
+	// next curation pass rather than a silent hole.
+	Unclassified       int            `json:"unclassified,omitempty"`
+	UnclassifiedVenues map[string]int `json:"unclassified_venues,omitempty"`
 	// Warning is a run that completed but should not be trusted: the budget ran out, or the yield collapsed
 	// against this town's own median. A warning is never a reason to publish less than what was mined; it is
 	// the reason to look.
@@ -336,16 +381,18 @@ type BuildReport struct {
 
 // Totals is the run in one line.
 type Totals struct {
-	Candidates  int `json:"candidates"`
-	Rows        int `json:"rows"`
-	Filtered    int `json:"filtered"`
-	Outside     int `json:"outside_window"`
-	Elsewhere   int `json:"other_town"`
-	NotAnArtist int `json:"not_an_artist"`
-	Failures    int `json:"failures"`
-	Retried     int `json:"retried"`
-	Queued      int `json:"queued"`
-	GivenUp     int `json:"given_up"`
+	Candidates   int `json:"candidates"`
+	Rows         int `json:"rows"`
+	Filtered     int `json:"filtered"`
+	Outside      int `json:"outside_window"`
+	Elsewhere    int `json:"other_town"`
+	NotAnArtist  int `json:"not_an_artist"`
+	NotMusic     int `json:"not_music"`
+	Unclassified int `json:"unclassified"`
+	Failures     int `json:"failures"`
+	Retried      int `json:"retried"`
+	Queued       int `json:"queued"`
+	GivenUp      int `json:"given_up"`
 }
 
 // WriteJSON writes the report where a script or an agent can read it.
@@ -376,6 +423,8 @@ func totalsOf(towns []TownReport) Totals {
 			totals.Rows += src.Rows
 			totals.Filtered += src.Filtered
 			totals.NotAnArtist += src.NotAnArtist
+			totals.NotMusic += src.NotMusic
+			totals.Unclassified += src.Unclassified
 			totals.Outside += src.Outside
 			totals.Elsewhere += src.Elsewhere
 			totals.Failures += failures(src)

@@ -1,0 +1,14 @@
+{
+  "format": "lineup-venues/1",
+  "market": "dk",
+  "venues": [
+    {"name": "Cap30", "class": "music"},
+    {"name": "H.J. Hansen Vin København", "class": "other"},
+    {"name": "Poolen", "class": "music"},
+    {"name": "Pumpehuset", "class": "music"},
+    {"name": "Stuekoncert med Lyng", "class": "music"},
+    {"name": "Sundby Idrætspark", "class": "other"},
+    {"name": "Thoras Café", "class": "other"},
+    {"name": "Thoras spisesal", "class": "other"}
+  ]
+}

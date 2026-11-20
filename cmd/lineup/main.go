@@ -28,6 +28,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
+	"github.com/jakobbjelver/messer-lineup/internal/venues"
 	"github.com/jakobbjelver/messer-lineup/internal/version"
 )
 
@@ -409,6 +410,12 @@ func writeDoctorText(out io.Writer, rep doctor.Report) {
 	if len(rep.Sources.Countries) > 0 {
 		rows = append(rows, [2]string{"countries", strings.Join(rep.Sources.Countries, " ")})
 	}
+	venuesLine := rep.Venues.Path + " — not classified (the music policy keeps everything)"
+	if len(rep.Venues.Files) > 0 {
+		venuesLine = fmt.Sprintf("%s — %d market(s), %d music / %d other",
+			rep.Venues.Path, len(rep.Venues.Files), rep.Venues.Music, rep.Venues.Other)
+	}
+	rows = append(rows, [2]string{"venues", venuesLine})
 	width := 0
 	for _, r := range rows {
 		if len(r[0]) > width {
@@ -471,6 +478,7 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	coveragePath := fs.String("coverage", "", "rewrite the measured block of this coverage file")
 	maxPerTown := fs.Int("max-per-town", 0, "cap candidates per town and source (0 = everything listed)")
 	statePath := fs.String("state", ".lineup-state/state.json", "the miner's memory: rate budget and yield history")
+	venuesDir := fs.String("venues", "sources/venues", "the music policy: classified rooms (empty = keep everything)")
 	budget := fs.Int("budget", 0, "requests per source per day (0 = no cap)")
 	interval := fs.Duration("interval", 0, "per-request gap (0 = the client default)")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
@@ -513,6 +521,17 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
 		return exitRefused
 	}
+	// The music policy is required when a registry exists: a run that silently skipped it would publish the
+	// museum calendar this filter was built to remove.
+	var rooms *venues.Registry
+	if *venuesDir != "" {
+		rooms, err = venues.LoadDir(*venuesDir)
+		if err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			fmt.Fprintln(stderr, "lineup mine: classify the rooms in sources/venues, or pass --venues= to measure unfiltered")
+			return exitRefused
+		}
+	}
 
 	report, err := mine.Run(context.Background(), mine.Options{
 		Adapters:     adapters,
@@ -527,6 +546,7 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		Log:          stderr,
 		State:        mem,
 		BudgetPerDay: *budget,
+		Venues:       rooms,
 	})
 	if err != nil {
 		// A run that died still measured something; the report is written before the complaint.
