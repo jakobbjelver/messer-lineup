@@ -109,7 +109,7 @@ Index: **3** shard(s), 598 rows published, 0 outside the window, 0 refused, 36 4
 | Last.fm `messeratgalten`, top artists (12 months *and* lifetime) | 42 | **0** |
 | ListenBrainz `jakob1337`, top artists this year | 17 | **0** |
 
-Three towns, 608 rows, 552 distinct artists — and two real taste lists match **nothing**. That is the coverage gap
+Three towns, 598 rows, 545 distinct artists — and two real taste lists match **nothing**. That is the coverage gap
 stated as a number rather than an adjective: every room on this index arrives through Tickster, and Tickster's
 inventory is the mid-size Nordic promoter layer, not the clubs and concert halls that book the artists a listener
 actually plays. No list length, cap or UI change moves this; a second source per town does. Re-measure with
@@ -118,11 +118,11 @@ actually plays. No list length, cap or UI change moves this; a second source per
 ## Three towns, one platform, and what the merge actually found
 
 The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg` at a 2 s interval (robots
-asks for `Crawl-delay: 2`): **1 725 candidates → 630 rows → 608 published**, three shards, 36 990 bytes,
-duplicate rate **3.5 %**. Stockholm lists **979 events** on its city page and Gothenburg **698**; the full walk is
+asks for `Crawl-delay: 2`): **1 720 candidates → 619 rows → 598 published**, three shards, 36 479 bytes,
+duplicate rate **3.4 %**. Stockholm lists **975 events** on its city page and Gothenburg **696**; the full walk is
 ~16 minutes and is the nightly's job.
 
-**The merge found 22 duplicates (3.5 %) with only one source.** They are not cross-platform matches — every row
+**The merge found 21 duplicates (3.4 %) with only one source.** They are not cross-platform matches — every row
 came from Tickster — they are the same artist, venue and date listed twice on the platform itself (a series with
 separate ticket types, or a duplicated listing). That is a different and smaller claim than the plan's gate
 made: a single source can prove the merge *runs* and that duplicates exist under the 8 % cap, but only a second
