@@ -175,7 +175,7 @@
 /* ── the board: one sticky header per day ─────────────────────────────────────────────────────── */
 
 .board {
-  margin-top: 0;
+  margin-top: 14px;
 }
 /* A day is a section, marked by air rather than by a rule: the rows already carry a hairline each, and a second
    heavier line at every boundary was one divider too many. */
@@ -194,7 +194,7 @@
   gap: 10px;
   /* Symmetric: 18px above and 6px below read as a text block sitting too low in its own bar. The group carries
      no padding above the header — a transparent strip there ghosts the previous row under the bar. */
-  padding: 12px 0;
+  padding: 12px 12px;
   background: var(--background);
   font: 600 11px/1 var(--font);
   letter-spacing: 0.1em;
@@ -205,7 +205,7 @@
   position: relative;
   display: inline-flex;
   align-items: baseline;
-  gap: 24px;
+  gap: 8px;
 }
 .day__head .day__dd {
   font-size: 11px;
@@ -234,8 +234,8 @@
   content: "";
   position: absolute;
   left: -13px;
-  top: -7px;
-  bottom: -7px;
+  top: 0px;
+  bottom: 0px;
   width: 2px;
   background: var(--primary-line);
   box-shadow: 0 0 4px var(--primary), 0 0 10px var(--primary),
@@ -498,11 +498,11 @@ a.show__artist:hover {
   }
   .day {
     display: grid;
-    grid-template-columns: 164px minmax(0, 1fr);
-    column-gap: 40px;
+    grid-template-columns: 124px minmax(0, 1fr);
   }
   .day__label {
     display: block;
+    gap: 24px;
   }
   .day__head {
     grid-column: 1;
@@ -511,7 +511,6 @@ a.show__artist:hover {
     display: block;
     position: sticky;
     top: calc(var(--bar) + 20px);
-    padding: 26px 0 0;
     letter-spacing: 0.12em;
     border-bottom: 0;
     background: none;
@@ -520,7 +519,7 @@ a.show__artist:hover {
   }
   .day__head .day__dd {
     display: block;
-    margin: 12px 0 2px;
+    margin: 4px 0 4px;
     font-size: 34px;
     line-height: 0.9;
     letter-spacing: -0.03em;
