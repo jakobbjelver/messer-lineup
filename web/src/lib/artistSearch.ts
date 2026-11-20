@@ -15,6 +15,8 @@
  *     to land as `unavailable: true` with no explanation on screen, and looked exactly like "no results".
  */
 
+import { TASTE_CAP } from "./calendar";
+
 export type ArtistHit = {
   name: string;
   mbid: string;
@@ -79,10 +81,16 @@ export async function importFrom(service: "listenbrainz" | "lastfm", handle: str
   const user = handle.trim();
   if (!user) return [];
   if (service === "listenbrainz") {
+    // The list is capped by the board, not by the provider: ListenBrainz answers `count=1000` (measured 2026-11-20,
+    // 200 artists in 20 KB in 1.4 s), so asking for the cap in one call is free and a second page is not needed.
     const res = await fetch(
-      `https://api.listenbrainz.org/1/stats/user/${encodeURIComponent(user)}/artists?range=year&count=50`,
+      `https://api.listenbrainz.org/1/stats/user/${encodeURIComponent(user)}/artists?range=year&count=${TASTE_CAP}`,
     );
-    if (!res.ok) throw new Error(res.status === 404 ? "No such ListenBrainz user." : "ListenBrainz did not answer.");
+    if (!res.ok) {
+      // 204 is an answer, not a failure: the account exists and its statistics are not computed yet.
+      if (res.status === 204) return [];
+      throw new Error(res.status === 404 ? "No such ListenBrainz user." : "ListenBrainz did not answer.");
+    }
     const body = (await res.json()) as { payload?: { artists?: { artist_name?: string }[] } };
     return (body.payload?.artists ?? [])
       .map((row) => row.artist_name)

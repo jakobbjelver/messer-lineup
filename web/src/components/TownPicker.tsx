@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, MagnifyingGlass, X } from "@phosphor-icons/react";
-import { townLabel, type Town, type TownEntry } from "../lib/indexData";
+import { Crosshair, GlobeHemisphereWest, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { ANYWHERE, townLabel, type Town, type TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 
 type Props = {
@@ -73,6 +73,10 @@ export default function TownPicker({
     return posts.filter((post) => fold(townLabel(post, names)).includes(q) || fold(post.town).includes(q));
   }, [posts, names, query]);
 
+  /** The whole board, for the scope row's count: it is what every town adds up to. */
+  const total = useMemo(() => posts.reduce((sum, post) => sum + post.count, 0), [posts]);
+  const anywhere = value === ANYWHERE;
+
   return (
     <div className="towns">
       {canLocate ? (
@@ -88,9 +92,11 @@ export default function TownPicker({
               ? "Asking your browser…"
               : located
                 ? "Nearest town selected"
-                : denied
-                  ? "Location off"
-                  : "Use my location"}
+                : anywhere && position.state === "granted"
+                  ? "Location on"
+                  : denied
+                    ? "Location off"
+                    : "Use my location"}
           </span>
           {/* Both states carry the tag: it is the one thing on the control that is a state, and a lamp with no
               counterpart reads as decoration rather than as "on". */}
@@ -124,6 +130,24 @@ export default function TownPicker({
       ) : null}
 
       <div className="picks" role="radiogroup" aria-label="Town">
+        {/* The scope, above the towns and always present: it is a choice, it has no shard of its own, and it can only
+            ever be asked for explicitly — never the default the edge or the first town would pick. */}
+        {posts.length > 1 ? (
+          <button
+            type="button"
+            className="pick pick--scope"
+            role="radio"
+            aria-checked={anywhere}
+            onClick={() => onChange(ANYWHERE)}
+          >
+            <span className="pick__dot" aria-hidden="true" />
+            <GlobeHemisphereWest size={15} className="pick__globe" aria-hidden="true" />
+            <span className="pick__name">Anywhere</span>
+            <span className="pick__meta">
+              {total} {total === 1 ? "show" : "shows"}
+            </span>
+          </button>
+        ) : null}
         {rows.map((post) => {
           const selected = post.town === value;
           return (

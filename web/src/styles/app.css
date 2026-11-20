@@ -110,6 +110,11 @@
   max-width: 100%;
   border-radius: 0;
 }
+/* The scope's glyph: ink, not accent — "anywhere" is an identity, not a state, and the accent is spent on state. */
+.townbtn .globe {
+  flex: none;
+  color: var(--text-2);
+}
 .townbtn .sign {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,7 +127,8 @@
 .townbtn:hover svg {
   color: var(--foreground);
 }
-.townbtn[aria-expanded="true"] svg {
+/* Only the caret turns: a globe rotated 180° is a mirrored globe, which is what a blanket `svg` rule did. */
+.townbtn[aria-expanded="true"] .caret {
   rotate: 180deg;
 }
 
@@ -467,6 +473,25 @@ a.show__artist:hover {
   justify-content: center;
   gap: 8px;
   margin-top: 6px;
+}
+/* Something that belongs to the state and is not a button: an empty board still has a subscription to offer. */
+.state__more {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 36ch;
+}
+.state__more .subs {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  justify-items: center;
+  text-align: center;
+}
+.state__more .subs__row {
+  justify-content: center;
+}
+.state__more .subs__link {
+  margin: 0 auto;
 }
 
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */

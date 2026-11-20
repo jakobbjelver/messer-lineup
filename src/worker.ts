@@ -15,7 +15,7 @@
 
 import { Hono } from "hono";
 import { buildEvent, buildIcs, type CalendarRow } from "./calendar/ics";
-import { decodeEvent, decodeSpec } from "./calendar/spec";
+import { decodeEvent, decodeSpec, ANYWHERE } from "./calendar/spec";
 // The identity key is the client's own implementation, imported rather than re-implemented: a third copy of a
 // normalisation rule is a third place for it to drift, and `make keycheck` already proves this one against
 // `internal/model/testdata/keys.json`.
@@ -334,12 +334,24 @@ app.all("/api/v1/*", (c) =>
 /**
  * `/calendar/<token>.ics` — the board as a subscribable feed.
  *
- * The token carries the whole board (town, window, artist keys) because a calendar client has no session to look up.
- * Nothing in it is secret: it names a slice of the same public index anyone can read, which is why it is not signed.
+ * The token carries the whole board (town, taste) because a calendar client has no session to look up. Nothing in it
+ * is secret: it names a slice of the same public index anyone can read, which is why it is not signed.
+ *
+ * Three rules, and each one was a defect before it was a rule:
+ *
+ *   - **No window means the published window.** A window frozen at subscribe time is a feed that dies — the client
+ *     keeps polling and gets an empty calendar for ever. `f`/`o` are still honoured when a token carries them, so an
+ *     older link keeps working.
+ *   - **`anywhere` reads every shard** and labels each event with its own town. One label for the whole feed would
+ *     print "Debaser, Anywhere", which is not a place.
+ *   - **A live artist source is a convenience with a floor.** `s` is resolved here; `a`, the snapshot written at
+ *     subscribe time, is what the feed falls back to when the provider is down, throttled or gone. A source that
+ *     resolves to nothing is an empty feed, never the whole town.
  *
  * This is the only route that reads a shard itself, and it does so deliberately: a feed is rendered on demand by a
  * client we do not control, so there is no page to hand it a pre-rendered file. One manifest, one towns file and one
- * shard per request, all cached for fifteen minutes — a daily refresh across a handful of subscribers is not a load.
+ * shard per town per request, all cacheable for fifteen minutes — a daily refresh across a handful of subscribers is
+ * not a load.
  */
 /**
  * `/event/<token>.ics` — one show, as a calendar file.
@@ -393,49 +405,80 @@ app.get("/calendar/:file", async (c) => {
     }
     const manifest = (await manifestRes.json()) as {
       built_at: string;
+      window: { from: string; to: string };
       towns: { town: string; shard: string }[];
     };
-    const entry = manifest.towns.find((town) => town.town === spec.t);
-    if (!entry) {
+
+    const entries = spec.t === ANYWHERE ? manifest.towns : manifest.towns.filter((town) => town.town === spec.t);
+    if (entries.length === 0) {
       return c.json(errorBody("unknown_town", `this index does not publish ${spec.t}`), 404);
     }
 
-    const [shardRows, townName] = await Promise.all([
-      fetchShard(new URL(`/${entry.shard}`, base)),
-      townLabel(new URL("/towns.json", base), spec.t),
-    ]);
+    // The window: the token's when it names one, the published one otherwise. This is what stops a subscription from
+    // ageing out — the token no longer carries a deadline it cannot move.
+    const from = spec.f ?? manifest.window.from.slice(0, 10);
+    const to = spec.o ?? manifest.window.to.slice(0, 10);
 
-    const artists = spec.a ? new Set(spec.a) : null;
-    const rows: CalendarRow[] = [];
-    for (const row of shardRows) {
-      const day = typeof row.d === "string" ? row.d.slice(0, 10) : "";
-      if (!day || day < spec.f || day > spec.o) continue;
-      if (typeof row.a !== "string") continue;
-      if (artists && !artists.has(Key(row.a))) continue;
-      // The nine-key contract, checked rather than asserted: a row missing any of these is not an event.
-      if (
-        typeof row.k !== "string" ||
-        typeof row.v !== "string" ||
-        typeof row.d !== "string" ||
-        typeof row.u !== "string"
-      ) {
-        continue;
-      }
-      rows.push({
-        k: row.k,
-        a: row.a,
-        v: row.v,
-        d: row.d,
-        u: row.u,
-        st: typeof row.st === "string" ? row.st : "o",
-      });
+    // The filter: an explicit list, or a live source that falls back to it. A source that resolves to nothing is an
+    // empty feed, never the whole town — the subscriber asked for artists.
+    let artists = spec.a && spec.a.length > 0 ? new Set(spec.a) : null;
+    if (spec.s) {
+      const live = await listenBrainzKeys(spec.s.u);
+      artists = new Set(live ?? spec.a ?? []);
     }
 
+    const labels = await townLabels(new URL("/towns.json", base));
+    const shards = await Promise.all(entries.map((entry) => fetchShard(new URL(`/${entry.shard}`, base))));
+
+    const rows: CalendarRow[] = [];
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index]!;
+      const label = labels.get(entry.town) ?? entry.town;
+      for (const row of shards[index]!) {
+        const day = typeof row.d === "string" ? row.d.slice(0, 10) : "";
+        if (!day || day < from || day > to) continue;
+        if (typeof row.a !== "string") continue;
+        if (artists && !artists.has(Key(row.a))) continue;
+        // The nine-key contract, checked rather than asserted: a row missing any of these is not an event.
+        if (
+          typeof row.k !== "string" ||
+          typeof row.v !== "string" ||
+          typeof row.d !== "string" ||
+          typeof row.u !== "string"
+        ) {
+          continue;
+        }
+        rows.push({
+          k: row.k,
+          a: row.a,
+          v: row.v,
+          d: row.d,
+          u: row.u,
+          st: typeof row.st === "string" ? row.st : "o",
+          // The event's own town, so an anywhere feed can say where each show is. A one-town feed writes the same
+          // label as before, which is why its bytes do not change.
+          town: label,
+        });
+      }
+    }
+    rows.sort((left, right) => (left.d === right.d ? (left.a === right.a ? (left.k < right.k ? -1 : 1) : left.a < right.a ? -1 : 1) : left.d < right.d ? -1 : 1));
+
+    const anywhere = spec.t === ANYWHERE;
+    const place = anywhere ? "Anywhere" : (labels.get(spec.t) ?? spec.t);
+    const filtered = artists !== null;
+    const count = artists?.size ?? 0;
+    const word = count === 1 ? "artist" : "artists";
     const ics = buildIcs(rows, {
       townId: spec.t,
-      townLabel: townName,
+      townLabel: place,
       builtAt: manifest.built_at,
       origin: new URL(c.req.url).origin,
+      calName: `Messer Lineup — ${place}`,
+      calDesc: filtered
+        ? `Shows for ${count} ${word}${anywhere ? ", anywhere" : ` in ${place}`}, from the Messer Lineup index.`
+        : anywhere
+          ? "Every show, in every published town, from the Messer Lineup index."
+          : `Shows in ${place}, from the Messer Lineup index.`,
     });
 
     return c.body(ics, 200, {
@@ -443,12 +486,65 @@ app.get("/calendar/:file", async (c) => {
       // A subscriber re-fetches on its own schedule; fifteen minutes is short enough to follow a nightly publish and
       // long enough that a mail client checking twice an hour does not reach origin.
       "cache-control": "public, max-age=900",
-      "content-disposition": `inline; filename="lineup-${spec.t}.ics"`,
+      "content-disposition": `inline; filename="lineup-${place.replace(/[^a-z0-9-]+/gi, "-").toLowerCase()}.ics"`,
     });
   } catch (err) {
     return c.json(errorBody("index_unavailable", err instanceof Error ? err.message : String(err)), 503);
   }
 });
+
+/**
+ * A handle's top artists, for a feed whose token names a source.
+ *
+ * `null` means the provider did not answer — the caller must fall back to the token's snapshot. An empty array means
+ * it answered with nothing (ListenBrainz replies `204` until an account's statistics have been computed), which is a
+ * fact and not a failure. Six hours at the edge is four upstream calls a day for a subscriber that polls hourly.
+ */
+async function listenBrainzKeys(handle: string): Promise<string[] | null> {
+  const user = handle.trim();
+  if (!user) return null;
+  const cache = caches.default;
+  const key = new Request(`https://lineup.messer.wtf/api/v1/taste/listenbrainz?v=1&u=${encodeURIComponent(user)}`);
+  const hit = await cache.match(key);
+  if (hit) {
+    const body = (await hit.json()) as { keys?: string[] };
+    return Array.isArray(body.keys) ? body.keys : [];
+  }
+  try {
+    const res = await fetch(
+      `https://api.listenbrainz.org/1/stats/user/${encodeURIComponent(user)}/artists?range=year&count=200`,
+      {
+        headers: { "user-agent": "MesserLineup/0.2 (https://lineup.messer.wtf)", accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    let keys: string[] | null = null;
+    if (res.status === 204) {
+      keys = [];
+    } else if (res.ok) {
+      const body = (await res.json()) as { payload?: { artists?: { artist_name?: string }[] } };
+      const seen = new Set<string>();
+      keys = [];
+      for (const artist of body.payload?.artists ?? []) {
+        const name = (artist.artist_name ?? "").trim();
+        if (!name) continue;
+        const identity = Key(name);
+        if (!identity || seen.has(identity)) continue;
+        seen.add(identity);
+        keys.push(identity);
+        if (keys.length === 200) break;
+      }
+    }
+    if (keys === null) return null; // a moment, not a fact: nothing cached, the snapshot answers this request
+    const answer = new Response(JSON.stringify({ keys }), {
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" },
+    });
+    caches.default.put(key, answer.clone()).catch(() => undefined);
+    return keys;
+  } catch {
+    return null;
+  }
+}
 
 /** A shard is stored gzipped; a runtime that already decompressed it hands back JSONL, and both are read. */
 async function fetchShard(url: URL): Promise<Record<string, unknown>[]> {
@@ -477,19 +573,29 @@ async function fetchShard(url: URL): Promise<Record<string, unknown>[]> {
   return rows;
 }
 
-/** The town's display name, falling back to the id: a feed titled `copenhagen-dk` is worse than one titled `København`. */
-async function townLabel(url: URL, id: string): Promise<string> {
+/**
+ * Every published town's display name in one read.
+ *
+ * The shortest label wins, the same rule `internal/index/towns.go` applies: platforms name districts as often as
+ * cities, and "København Ø" is a district. A feed reads this once and labels each event from it, because a feed that
+ * spans towns cannot use one name for every row.
+ */
+async function townLabels(url: URL): Promise<Map<string, string>> {
+  const labels = new Map<string, string>();
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return id;
+    if (!res.ok) return labels;
     const body = (await res.json()) as { towns?: { id: string; name: string }[] };
-    const labels = (body.towns ?? []).filter((town) => town.id === id).map((town) => town.name);
-    // The shortest label wins, the same rule `internal/index/towns.go` applies: platforms name districts as often as
-    // cities, and "København Ø" is a district.
-    return labels.sort((a, b) => a.length - b.length)[0] ?? id;
+    for (const town of body.towns ?? []) {
+      if (!town.id || !town.name) continue;
+      const current = labels.get(town.id);
+      if (!current || town.name.length < current.length) labels.set(town.id, town.name);
+    }
   } catch {
-    return id;
+    /* a towns file that cannot be read leaves the ids: a feed titled `copenhagen-dk` is worse than one titled
+       `København`, and better than a 503 for a cosmetic read. */
   }
+  return labels;
 }
 
 /**

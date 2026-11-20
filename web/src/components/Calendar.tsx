@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import ResponsiveDialog from "./ui/ResponsiveDialog";
 import Avatar from "./Avatar";
@@ -57,6 +57,8 @@ type Props = {
   /** How many faces a cell holds before it prints `+N`. */
   maxFaces?: number;
   onDay: (day: string) => void;
+  /** The subscription for exactly this board, under the grid. */
+  children?: ReactNode;
 };
 
 /**
@@ -65,7 +67,7 @@ type Props = {
  * Every cell is built from the rows already in memory, so a month change costs no request — that is
  * the point of the shard cache, and the reason the calendar can be a view rather than a second page.
  */
-export default function Calendar({ days, month, onMonth, portraits, today, from, to, maxFaces = 3, onDay }: Props) {
+export default function Calendar({ days, month, onMonth, portraits, today, from, to, maxFaces = 3, onDay, children }: Props) {
   const byDay = useMemo(() => {
     const map = new Map<string, Row[]>();
     for (const group of days) map.set(group.day, group.rows);
@@ -151,6 +153,8 @@ export default function Calendar({ days, month, onMonth, portraits, today, from,
           );
         })}
       </div>
+
+      {children ? <div className="cal__foot">{children}</div> : null}
     </div>
   );
 }

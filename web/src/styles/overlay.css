@@ -656,3 +656,92 @@
   flex-direction: column;
   min-height: 0;
 }
+
+/* ── the subscription ────────────────────────────────────────────────────────────────────────────
+   One control, under the board it describes. The count rides on the button because it is the answer to "is this
+   worth it", and the note under it is the one promise a feed actually keeps. Square, like everything else; the
+   accent is not spent here — this is not a state, it is an offer. */
+
+.subs {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.subs__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.subs__link {
+  width: fit-content;
+}
+.subs__n {
+  font: 400 11.5px/1 var(--mono);
+  color: var(--text-3);
+}
+.subs__link:hover .subs__n {
+  color: var(--text-2);
+}
+.subs__copy {
+  width: 44px;
+  height: 44px;
+  border-color: var(--border-strong);
+}
+.subs__note {
+  margin: 0;
+  font: 400 12px/1.5 var(--font);
+  color: var(--text-3);
+}
+/* A quiet subscription: a link, not a button, so it can sit under an offer without competing with it. */
+.subs--quiet {
+  margin-top: 18px;
+  padding-top: 14px;
+}
+.subs__link--quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+  padding: 0 0 2px;
+  font: 500 12.5px/1.2 var(--font);
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border-strong);
+  transition: color 0.12s linear, border-color 0.12s linear;
+}
+.subs__link--quiet:hover {
+  color: var(--foreground);
+  border-color: var(--primary);
+}
+.subs__link--quiet .subs__n {
+  margin-left: 2px;
+}
+.subs__copytext {
+  padding: 0 0 2px;
+  font: 500 10.5px/1.2 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.12s linear;
+}
+.subs__copytext:hover {
+  color: var(--foreground);
+}
+
+.cal__foot {
+  margin-top: 26px;
+}
+
+/* The scope row: a choice that is not a place, so it wears a globe and sits above the towns. */
+.pick--scope {
+  border-bottom: 1px solid var(--border-strong);
+}
+.pick__globe {
+  flex: none;
+  color: var(--text-2);
+}
+.pick[aria-checked="true"] .pick__globe {
+  color: var(--foreground);
+}

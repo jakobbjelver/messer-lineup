@@ -50,6 +50,16 @@ export default function ShowRow({ row, portraits, mine, linkArtist = true, dista
         )}
         <span className="show__meta">
           <span className="venue">{row.v}</span>
+          {/* A row on a board that spans towns says which town it is in, before it says how far — the place is the
+              identity and the distance is the detail. */}
+          {place ? (
+            <>
+              <span className="dot" aria-hidden="true">
+                ·
+              </span>
+              <span className="venue town">{place}</span>
+            </>
+          ) : null}
           {typeof distance === "number" ? (
             <>
               <span className="dot" aria-hidden="true">
@@ -58,13 +68,6 @@ export default function ShowRow({ row, portraits, mine, linkArtist = true, dista
               <span className="km">
                 <b>{formatKm(distance)}</b> km
               </span>
-            </>
-          ) : place ? (
-            <>
-              <span className="dot" aria-hidden="true">
-                ·
-              </span>
-              <span className="venue">{place}</span>
             </>
           ) : null}
           {status ? (

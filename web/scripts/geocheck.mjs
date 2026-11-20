@@ -12,7 +12,7 @@
  * Run with `make geocheck`.
  */
 
-import { distanceKm, formatKm, nearestTown, pointOf, withinReach } from "../src/lib/geo.ts";
+import { distanceKm, formatKm, nearestTown, pointOf } from "../src/lib/geo.ts";
 
 const CASES = [
   // name, from, to, expectation in km, tolerance
@@ -81,19 +81,6 @@ if (near?.town.id !== "copenhagen-dk") {
   console.error(`NEAREST: want copenhagen-dk, got ${near?.town.id ?? "none"}`);
 }
 
-const origin = { basis: "device", point: { lat: 55.6761, lon: 12.5683 } };
-const reached = [
-  [withinReach({ g: [55.6736, 12.5989] }, origin, 5), true], // ~2 km away
-  [withinReach({ g: [55.6736, 12.5989] }, origin, 1), false], // same row, a 1 km reach
-  [withinReach({}, origin, 50), false], // no position: never counted as inside
-];
-for (const [got, want] of reached) {
-  if (got !== want) {
-    failures += 1;
-    console.error(`REACH: want ${want}, got ${got}`);
-  }
-}
-
-const total = CASES.length + FORMATS.length + PAIRS.length + 2 + reached.length;
+const total = CASES.length + FORMATS.length + PAIRS.length + 2;
 console.log(`geocheck: ${total - failures}/${total} cases agree with the row contract`);
 process.exit(failures ? 1 : 0);

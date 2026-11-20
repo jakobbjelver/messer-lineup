@@ -22,6 +22,8 @@ export type CalendarRow = {
   d: string;
   u: string;
   st: string;
+  /** The town this event is actually in, for a feed that spans towns. Absent: the feed's own town. */
+  town?: string;
 };
 
 type Meta = {
@@ -30,6 +32,9 @@ type Meta = {
   builtAt: string;
   /** Host the feed is served from, for `URL:` lines that point back at the board. */
   origin: string;
+  /** `X-WR-CALNAME` / `X-WR-CALDESC` overrides: a feed for a scope that is not one town names itself. */
+  calName?: string;
+  calDesc?: string;
 };
 
 /** Three hours: a block a client draws, not a claim about the running time. */
@@ -43,8 +48,8 @@ export function buildIcs(rows: CalendarRow[], meta: Meta): string {
     "PRODID:-//Messer//Lineup//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    `X-WR-CALNAME:${escapeText(`Messer Lineup — ${meta.townLabel}`)}`,
-    `X-WR-CALDESC:${escapeText(`Shows in ${meta.townLabel}, from the Messer Lineup index.`)}`,
+    `X-WR-CALNAME:${escapeText(meta.calName ?? `Messer Lineup — ${meta.townLabel}`)}`,
+    `X-WR-CALDESC:${escapeText(meta.calDesc ?? `Shows in ${meta.townLabel}, from the Messer Lineup index.`)}`,
     "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
     "X-PUBLISHED-TTL:PT6H",
   ];
@@ -89,7 +94,7 @@ function vevent(row: CalendarRow, meta: Meta, stamp: string): string[] | null {
     `DTSTART:${toStamp(start)!}`,
     `DTEND:${toStamp(end)!}`,
     `SUMMARY:${escapeText(`${row.a} @ ${row.v}`)}`,
-    `LOCATION:${escapeText(`${row.v}, ${meta.townLabel}`)}`,
+    `LOCATION:${escapeText(`${row.v}, ${row.town ?? meta.townLabel}`)}`,
     `URL:${row.u}`,
     `STATUS:${status}`,
     `CATEGORIES:${escapeText("Messer Lineup")}`,

@@ -35,6 +35,8 @@ type Options struct {
 	ArtistSearchURL string
 	// DeezerURL overrides the Deezer artist search behind the on-demand portraits. A test seam.
 	DeezerURL string
+	// ListenBrainzURL overrides the statistics endpoint behind a calendar's live artist source. A test seam.
+	ListenBrainzURL string
 }
 
 // Handler builds the routes. It returns an error only when the index cannot be read at all — a server that can
@@ -55,6 +57,7 @@ func Handler(opts Options) (http.Handler, error) {
 		manifest: manifest,
 		search:   newArtistSearcher(opts.ArtistSearchURL),
 		faces:    newFaceIndex(opts.DeezerURL, opts.Now),
+		taste:    newTasteResolver(opts.ListenBrainzURL, opts.Now),
 	}
 
 	mux := http.NewServeMux()
@@ -82,6 +85,7 @@ type server struct {
 	manifest model.Manifest
 	search   *artistSearcher
 	faces    *faceIndex
+	taste    *tasteResolver
 }
 
 // health is liveness only: the process answers. It says nothing about the index, which is /readyz's job.
