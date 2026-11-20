@@ -112,6 +112,11 @@ func TestNonMusicFormDoesNotTouchAGig(t *testing.T) {
 		"Familjesöndag: baka pepparkakor":       "familjesondag",
 		"Full English Standup Comedy Thursdays": "standup",
 		"Orgelfest med provning":                "provning",
+		// The three measured on the three-town index: an English musical, an English dinner show and a
+		// community sing-along. Each sat on a music room's board beside real gigs.
+		"Legally Blonde - The musical":                   "musical",
+		"Christmas Dinner Show på Valand":                "dinner",
+		"Allsång i Hjorthagen med Anders, Bo & Kerstin!": "allsang",
 	}
 	for title, want := range dropped {
 		if token := NonMusicForm(title); token != want {
