@@ -199,14 +199,16 @@ func NonMusicForm(title string) string {
 // 2026-11-20: each one names an event that is not music, and no entry drops a title that is a gig. See the
 // package comment for the two that must never be added.
 //
-// "tasting" was the one form the Swedish tokens missed: Wine Mechanics' Göteborg listing carries four
-// "The Wine Mechanics Tasting" rows beside real concerts ("Jakob Hellman - Live i Vineriet"), so the room is
-// music and the tasting is the form — the same split "provning" already made in Swedish.
+// "musical", "dinner" and "allsång" are the three the Swedish form list could not see, measured on the
+// three-town index on 2026-11-20: "Legally Blonde - The musical" (English), "Christmas Dinner Show på Valand"
+// and "DANCING QUEEN – A CHRISTMAS DINNER SHOW" (an English dinner show), and "Allsång i Hjorthagen" (a
+// community sing-along, not a gig). The venue names are untouched: "Södra Teaterns Stora Scen" and
+// "Teatern i Hjorthagens Kulturhus" are concert rooms, which is why "teater" is still not a token.
 var formTokens = []string{
-	"julbord", "buffe", "brunch", "middag", "provning", "tasting", "workshop", "kurs", "kollo",
+	"julbord", "buffe", "brunch", "middag", "dinner", "provning", "tasting", "workshop", "kurs", "kollo",
 	"forelasning", "seminarium", "konferens", "visning", "guidning", "vandring",
 	"standup", "stand-up", "komedi", "humor", "quiz", "bingo", "karaoke",
-	"forestallning", "musikal", "vernissage", "utstallning", "loppis", "marknad",
+	"forestallning", "musikal", "musical", "allsang", "vernissage", "utstallning", "loppis", "marknad",
 	"gudstjanst", "andakt", "pyssel", "lunchtrav", "travbana", "fotboll", "hockey", "basket",
 	"filmklubb", "film-och", "yoga", "traning", "frukost", "dating", "familjesondag",
 	"ljustandning", "baka", "kidz", "nyarsskal", "mingel", "wrestling", "vendors",
