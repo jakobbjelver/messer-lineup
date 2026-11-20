@@ -260,6 +260,8 @@ a.show__artist:hover {
   overflow: hidden;
   background: var(--surface-2);
   color: var(--text-2);
+  /* A one-pixel rim so a soft press photo does not dissolve into the paper. */
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent);
   font: 600 calc(var(--size, 40px) * 0.29) / 1 var(--font);
   letter-spacing: 0.02em;
   user-select: none;

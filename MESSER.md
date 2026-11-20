@@ -42,11 +42,15 @@ board (the location control), three during the first-run gate.
 
 ## Portraits
 
-`artists/portraits.json` (`{ artistKey: { u, c } }`) is published beside the shards, immutable. Sources, in
-order: MusicBrainz `image` relations → the artist's Wikipedia lead image. Both resolve to a
-`thumb.wikimedia.org` URL at mine time. The UI treats a portrait as an enhancement: an avatar is initials
-first, the face replaces it when it loads, and a build with no portraits is a supported state. An identity
-mismatch is never allowed to become a portrait — a bill (`A + B + C`) keeps its initials.
+`artists/portraits.json` (`{ artistKey: { u, c } }`) is published beside the shards, immutable. Sources, best
+coverage first: **Deezer's public artist search** (`picture_xl`, one call, no key) → MusicBrainz `image`
+relations → the artist's Wikipedia lead image. MusicBrainz hosts no images of its own; its relations are links
+to Commons and most artists have none, which is why it cannot be the primary. The UI treats a portrait as an
+enhancement: an avatar is initials first, the face replaces it when it loads, and a build with no portraits is
+a supported state. An identity mismatch is never allowed to become a portrait — a bill (`A + B + C`) keeps its
+initials, and a Wikipedia page whose own description does not name music is refused. Takedown is
+`.lineup-state/blocklist.json` (`{"keys": […]}`): the pipeline skips those keys and the next publish removes
+them.
 
 Credit: the artist page links the source under the name; the footer carries
 "Portraits · Wikimedia Commons" only when the published file has entries.

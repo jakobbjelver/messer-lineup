@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -39,6 +40,10 @@ func TestResolveWalksSearchLookupAndThumbnail(t *testing.T) {
 		}
 		fmt.Fprint(w, `{"artists":[{"id":"mbid-1","name":"Björk","score":100}]}`)
 	})
+	// Deezer has no picture for this one, so the fallback chain has to reach MusicBrainz.
+	mux.HandleFunc("/deezer", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":[]}`)
+	})
 	mux.HandleFunc("/artist/mbid-1", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"relations":[
 			{"type":"official homepage","url":{"resource":"https://bjork.com/"}},
@@ -65,6 +70,7 @@ func TestResolveWalksSearchLookupAndThumbnail(t *testing.T) {
 		BaseURL:    server.URL + "/search?query=",
 		LookupURL:  server.URL + "/artist/",
 		CommonsURL: server.URL + "/file/",
+		DeezerURL:  server.URL + "/deezer?q=",
 		Client:     server.Client(),
 		Gap:        time.Millisecond,
 	}
@@ -85,6 +91,9 @@ func TestResolveRefusesABill(t *testing.T) {
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"artists":[{"id":"mbid-1","name":"Archspire","score":90}]}`)
 	})
+	mux.HandleFunc("/deezer", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":[]}`)
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
@@ -92,11 +101,46 @@ func TestResolveRefusesABill(t *testing.T) {
 		BaseURL:    server.URL + "/search?query=",
 		LookupURL:  server.URL + "/artist/",
 		CommonsURL: server.URL + "/file/",
+		DeezerURL:  server.URL + "/deezer?q=",
 		Client:     server.Client(),
 		Gap:        time.Millisecond,
 	}
 	// A fuzzy hit for a bill is a wrong face: the name is not the artist, and the score is not near-certain.
 	if _, kind := resolve(context.Background(), opts, "Archspire + Crown Magnetar", t.Logf); kind != none {
 		t.Fatalf("a fuzzy match on a bill returned %v, want none", kind)
+	}
+}
+
+func TestDeezerIsTheFirstSource(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/deezer", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("q"); got != "Noah Gundersen" {
+			t.Errorf("deezer query = %q", got)
+		}
+		fmt.Fprint(w, `{"data":[{"id":42,"name":"Noah Gundersen","picture_xl":"https://cdn-images.dzcdn.net/images/artist/x/1000x1000.jpg"}]}`)
+	})
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"artists":[{"id":"mbid-1","name":"Noah Gundersen","score":100}]}`)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	opts := Options{
+		DeezerURL:  server.URL + "/deezer?q=",
+		BaseURL:    server.URL + "/search?query=",
+		LookupURL:  server.URL + "/artist/",
+		CommonsURL: server.URL + "/file/",
+		Client:     server.Client(),
+		Gap:        time.Millisecond,
+	}
+	portrait, kind := resolve(context.Background(), opts, "Noah Gundersen", t.Logf)
+	if kind != found {
+		t.Fatalf("kind = %v, want found", kind)
+	}
+	if !strings.Contains(portrait.URL, "dzcdn.net") {
+		t.Fatalf("url = %q, want the Deezer picture", portrait.URL)
+	}
+	if portrait.Credit != "https://www.deezer.com/artist/42" {
+		t.Fatalf("credit = %q", portrait.Credit)
 	}
 }
