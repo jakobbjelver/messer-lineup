@@ -129,7 +129,7 @@
   z-index: 2;
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   padding: 12px 0 8px;
   background: color-mix(in oklch, var(--background) 94%, transparent);
   backdrop-filter: blur(8px);
@@ -138,6 +138,12 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-3);
+}
+.day__label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 6px;
 }
 .day__head .day__dd {
   font-size: 11px;
@@ -153,15 +159,12 @@
 .day--today .day__head .day__dd {
   color: var(--foreground);
 }
-.day--today .day__head::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 28px;
-  height: 2px;
-  background: var(--primary);
-  box-shadow: var(--glow-1), var(--glow-2);
+/* The rule is the label's own width — a fixed 28 px underline under a wider word was a line that stopped
+   mid-word. The glow rides on the label, so it can be any length. */
+.day--today .day__label {
+  border-bottom: 2px solid var(--primary-line);
+  box-shadow: 0 2px 0 -1px color-mix(in oklch, var(--primary) 45%, transparent),
+    0 6px 14px -6px color-mix(in oklch, var(--primary) 55%, transparent);
 }
 
 .show {
@@ -248,6 +251,7 @@ a.show__artist:hover {
 
 .avatar {
   position: relative;
+  flex: none;
   display: grid;
   place-items: center;
   width: var(--size, 40px);
@@ -375,13 +379,13 @@ a.show__artist:hover {
 .backlink {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 32px;
+  gap: 10px;
+  height: 44px;
   margin-top: 18px;
-  padding: 0 10px 0 6px;
+  padding: 0 16px 0 10px;
   border: 1px solid var(--border-strong);
   border-radius: 2px;
-  font: 400 12.5px/1 var(--font);
+  font: 600 13.5px/1 var(--font);
   color: var(--text-2);
   transition: color 0.12s linear, background 0.12s linear;
 }
@@ -422,9 +426,8 @@ a.show__artist:hover {
   letter-spacing: 0.02em;
   color: var(--text-3);
 }
-.foot a {
+.foot__credit {
   color: var(--text-3);
-  border-bottom: 1px solid var(--border);
 }
 
 @media (min-width: 721px) {
@@ -461,6 +464,13 @@ a.show__artist:hover {
     display: grid;
     grid-template-columns: 132px minmax(0, 1fr);
     column-gap: 28px;
+  }
+  .day__label {
+    display: block;
+  }
+  .day--today .day__label {
+    border-bottom: 0;
+    box-shadow: none;
   }
   .day__head {
     grid-column: 1;

@@ -82,9 +82,11 @@ export default function Board({
         return (
           <section className={`day${isToday ? " day--today" : ""}`} key={group.day}>
             <h2 className="day__head">
-              <span className="day__wd">{weekdayOf(group.day)}</span>
-              <span className="num day__dd">{dayNumber(group.day)}</span>
-              <span className="day__mo">{monthShort(group.day)}</span>
+              <span className="day__label">
+                <span className="day__wd">{weekdayOf(group.day)}</span>
+                <span className="num day__dd">{dayNumber(group.day)}</span>
+                <span className="day__mo">{monthShort(group.day)}</span>
+              </span>
               <span className="num day__n">{group.rows.length}</span>
             </h2>
             {group.rows.map((row) => (

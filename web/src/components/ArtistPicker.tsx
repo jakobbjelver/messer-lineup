@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import Loader from "./Loader";
 import { importFrom, searchArtists, type ArtistHit } from "../lib/artistSearch";
 import { Key } from "../lib/key";
 import { labelFor, type TasteEntry } from "../lib/taste";
@@ -182,7 +183,7 @@ export default function ArtistPicker({ value, onChange, compact }: Props) {
           onKeyDown={onKeyDown}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         />
-        {busy ? <span className="picker__busy" aria-hidden="true" /> : null}
+        {busy ? <Loader size={16} label="Searching" /> : null}
       </div>
 
       <p className="sr-only" aria-live="polite">

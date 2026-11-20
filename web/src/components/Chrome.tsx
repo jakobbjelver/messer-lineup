@@ -1,6 +1,5 @@
-import { Crosshair, GearSix, ListBullets, SquaresFour } from "@phosphor-icons/react";
+import { ListBullets, SlidersHorizontal, SquaresFour } from "@phosphor-icons/react";
 import Mark from "./Mark";
-import type { Position } from "../lib/location";
 import type { View } from "../lib/storage";
 
 type Props = {
@@ -9,29 +8,17 @@ type Props = {
   onView?: (view: View) => void;
   /** Omitted where settings cannot be changed in place. */
   onPanel?: () => void;
-  /** Absent where a distance means nothing, or where GPS cannot work. */
-  location?: { state: Position["state"]; canLocate: boolean; onLocate: () => void };
 };
 
 /**
- * The whole chrome: a mark, at most three controls.
+ * The whole chrome: a mark and two controls.
  *
- * The location button is the one that may glow, and only while it is the action worth taking — a
- * granted fix stops the glow, because a light that outlives its action lies about what the next tap
- * does. The view control shows the view you would get, not the one you are in, so its label is always
- * the truth about the tap.
+ * The location control moved into the town panel, where the question it answers is asked. A bar that carried
+ * it had three icons for one of them to be a maybe; the settings sheet is exactly where "where am I" belongs.
+ * The view control shows the view you would get, not the one you are in, so its label is always the truth
+ * about the tap.
  */
-export default function Chrome({ view, onView, onPanel, location }: Props) {
-  const canLocate = location?.canLocate ?? false;
-  const granted = location?.state === "granted";
-  const lit = canLocate && location?.state === "idle";
-  const locateLabel =
-    location?.state === "asking"
-      ? "Asking your browser for your location"
-      : granted
-        ? "Location is on — distances are from you"
-        : "Use my location for distances";
-
+export default function Chrome({ view, onView, onPanel }: Props) {
   return (
     <header className="bar">
       <div className="bar__row">
@@ -40,16 +27,6 @@ export default function Chrome({ view, onView, onPanel, location }: Props) {
         </a>
         <span className="bar__name">Lineup</span>
         <div className="bar__actions">
-          {canLocate && location ? (
-            <button
-              className={lit ? "iconbtn iconbtn--lit" : "iconbtn"}
-              aria-label={locateLabel}
-              aria-busy={location.state === "asking" ? true : undefined}
-              onClick={() => location.onLocate()}
-            >
-              <Crosshair size={16} />
-            </button>
-          ) : null}
           {view && onView ? (
             <button
               className="iconbtn"
@@ -61,7 +38,7 @@ export default function Chrome({ view, onView, onPanel, location }: Props) {
           ) : null}
           {onPanel ? (
             <button className="iconbtn" aria-label="Artists and town" onClick={onPanel}>
-              <GearSix size={16} />
+              <SlidersHorizontal size={16} />
             </button>
           ) : null}
         </div>

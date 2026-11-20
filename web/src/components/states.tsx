@@ -1,29 +1,4 @@
-/** The three states every surface owes the reader: loading, empty, failed. One sentence each. */
-
-export function Skeleton() {
-  return (
-    <div aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading the board…</span>
-      <div className="sk">
-        <div className="sk__sign" />
-        <div className="sk__count" />
-        {[0, 1, 2, 3, 4, 5].map((index) => (
-          <div key={index}>
-            {index % 3 === 0 ? <div className="sk__day" /> : null}
-            <div className="sk__row">
-              <div className="sk__circle" />
-              <div>
-                <div className="sk__line sk__line--a" />
-                <div className="sk__line sk__line--b" />
-              </div>
-              <div />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+/** The states every surface owes the reader. Loading is the one `Loader`; these two are the outcomes. */
 
 type EmptyProps = {
   title: string;

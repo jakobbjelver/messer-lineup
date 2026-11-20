@@ -53,6 +53,22 @@ export function initials(name: string): string {
   return (pool[0]![0]! + pool[1]![0]!).toUpperCase();
 }
 
+/** The source's own name, for a credit line: a Deezer CDN image is Deezer's, a Wikipedia article is Wikipedia's. */
+export function sourceName(credit: string | undefined): string {
+  const url = credit ?? "";
+  if (url.includes("deezer.com")) return "Deezer";
+  if (url.includes("commons.wikimedia.org")) return "Wikimedia Commons";
+  if (url.includes("wikipedia.org")) return "Wikipedia";
+  return "Wikimedia Commons";
+}
+
+/** Every source the published file actually uses, for the footer's one line. */
+export function sourceNames(map: PortraitMap): string[] {
+  const names = new Set<string>();
+  for (const portrait of map.values()) names.add(sourceName(portrait.c));
+  return [...names].sort();
+}
+
 /** A portrait for a display name, when the published file has one. */
 export function portraitFor(map: PortraitMap, name: string): Portrait | undefined {
   return map.get(Key(name));

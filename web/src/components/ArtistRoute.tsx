@@ -3,10 +3,11 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
 import Board from "./Board";
 import Chrome from "./Chrome";
-import { Empty, Failed, Skeleton } from "./states";
+import Loader from "./Loader";
+import { Empty, Failed } from "./states";
 import { groupByDay, localDay } from "../lib/board";
 import { loadArtistRows, loadIndex, stampLabel, townLabel, type ArtistShow, type Manifest, type Town } from "../lib/indexData";
-import { loadPortraits, portraitFor, type PortraitMap } from "../lib/portraits";
+import { loadPortraits, portraitFor, sourceName, type PortraitMap } from "../lib/portraits";
 import { labelFor } from "../lib/taste";
 
 type Phase =
@@ -22,11 +23,6 @@ type Phase =
  * playing two towns is exactly the case a single-town board hides, and each row says which town it is
  * in instead of printing a distance that would be measured from a town's centre.
  */
-/** The source's own name: a lead image from an article is Wikipedia's, a Commons file page is Commons'. */
-function creditLabel(url: string): string {
-  return url.includes("commons.wikimedia.org") ? "Wikimedia Commons" : "Wikipedia";
-}
-
 export default function ArtistRoute({ artistKey }: { artistKey: string }) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [portraits, setPortraits] = useState<PortraitMap | undefined>(undefined);
@@ -91,7 +87,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
                 <p className="artist__credit">
                   Portrait from{" "}
                   <a href={portrait.c} target="_blank" rel="noopener noreferrer">
-                    {creditLabel(portrait.c)}
+                    {sourceName(portrait.c)}
                   </a>
                 </p>
               ) : null}
@@ -99,7 +95,11 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
           </div>
         ) : null}
 
-        {phase.kind === "loading" ? <Skeleton /> : null}
+        {phase.kind === "loading" ? (
+          <div className="loading">
+            <Loader size={30} label="Reading this artist's dates" />
+          </div>
+        ) : null}
         {phase.kind === "error" ? <Failed message={phase.message} onRetry={() => setNonce((n) => n + 1)} /> : null}
         {phase.kind === "ready" && phase.shows.length === 0 ? (
           <Empty
@@ -126,9 +126,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
             </span>
           </span>
           {portraits && portraits.size > 0 ? (
-            <a href="https://commons.wikimedia.org" target="_blank" rel="noopener noreferrer">
-              Portraits · Wikimedia Commons
-            </a>
+            <span className="foot__credit">Portraits · Wikimedia Commons</span>
           ) : null}
         </div>
       </main>
