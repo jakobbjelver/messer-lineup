@@ -25,6 +25,11 @@ export interface Env {
   /** `https://lineup-data.messer.wtf` — where the built index is published. Read only by /readyz. */
   DATA_BASE: string;
   /**
+   * The Last.fm API key behind the taste import. Set with `wrangler secret put LASTFM_KEY`; it never reaches the
+   * tab, because the route that uses it is also the route that caches what the provider said.
+   */
+  LASTFM_KEY?: string;
+  /**
    * The static assets, bound so the one client route can be resolved without moving page views onto the script.
    * `/a/<artist key>` has no file behind it; the asset layer's `single-page-application` rule answers it with
    * index.html once the script asks it to.
@@ -220,11 +225,111 @@ app.get("/api/v1/artists/portraits", async (c) => {
   return answer;
 });
 
+/**
+ * `/api/v1/taste/lastfm?user=` — one handle's top artists, for the picker's import control.
+ *
+ * Last.fm is where most listeners already are, and `user.getTopArtists` is a public read whose API key is the
+ * app's identity. The key therefore lives here and never reaches the tab. The body is **names**, the currency the
+ * import already speaks, so the identity function does not need a second implementation at the edge.
+ *
+ * Last.fm reports failure in the **body** with HTTP 200 (`{"error":6,"message":"User not found"}`), so a client that
+ * trusts the status calls a missing handle a success. Three outcomes, three statuses: names (200, six hours),
+ * no such user (404, remembered for a day), provider blinked (503, `no-store`, never remembered).
+ */
+const LASTFM_API = "https://ws.audioscrobbler.com/2.0/";
+const LASTFM_GAP = 200;
+const LASTFM_MAX = 200;
+const LASTFM_PERIOD = "12month";
+
+type LastFMTop = { names: string[]; answer: "ok" | "unknown" | "failed" };
+
+let lfmChain: Promise<unknown> = Promise.resolve();
+let lfmLast = 0;
+
+/** One call, serialised across requests: Last.fm's own limit is per key, and a picker is a burst by nature. */
+async function lastfmTopArtists(key: string, user: string): Promise<LastFMTop> {
+  const run = async (): Promise<LastFMTop> => {
+    const wait = LASTFM_GAP - (Date.now() - lfmLast);
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    lfmLast = Date.now();
+    const url = new URL(LASTFM_API);
+    url.searchParams.set("method", "user.getTopArtists");
+    url.searchParams.set("user", user);
+    url.searchParams.set("api_key", key);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("limit", String(LASTFM_MAX));
+    url.searchParams.set("period", LASTFM_PERIOD);
+    const res = await fetch(url, {
+      headers: { "user-agent": "MesserLineup/0.2 (https://lineup.messer.wtf)", accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
+    // **Last.fm's error envelope rides on a non-2xx status**: a missing user is `404` with
+    // `{"error":6,"message":"User not found"}` (measured). So the body decides, and the status only speaks when the
+    // body carries no error code — otherwise a named answer is reported as "did not answer".
+    if (res.status >= 500) return { names: [], answer: "failed" };
+    const body = (await res.json().catch(() => null)) as {
+      error?: number;
+      topartists?: { artist?: { name?: string }[] };
+    } | null;
+    if (!body) return { names: [], answer: "failed" };
+    if (body.error) return { names: [], answer: body.error === 6 ? "unknown" : "failed" };
+    if (res.status !== 200) return { names: [], answer: "failed" };
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const artist of body.topartists?.artist ?? []) {
+      const name = (artist.name ?? "").trim();
+      if (!name) continue;
+      const identity = Key(name);
+      if (!identity || seen.has(identity)) continue;
+      seen.add(identity);
+      names.push(name);
+      if (names.length === LASTFM_MAX) break;
+    }
+    return { names, answer: "ok" };
+  };
+  const next = lfmChain.then(run, run);
+  lfmChain = next.catch(() => undefined);
+  return next;
+}
+
+app.get("/api/v1/taste/lastfm", async (c) => {
+  const key = c.env.LASTFM_KEY;
+  if (!key) {
+    // A build fact, not an outage: name the setting instead of calling the provider with no identity.
+    return c.json(errorBody("not_configured", "LASTFM_KEY is not set on this Worker"), 503, { "cache-control": "no-store" });
+  }
+  const user = (c.req.query("user") ?? "").trim();
+  if (!user || [...user].length > 64) {
+    return c.json(errorBody("invalid_user", "user is required, and names a Last.fm handle"), 400);
+  }
+
+  const cache = caches.default;
+  const cacheKey = new Request(`https://lineup.messer.wtf/api/v1/taste/lastfm?v=1&u=${encodeURIComponent(user)}`);
+  const hit = await cache.match(cacheKey);
+  const headers = { "content-type": "application/json" };
+  if (hit) return new Response(hit.body, { headers: { ...headers, "cache-control": "public, max-age=21600" } });
+
+  const answer = await lastfmTopArtists(key, user);
+  if (answer.answer === "unknown") {
+    return c.json(errorBody("unknown_user", "Last.fm has no user by that name"), 404);
+  }
+  if (answer.answer === "failed") {
+    // Nothing cached and nothing claimed: the next try asks again. Six hours of "no artists" for one 503 is the
+    // exact bug the search route already paid for.
+    return c.json(errorBody("provider_unavailable", "Last.fm did not answer; try again"), 503, { "cache-control": "no-store" });
+  }
+  const res = new Response(JSON.stringify({ artists: answer.names }), {
+    headers: { ...headers, "cache-control": "public, max-age=21600" },
+  });
+  c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()));
+  return res;
+});
+
 app.all("/api/v1/*", (c) =>
   c.json(
     errorBody(
       "not_implemented",
-      `${new URL(c.req.url).pathname} arrives with the taste providers (P5); this Worker serves the index only`,
+      `${new URL(c.req.url).pathname} is not a route this build serves; the API is the artist routes, the taste import and the calendar feed`,
     ),
     501,
   ),

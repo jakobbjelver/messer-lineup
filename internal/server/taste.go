@@ -24,10 +24,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
@@ -151,4 +153,168 @@ func (t *tasteResolver) fetch(handle string) ([]string, bool, time.Duration) {
 		}
 	}
 	return keys, true, tasteTTL
+}
+
+// --- Last.fm: the second taste source, and the only one that needs a key.
+//
+// ListenBrainz is keyless but rare among listeners; Last.fm is where most of them already are, and
+// `user.getTopArtists` is a public read with an API key as the app's identity. The route therefore lives on the
+// server (the key must not travel to the tab) and answers **names**, the same currency the import already speaks,
+// so no second identity function has to exist.
+//
+// Last.fm reports failures in the body with HTTP 200, so the status code is not the answer:
+//
+//	error 6   user not found        a fact about the handle — remembered for a day
+//	error 29  rate limited          a moment — remembered for five minutes
+//	error 10/26 bad/suspended key   an operator problem, and still not a fact about the handle
+//
+// A twelve-month period is asked for because a taste board is about what someone listens to now: `overall` is a
+// lifetime chart (a handle can be fifteen years of one genre), and the year window is the same one ListenBrainz is
+// asked for, so the two imports mean the same thing.
+const (
+	defaultLastFM    = "https://ws.audioscrobbler.com/2.0/"
+	lastfmTTL        = 6 * time.Hour
+	lastfmMissingTTL = 24 * time.Hour
+	lastfmFailedTTL  = 5 * time.Minute
+	lastfmPeriod     = "12month"
+)
+
+// lastfmAnswer is why the route can tell "no such user" from "the provider blinked": the first is a 404, the
+// second a 503. A client that mixes them up either hides a real account or claims one exists.
+type lastfmAnswer int
+
+const (
+	lastfmOK lastfmAnswer = iota
+	lastfmUnknownUser
+	lastfmNotAnswered
+)
+
+type lastfmEntry struct {
+	names  []string
+	answer lastfmAnswer
+	at     time.Time
+	retry  time.Duration
+}
+
+// lastfmResolver remembers one handle's top artists for six hours. One per server; the edge caches separately.
+type lastfmResolver struct {
+	key      string
+	endpoint string
+	client   *http.Client
+	now      func() time.Time
+
+	mu      sync.Mutex
+	entries map[string]lastfmEntry
+}
+
+func newLastFMResolver(endpoint, key string, now func() time.Time) *lastfmResolver {
+	if endpoint == "" {
+		endpoint = defaultLastFM
+	}
+	if !strings.HasSuffix(endpoint, "/") {
+		endpoint += "/"
+	}
+	if now == nil {
+		now = clock.Now
+	}
+	return &lastfmResolver{
+		key:      key,
+		endpoint: endpoint,
+		client:   &http.Client{Timeout: 8 * time.Second},
+		now:      now,
+		entries:  map[string]lastfmEntry{},
+	}
+}
+
+// topArtists answers with the provider's own spellings, in its own order, deduped by identity key.
+func (l *lastfmResolver) topArtists(handle string) ([]string, lastfmAnswer) {
+	handle = strings.TrimSpace(handle)
+	if handle == "" {
+		return nil, lastfmUnknownUser
+	}
+	l.mu.Lock()
+	if entry, found := l.entries[handle]; found && l.now().Sub(entry.at) < entry.retry {
+		l.mu.Unlock()
+		return entry.names, entry.answer
+	}
+	l.mu.Unlock()
+
+	names, answer, retry := l.fetch(handle)
+	l.mu.Lock()
+	l.entries[handle] = lastfmEntry{names: names, answer: answer, at: l.now(), retry: retry}
+	l.mu.Unlock()
+	return names, answer
+}
+
+type lastfmTop struct {
+	TopArtists struct {
+		Artist []struct {
+			Name string `json:"name"`
+		} `json:"artist"`
+	} `json:"topartists"`
+	Error   int    `json:"error"`
+	Message string `json:"message"`
+}
+
+func (l *lastfmResolver) fetch(handle string) ([]string, lastfmAnswer, time.Duration) {
+	query := url.Values{}
+	query.Set("method", "user.getTopArtists")
+	query.Set("user", handle)
+	query.Set("api_key", l.key)
+	query.Set("format", "json")
+	query.Set("limit", strconv.Itoa(tasteMax))
+	query.Set("period", lastfmPeriod)
+
+	req, err := http.NewRequest(http.MethodGet, l.endpoint+"?"+query.Encode(), nil)
+	if err != nil {
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+	req.Header.Set("User-Agent", "MesserLineup/0.2 (https://lineup.messer.wtf)")
+	req.Header.Set("Accept", "application/json")
+
+	res, err := l.client.Do(req)
+	if err != nil {
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	// **Last.fm's error envelope rides on a non-2xx status.** A missing user answers `404` with
+	// `{"error":6,"message":"User not found"}` (measured), and a 5xx carries an error code too — so a client that
+	// returns on the status alone reports a real, named provider answer as "did not answer". The body is read first;
+	// the status is only consulted when the body carries no error field at all.
+	if res.StatusCode >= 500 {
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+	var body lastfmTop
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+	if body.Error != 0 {
+		if body.Error == 6 {
+			return nil, lastfmUnknownUser, lastfmMissingTTL
+		}
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, lastfmNotAnswered, lastfmFailedTTL
+	}
+
+	seen := make(map[string]bool, len(body.TopArtists.Artist))
+	names := make([]string, 0, len(body.TopArtists.Artist))
+	for _, artist := range body.TopArtists.Artist {
+		name := strings.TrimSpace(artist.Name)
+		if name == "" {
+			continue
+		}
+		key := model.Key(name)
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		names = append(names, name)
+		if len(names) == tasteMax {
+			break
+		}
+	}
+	return names, lastfmOK, lastfmTTL
 }

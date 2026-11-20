@@ -19,17 +19,23 @@ https://lineup.messer.wtf/?town=copenhagen-dk&a=boiler-room,paul-van-dyk
 which makes a personalised board a link you can send, and makes "forget my taste" a matter of clearing the
 parameter. No cookie, no session, no server-side list.
 
-## Why the provider rows are absent, not disabled
+## The two imports, and why there are no more
 
-`Add taste` ranks a music account first, and that is still the right ranking: it is the only route that stays
-current as taste moves. But every provider route needs a server to hold a token and a client secret, and that is
-P5. A row that cannot do its job is a lie about what tapping it will do, so the panel shows what works and says
-plainly that accounts arrive with the backends:
+`Import from` offers **ListenBrainz** and **Last.fm** — one handle field and one button each:
 
-> A music account and a Last.fm handle arrive with the taste backends — they need a server to hold the token, and
-> neither exists yet. Pasting is the faster route anyway.
+- **ListenBrainz** is keyless and answers the tab directly (`stats/user/<handle>/artists`, asked for the board's
+  200).
+- **Last.fm** goes through our own origin (`GET /api/v1/taste/lastfm?user=`), because `user.getTopArtists` needs
+  the app's API key and a key in a browser is a key in every visitor's tab. The route answers names for the last
+  twelve months — the same window ListenBrainz is asked for — deduped by identity key, held six hours at the edge,
+  and it tells a handle Last.fm does not know (`404 unknown_user`) apart from one where the provider blinked
+  (`503`, never cached). Last.fm reports the first in the **body** on a 404, which is why the route reads the body
+  before it believes the status.
 
-The rows slot in above the paste row when they land; the panel does not change shape.
+A music account (Spotify, YouTube, Apple) needs OAuth, a session and a server-side token — the shape ADR-004
+decided against: Spotify's development mode is five allowlisted users with a Premium owner at any scale, and a
+control most visitors cannot connect is a control that cannot do its job. The Spotify **export file** is the
+exception that needs no account at all, and it is the next taste step.
 
 ## The identity contract is shared, not duplicated
 
@@ -49,6 +55,7 @@ every unknown artist to every other one.
 - **No curation weighting for pasted lists.** A provider list arrives ordered by listening weight; a pasted one
   has no weight to invent, so every chip counts the same and the chips with a show on the current board are
   marked instead (`{n} on this board`). Inventing weights would make the affinity hairline a decoration.
-- **No server round-trip.** There is no session, no taste row and no `/taste/curate`: the list lives in the URL
-  and in localStorage, and the only server route a taste import uses is `GET /api/v1/taste/lastfm`.
+- **No server round-trip.** There is no session and no taste row: the list lives in the URL and in localStorage,
+  and the only request an import makes carries the handle and nothing else (`GET /api/v1/taste/lastfm`). Nothing
+  server-side remembers who asked.
 - **No "new since last visit"** — the marker was retired with the 2026-11-20 rethink; nothing stores a visit.

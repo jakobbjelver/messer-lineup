@@ -73,9 +73,6 @@ export async function searchArtists(query: string, signal: AbortSignal): Promise
   }
 }
 
-/** What the edge says while Last.fm's route is still the P5 stub — a fact about the build, not about Last.fm. */
-export const LASTFM_NOT_READY = "Last.fm import isn’t available yet.";
-
 /** The import endpoints that need no account of ours: ListenBrainz direct, Last.fm through the edge. */
 export async function importFrom(service: "listenbrainz" | "lastfm", handle: string): Promise<string[]> {
   const user = handle.trim();
@@ -96,9 +93,9 @@ export async function importFrom(service: "listenbrainz" | "lastfm", handle: str
       .map((row) => row.artist_name)
       .filter((name): name is string => typeof name === "string" && name.length > 0);
   }
-  const res = await fetch(`/api/v1/taste/lastfm?user=${encodeURIComponent(user)}`);
-  // 501 is the P5 stub answering, not Last.fm failing to answer: the route exists and nothing behind it does yet.
-  if (res.status === 501) throw new Error(LASTFM_NOT_READY);
+  // The edge holds the key and the cache, so this is one call to our own origin. `no-store`: the edge caches a real
+  // answer for six hours and an unavailable one for no time at all, and the tab must not add a third opinion.
+  const res = await fetch(`/api/v1/taste/lastfm?user=${encodeURIComponent(user)}`, { cache: "no-store" });
   if (!res.ok) throw new Error(res.status === 404 ? "No such Last.fm user." : "Last.fm did not answer.");
   const body = (await res.json()) as { artists?: string[] };
   return (body.artists ?? []).filter((name) => typeof name === "string" && name.length > 0);
