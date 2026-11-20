@@ -89,10 +89,11 @@ file rather than to prose.
 
 ## Status
 
-The board is live at `lineup.messer.wtf` with two towns (Copenhagen, Stockholm), a nightly miner and a
-published index at `lineup-data.messer.wtf`. `docs/coverage.md` is the measured state of every source;
-`docs/state.md` is what a board is a function of. The road to v1 — coverage, the taste tail, the nightly's
-honesty, shipping — is kept outside this public tree with the rest of the build plan.
+The board is live at `lineup.messer.wtf` with three towns (Copenhagen, Stockholm, Gothenburg), a nightly miner and
+a published index at `lineup-data.messer.wtf` — 608 shows from one platform. Taste is a list you pick, paste or
+import (ListenBrainz, or a Last.fm handle through our own origin). `docs/coverage.md` is the measured state of
+every source — including the hit rate, which is the honest number: two real taste lists matched zero rows, because
+the rooms they play are not on the platform we read yet. `docs/state.md` is what a board is a function of.
 
 ## License
 
