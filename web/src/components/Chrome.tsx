@@ -1,4 +1,4 @@
-import { ListBullets, SlidersHorizontal, SquaresFour } from "@phosphor-icons/react";
+import { CalendarBlank, ListBullets, SlidersHorizontal } from "@phosphor-icons/react";
 import Mark from "./Mark";
 import type { View } from "../lib/storage";
 
@@ -22,10 +22,12 @@ export default function Chrome({ view, onView, onPanel }: Props) {
   return (
     <header className="bar">
       <div className="bar__row">
-        <a className="bar__mark" href="/" aria-label="Messer Lineup">
-          <Mark />
+        <a className="bar__brand" href="/" aria-label="Messer Lineup">
+          <span className="bar__mark">
+            <Mark />
+          </span>
+          <span className="bar__name">Lineup</span>
         </a>
-        <span className="bar__name">Lineup</span>
         <div className="bar__actions">
           {view && onView ? (
             <button
@@ -33,7 +35,7 @@ export default function Chrome({ view, onView, onPanel }: Props) {
               aria-label={view === "list" ? "Show the calendar" : "Show the list"}
               onClick={() => onView(view === "list" ? "calendar" : "list")}
             >
-              {view === "list" ? <SquaresFour size={16} /> : <ListBullets size={16} />}
+              {view === "list" ? <CalendarBlank size={16} /> : <ListBullets size={16} />}
             </button>
           ) : null}
           {onPanel ? (
