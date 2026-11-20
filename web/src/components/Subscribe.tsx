@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CalendarPlus, Check, Copy } from "@phosphor-icons/react";
+import InfoTip from "./ui/InfoTip";
 import { feedUrl, tokenFor, webcalUrl, type CalendarSource } from "../lib/calendar";
 import { readFeed, writeFeed } from "../lib/storage";
 import type { TasteEntry } from "../lib/taste";
@@ -63,7 +64,6 @@ export default function Subscribe({ scope, artists, matched, source, variant = "
   const hint = isUpdate
     ? "Replace the old address in your calendar app."
     : note ?? (matched === 0 ? "Your calendar fills itself when one of them announces." : "Updates nightly.");
-  const follow = source ? ` Follows ${source.u} on ListenBrainz.` : "";
 
   const remember = () => writeFeed(token);
 
@@ -106,7 +106,21 @@ export default function Subscribe({ scope, artists, matched, source, variant = "
           </button>
         )}
       </div>
-      <p className="subs__note">{copied && variant !== "quiet" ? "Link copied." : `${hint}${follow}`}</p>
+      {/* The state belongs to the sentence about what the feed is, not to the row of actions: actions on the left,
+          the one state on the right, and no third thing competing for the same line. */}
+      <div className="subs__foot">
+        <p className="subs__note">{copied && variant !== "quiet" ? "Link copied." : hint}</p>
+        {source && !isUpdate ? (
+          <span className="live" data-on="">
+            <span className="live__dot" aria-hidden="true" />
+            Live
+            <InfoTip label="What live means here">
+              Following {source.u} on ListenBrainz. The calendar re-reads your top artists every six hours; if
+              ListenBrainz cannot answer, it falls back to the artists in this link.
+            </InfoTip>
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
