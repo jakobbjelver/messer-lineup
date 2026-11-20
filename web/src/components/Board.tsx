@@ -1,150 +1,107 @@
-import type { MouseEvent } from "react";
-import { ArrowUpRight, CalendarPlus } from "./icons";
-import { eventLink } from "../lib/calendar";
-import { Key } from "../lib/key";
-import { formatKm } from "../lib/geo";
-import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf } from "../lib/indexData";
-import type { Row } from "../lib/indexData";
+import { useEffect, useRef, useState } from "react";
+import ShowRow from "./ShowRow";
+import { dayNumber, monthShort, weekdayOf, type Row } from "../lib/indexData";
+import type { DayGroup } from "../lib/board";
+import type { PortraitMap } from "../lib/portraits";
 
 type Props = {
-  rows: Row[];
-  /** The visitor's taste, as identity keys. A row whose artist is in this set is "yours". */
-  tasteKeys?: Set<string>;
-  /** Shows that were not on the board at this browser's last visit. */
-  newKeys?: Set<string>;
-  /** `k` → the town it is in, for a page that spans towns (the artist route). */
-  townOf?: Map<string, string>;
-  /** Whether the artist name is a link to that artist's page. Off on the page itself. */
-  linkArtist?: boolean;
-  /** The town a row is in, for the event link's `LOCATION`. A page that spans towns answers per row. */
-  townForRow?: (row: Row) => string;
-  /**
-   * How far the show is from the visitor, when the board knows both ends. `null` means the row has no position —
-   * and a row with no position prints no number rather than a wrong one.
-   */
+  days: DayGroup[];
+  portraits?: PortraitMap;
+  /** The reader's rows, for the mark that only appears while the board shows everyone. */
+  mine?: Set<string>;
+  markMine?: boolean;
   distanceFor?: (row: Row) => number | null;
+  /** The visitor's today, for the one day that gets a lit rule. */
+  today: string;
+  /** A page that spans towns says which town each row is in. */
+  townOf?: (row: Row) => string;
+  linkArtist?: boolean;
+  /** Rows per page. Groups are never split, so a busy day is one page on its own. */
+  pageRows?: number;
 };
 
-/**
- * The board: month headers, then one row per show, oldest first.
- *
- * A row is a link. It carries no portrait yet — ADR-002 decides where those come from, and until it does the
- * flat scrim the stylesheet draws *is* the row, not a placeholder for one.
- */
-export default function Board({ rows, tasteKeys, newKeys, townOf, linkArtist = true, townForRow, distanceFor }: Props) {
-  let month = "";
-  const hasTaste = (tasteKeys?.size ?? 0) > 0;
-
-  return (
-    <div>
-      {rows.map((row) => {
-        const day = dayOf(row.d);
-        const monthName = monthLongUpper(day);
-        const header = monthName !== month ? monthName : null;
-        if (header) month = monthName;
-        const status = statusLabel(row.st);
-        const distance = distanceFor?.(row) ?? null;
-        const mine = hasTaste && tasteKeys?.has(Key(row.a));
-        const isNew = newKeys?.has(row.k) ?? false;
-        // A row with no town label has nowhere to say it is, so it offers no calendar link rather than half of one.
-        const rowTown = townForRow?.(row) ?? "";
-        // The whole row opens the show, except on a control — the artist link and the arrow own their own clicks.
-        const openRow = (event: MouseEvent<HTMLDivElement>) => {
-          if ((event.target as HTMLElement).closest("a,button")) return;
-          window.open(row.u, "_blank", "noopener,noreferrer");
-        };
-
-        return (
-          <div key={row.k}>
-            {header ? <div className="month">{header}</div> : null}
-            <div
-              className="row"
-              data-status={row.st}
-              data-mine={mine ? "" : undefined}
-              onClick={openRow}
-            >
-              <span className="shot" />
-              {isNew ? <span className="new" aria-label="new since your last visit" /> : null}
-              <span className="when">
-                <span className="wd">{weekdayOf(day)}</span>
-                <span className="dd">
-                  {dayNumber(day)} {monthShort(day)}
-                </span>
-              </span>
-              <span className="who">
-                {linkArtist ? (
-                  <a className="artist artist--link" href={`/a/${Key(row.a)}`}>
-                    {row.a}
-                  </a>
-                ) : (
-                  <span className="artist">{row.a}</span>
-                )}
-                <span className="meta">
-                  <span className="venue">{row.v}</span>
-                  {distance !== null ? (
-                    <>
-                      <span className="dot">·</span>
-                      <span className="km">
-                        <b>{formatKm(distance)}</b> km
-                      </span>
-                    </>
-                  ) : townOf?.get(row.k) ? (
-                    <>
-                      <span className="dot">·</span>
-                      <span className="venue town">{townOf.get(row.k)}</span>
-                    </>
-                  ) : null}
-                  {status ? (
-                    <>
-                      <span className="dot">·</span>
-                      <span className="status">{status}</span>
-                    </>
-                  ) : null}
-                </span>
-                {mine ? <span className="aff" style={{ width: "100%" }} /> : null}
-              </span>
-              <span className="acts">
-                {rowTown ? (
-                  <a
-                    className="cal"
-                    href={eventLink(row, rowTown).webcal}
-                    aria-label={`Add ${row.a} at ${row.v}, ${dayNumber(day)} ${monthShort(day)}, to your calendar`}
-                  >
-                    <CalendarPlus />
-                  </a>
-                ) : null}
-                <a
-                  className="go"
-                  href={row.u}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${row.a} at ${row.v}, ${weekdayOf(day)} ${dayNumber(day)} ${monthShort(day)}${status ? ` (${status})` : ""}`}
-              >
-                  <ArrowUpRight />
-                </a>
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+/** How many whole day groups fit in `limit` rows. */
+function groupsWithin(days: DayGroup[], limit: number): number {
+  let count = 0;
+  let groups = 0;
+  for (const group of days) {
+    if (count >= limit) break;
+    count += group.rows.length;
+    groups += 1;
+  }
+  return Math.max(groups, 1);
 }
 
-function monthLongUpper(day: string): string {
-  const names = [
-    "JANUARY",
-    "FEBRUARY",
-    "MARCH",
-    "APRIL",
-    "MAY",
-    "JUNE",
-    "JULY",
-    "AUGUST",
-    "SEPTEMBER",
-    "OCTOBER",
-    "NOVEMBER",
-    "DECEMBER",
-  ];
-  return names[new Date(`${day}T12:00:00Z`).getUTCMonth()] ?? "";
+/**
+ * The board: a sticky date, then that day's shows.
+ *
+ * Rendering is paged **by row count but cut on a day boundary**, because both units matter: 693 rows in
+ * the DOM is a 54 000 px page, and a day split across two pages is a day that reads as two. Sixty rows is
+ * four or five calm days, or one very busy one — and the sentinel appends before the reader reaches the end.
+ */
+export default function Board({
+  days,
+  portraits,
+  mine,
+  markMine = false,
+  distanceFor,
+  today,
+  townOf,
+  linkArtist = true,
+  pageRows = 60,
+}: Props) {
+  const [limit, setLimit] = useState(pageRows);
+  const sentinel = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setLimit(pageRows);
+  }, [days, pageRows]);
+
+  const shown = days.slice(0, groupsWithin(days, limit));
+  const complete = shown.length === days.length;
+
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!node || complete) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setLimit((current) => current + pageRows);
+        }
+      },
+      { rootMargin: "900px 0px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [complete, limit, pageRows]);
+
+  return (
+    <div className="board">
+      {shown.map((group) => {
+        const isToday = group.day === today;
+        return (
+          <section className={`day${isToday ? " day--today" : ""}`} key={group.day}>
+            <h2 className="day__head">
+              <span className="day__wd">{weekdayOf(group.day)}</span>
+              <span className="num day__dd">{dayNumber(group.day)}</span>
+              <span className="day__mo">{monthShort(group.day)}</span>
+              <span className="num day__n">{group.rows.length}</span>
+            </h2>
+            {group.rows.map((row) => (
+              <ShowRow
+                key={row.k}
+                row={row}
+                portraits={portraits}
+                mine={markMine && mine?.has(row.k)}
+                linkArtist={linkArtist}
+                distance={distanceFor?.(row) ?? null}
+                town={townOf?.(row)}
+              />
+            ))}
+          </section>
+        );
+      })}
+      {complete ? null : <div ref={sentinel} className="board__sentinel" aria-hidden="true" />}
+    </div>
+  );
 }

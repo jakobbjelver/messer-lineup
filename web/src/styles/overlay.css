@@ -1,0 +1,554 @@
+/* ── overlays, the first-run gate, the pickers and the calendar ───────────────────────────────────
+   Radix supplies behaviour (focus trap and restore, escape, outside press, roving tabindex); this
+   sheet supplies the family's look. Square, one surface step, a hairline, and light only where the
+   accent budget allows it. */
+
+.ui-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: color-mix(in oklch, var(--background) 58%, transparent);
+  backdrop-filter: blur(4px);
+  animation: fade 0.16s linear;
+}
+
+.ui-dialog {
+  position: fixed;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  outline: none;
+  animation: rise 0.18s var(--ease);
+}
+.ui-dialog[data-medium="dialog"] {
+  left: 50%;
+  top: 12vh;
+  translate: -50% 0;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(76dvh, 720px);
+}
+.ui-dialog[data-medium="sheet"] {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 88dvh;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Tabs: two words, one lit rule under the active one — never a filled pill. */
+.ui-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ui-tab {
+  position: relative;
+  height: 46px;
+  padding: 0 18px;
+  font: 600 15px/1 var(--font);
+  letter-spacing: 0.01em;
+  color: var(--text-3);
+  transition: color 0.14s linear;
+}
+.ui-tab:hover {
+  color: var(--foreground);
+}
+.ui-tab[data-state="active"] {
+  color: var(--foreground);
+}
+.ui-tab[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -1px;
+  height: 2px;
+  background: var(--primary);
+  box-shadow: var(--glow-1), var(--glow-2);
+}
+
+/* ── a panel: the body of any dialog ───────────────────────────────────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.panel__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+}
+.panel__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+.panel__foot .spacer {
+  margin-left: auto;
+}
+.panel__lede {
+  margin: 0 0 14px;
+  font: 400 13px/1.45 var(--font);
+  color: var(--text-2);
+  max-width: 44ch;
+}
+
+/* ── the artist picker: a combobox that never becomes a wall ───────────────────────────────────── */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.results {
+  margin: -6px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-top: 0;
+  background: var(--surface);
+  max-height: 296px;
+  overflow-y: auto;
+}
+.result {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s linear;
+}
+.result:last-child {
+  border-bottom: 0;
+}
+.result:hover,
+.result[aria-selected="true"] {
+  background: var(--surface-2);
+}
+.result[aria-selected="true"] {
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+.result__name {
+  font: 600 14px/1.2 var(--font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result__meta {
+  margin-left: auto;
+  flex: none;
+  font: 400 11px/1 var(--mono);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.result--add .result__name {
+  font-weight: 400;
+  color: var(--text-2);
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+}
+.badges__empty {
+  font: 400 12.5px/1.6 var(--font);
+  color: var(--text-3);
+}
+.import {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font: 400 12.5px/1.4 var(--font);
+  color: var(--text-3);
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.import button {
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 1px;
+}
+.import button:hover {
+  color: var(--foreground);
+  border-color: var(--primary);
+}
+.import__field {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.import__field .field {
+  flex: 1;
+  height: 40px;
+}
+.import__field .btn {
+  height: 40px;
+  padding: 0 14px;
+}
+.hint {
+  margin: 0;
+  font: 400 12px/1.45 var(--font);
+  color: var(--text-3);
+}
+
+/* ── the town picker: a list, not a gazetteer ──────────────────────────────────────────────────── */
+
+.picks {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s linear;
+}
+.pick:hover {
+  background: var(--surface-2);
+}
+.pick__dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  transition: border-color 0.12s linear, box-shadow 0.12s linear;
+}
+.pick[aria-checked="true"] .pick__dot {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 14px var(--primary),
+    var(--glow-1), var(--glow-2);
+}
+.pick__name {
+  font: 600 15px/1.2 var(--font);
+}
+.pick__meta {
+  margin-left: auto;
+  font: 400 11.5px/1 var(--mono);
+  color: var(--text-3);
+}
+.pick[aria-checked="true"] .pick__meta {
+  color: var(--text-2);
+}
+
+/* ── the first-run gate ──────────────────────────────────────────────────────────────────────────
+   Full screen, no scrim, no bar: it is a place, not a modal over one. */
+
+.wiz {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  animation: fade 0.2s linear;
+}
+.wiz__bar {
+  height: 2px;
+  background: var(--border);
+  flex: none;
+}
+.wiz__bar i {
+  display: block;
+  height: 100%;
+  width: 50%;
+  background: var(--primary);
+  box-shadow: var(--glow-1), var(--glow-2);
+  transition: width 0.18s var(--ease);
+}
+.wiz__bar[data-step="2"] i {
+  width: 100%;
+}
+.wiz__body {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 32px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  animation: rise 0.2s var(--ease);
+}
+.wiz__mark {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 28px;
+  color: var(--foreground);
+  opacity: 0.16;
+}
+.wiz__h1 {
+  font-size: 32px;
+  letter-spacing: -0.025em;
+  margin-bottom: 20px;
+}
+.wiz__foot {
+  flex: none;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+}
+.wiz__foot .btn--primary {
+  margin-left: auto;
+  min-width: 132px;
+}
+.wiz__back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-2);
+}
+.wiz__back:hover {
+  color: var(--foreground);
+}
+.wiz__step {
+  font: 400 11px/1 var(--mono);
+  color: var(--text-3);
+}
+
+@media (min-width: 721px) {
+  .wiz__body {
+    padding-top: 56px;
+  }
+  .wiz__h1 {
+    font-size: 40px;
+  }
+}
+
+/* ── the calendar ─────────────────────────────────────────────────────────────────────────────── */
+
+.cal__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 14px;
+}
+.cal__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 600 15px/1 var(--font);
+}
+.cal__title .num {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.cal__nav {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.cal__wd {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.cal__wd span {
+  padding: 0 0 8px 6px;
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cal__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 104px;
+  padding: 6px;
+  background: var(--background);
+  text-align: left;
+  transition: background 0.12s linear;
+}
+.cal__cell:hover {
+  background: var(--surface-2);
+}
+.cal__cell[data-out] {
+  opacity: 0.32;
+}
+.cal__n {
+  font: 400 11.5px/1 var(--mono);
+  color: var(--text-3);
+}
+.cal__cell[data-shows] .cal__n {
+  color: var(--foreground);
+}
+.cal__cell[data-past] .cal__n {
+  opacity: 0.45;
+}
+.cal__cell--today::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 18px;
+  height: 2px;
+  background: var(--primary);
+  box-shadow: var(--glow-1), var(--glow-2);
+}
+.cal__faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.cal__more {
+  align-self: flex-end;
+  margin-top: auto;
+  font: 400 10px/1 var(--mono);
+  color: var(--text-3);
+}
+.cal .avatar {
+  --size: 22px;
+  font-size: 10px;
+}
+
+@media (max-width: 720px) {
+  .cal__cell {
+    min-height: 52px;
+    padding: 4px;
+    gap: 3px;
+  }
+  .cal__cell--today::after {
+    left: 4px;
+    bottom: 4px;
+    width: 12px;
+  }
+  .cal .avatar {
+    --size: 20px;
+    font-size: 10px;
+  }
+  .cal__wd span {
+    padding-left: 4px;
+  }
+  .cal__title {
+    font-size: 14px;
+  }
+}
+
+/* The day sheet: a day's shows, in the board's own rows. */
+.daysheet__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.daysheet__title .num {
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+.daysheet__body {
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ── two small pieces the pickers needed ───────────────────────────────────────────────────────── */
+
+.locate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  margin-bottom: 18px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: transparent;
+  font: 600 14px/1 var(--font);
+  color: var(--foreground);
+  box-shadow: var(--glow-1), var(--glow-2), var(--glow-3);
+  transition: background 0.12s linear, box-shadow 0.14s linear, color 0.12s linear;
+}
+.locate:hover {
+  background: var(--surface-2);
+}
+.locate--on {
+  box-shadow: none;
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border-strong));
+  color: var(--primary);
+  cursor: default;
+}
+.locate__tag {
+  margin-left: auto;
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.picker__busy {
+  flex: none;
+  width: 14px;
+  height: 2px;
+  background: var(--primary);
+  box-shadow: var(--glow-1), var(--glow-2);
+  animation: busy 1s ease-in-out infinite;
+}
+@keyframes busy {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.board__sentinel {
+  height: 1px;
+}
+
+.daysheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}

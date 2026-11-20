@@ -57,12 +57,6 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 	if title == "" {
 		return model.Show{}, fmt.Errorf("tickster: %s: no event title", pageURL)
 	}
-	// Tickster names some un-ticketed admission with its own ticket product ("Entrébiljetter/Tickets"). It parses
-	// perfectly and is not a show, so the adapter refuses it by name instead of publishing an artist called
-	// "Tickets" — see model.NotAnArtistTitle.
-	if model.NotAnArtistTitle(text(title)) {
-		return model.Show{}, model.ErrNotAnArtist
-	}
 	rawStart := firstGroup(startPattern, page)
 	if rawStart == "" {
 		return model.Show{}, fmt.Errorf("tickster: %s: no start date", pageURL)
@@ -98,6 +92,20 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 		return model.Show{}, fmt.Errorf("tickster: %s: no town id for %q", pageURL, city)
 	}
 
+	// The page title is written for the ticketer, not for a board: it can carry the date and the venue. Clean it
+	// against the venue we just parsed, then decide whether anything is left — and only then take the identity
+	// key, because a key computed from a polluted name can never match a reader's list.
+	artist := model.CleanArtistName(text(title), venue)
+	if artist == "" {
+		return model.Show{}, model.ErrNotAnArtist
+	}
+	// Tickster names some un-ticketed admission with its own ticket product ("Entrébiljetter/Tickets"). It parses
+	// perfectly and is not a show, so the adapter refuses it by name instead of publishing an artist called
+	// "Tickets" — see model.NotAnArtistTitle.
+	if model.NotAnArtistTitle(artist) {
+		return model.Show{}, model.ErrNotAnArtist
+	}
+
 	// A position is a bonus, never a requirement: a page without a map still publishes, it just adds nothing to its
 	// town's centre. A malformed pair is treated the same way as an absent one.
 	var geo *model.Geo
@@ -115,8 +123,8 @@ func parseEvent(body []byte, pageURL string) (model.Show, error) {
 	}
 
 	return model.Show{
-		Artist:    text(title),
-		ArtistKey: model.Key(text(title)),
+		Artist:    artist,
+		ArtistKey: model.Key(artist),
 		Venue:     venue,
 		VenueKey:  model.Key(venue),
 		Town:      slug + "-" + country,

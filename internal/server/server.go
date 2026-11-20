@@ -31,6 +31,8 @@ type Options struct {
 	WebDir   string // optional SPA assets; empty means "no board yet", and that is answered honestly
 	Now      func() time.Time
 	Log      io.Writer
+	// ArtistSearchURL overrides the MusicBrainz search endpoint. A test seam: production never sets it.
+	ArtistSearchURL string
 }
 
 // Handler builds the routes. It returns an error only when the index cannot be read at all — a server that can
@@ -46,7 +48,7 @@ func Handler(opts Options) (http.Handler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("server: %w", err)
 	}
-	s := &server{opts: opts, manifest: manifest}
+	s := &server{opts: opts, manifest: manifest, search: newArtistSearcher(opts.ArtistSearchURL)}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
@@ -57,6 +59,7 @@ func Handler(opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /data/", s.townData)
 	mux.HandleFunc("GET /where", s.where)
 	mux.HandleFunc("GET /event/", s.event)
+	mux.HandleFunc("GET /api/v1/artists/search", s.artistSearch)
 	mux.HandleFunc("/api/v1/", s.apiNotYet)
 	mux.HandleFunc("GET /calendar/{file}", s.calendar)
 	mux.HandleFunc("/", s.web)
@@ -66,6 +69,7 @@ func Handler(opts Options) (http.Handler, error) {
 type server struct {
 	opts     Options
 	manifest model.Manifest
+	search   *artistSearcher
 }
 
 // health is liveness only: the process answers. It says nothing about the index, which is /readyz's job.

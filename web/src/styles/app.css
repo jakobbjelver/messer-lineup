@@ -1,568 +1,517 @@
-/*
- * The app's own delta on the frozen design.
- *
- * `lineup.css` is the mockup's stylesheet verbatim — it is the design, and it is not edited here. This file adds
- * only what the mockup did not need: a textarea for a pasted list, chips that are buttons (tappable to drop), an
- * inline text link, loader skeletons, the canon's way back, and one quiet hint line. Every value comes from
- * the design's tokens. The owner's amendments to the design itself are recorded at the top of `lineup.css`.
- */
+/* ── the bar ──────────────────────────────────────────────────────────────────────────────────────
+   48px, sticky, one hairline. The mark is a seal; the three controls are the whole app's chrome. */
 
-.paste {
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: var(--background);
-  border: 1px solid var(--border-strong);
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--bar);
+  background: color-mix(in oklch, var(--background) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.bar__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: calc(var(--bar) - 1px);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 12px 0 16px;
+}
+.bar__mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   color: var(--foreground);
-  font: 400 13px/1.5 var(--font-golos);
-  resize: vertical;
-  outline: none;
 }
-.paste:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent);
+.bar__name {
+  display: none;
+  margin-left: 10px;
+  font: 600 14px/1 var(--font);
+  letter-spacing: -0.01em;
 }
-.paste::placeholder {
-  color: var(--text-3);
+.bar__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bar__actions .sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: var(--border);
 }
 
-/* Chips are the curation list: every one is on, tapping drops it, and the ones with a show are marked. */
-.chip {
+/* ── the page ────────────────────────────────────────────────────────────────────────────────────
+   One column on the page, no card, no shadow: the hairlines and the faces do the structure. */
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 96px;
+}
+.page[data-view="calendar"] {
+  max-width: 960px;
+}
+
+.head {
+  padding: 18px 0 6px;
+}
+.head__h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.townbtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 8px;
-  font: 400 12px var(--font-golos);
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 2px;
+}
+.townbtn .sign {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.townbtn svg {
+  flex: none;
+  color: var(--text-3);
+  transition: rotate 0.14s var(--ease), color 0.12s linear;
+}
+.townbtn:hover svg {
   color: var(--foreground);
-  background: var(--surface-2);
-  border: 1px solid var(--border-strong);
-  cursor: pointer;
 }
-.chip:hover {
+.townbtn[aria-expanded="true"] svg {
+  rotate: 180deg;
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  margin-top: 8px;
+  font: 400 12.5px/1.2 var(--font);
+  color: var(--text-2);
+}
+.count__swap {
+  color: var(--text-2);
+  border-bottom: 1px solid color-mix(in oklch, var(--text-3) 55%, transparent);
+  padding-bottom: 1px;
+  transition: color 0.12s linear, border-color 0.12s linear;
+}
+.count__swap:hover {
+  color: var(--foreground);
   border-color: var(--primary);
+  box-shadow: 0 2px 0 -1px color-mix(in oklch, var(--primary) 45%, transparent);
 }
-.chip b {
-  font: 400 11px var(--font-mono);
+.count .num {
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+/* ── the board: one sticky header per day ─────────────────────────────────────────────────────── */
+
+.board {
+  margin-top: 0;
+}
+.day {
+  position: relative;
+}
+.day__head {
+  position: sticky;
+  top: var(--bar);
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 0 8px;
+  background: color-mix(in oklch, var(--background) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--text-3);
 }
-.chip:hover b {
-  color: var(--primary);
-}
-.chip.on {
-  border-color: color-mix(in oklab, var(--primary) 55%, var(--border-strong));
-  background: color-mix(in oklab, var(--primary) 10%, transparent);
-}
-
-.linkish {
-  padding: 0;
+.day__head .day__dd {
+  font-size: 11px;
+  letter-spacing: 0.04em;
   color: var(--text-2);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
 }
-.linkish:hover {
-  color: var(--primary);
+.day__head .day__n {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.day--today .day__head .day__dd {
+  color: var(--foreground);
+}
+.day--today .day__head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 28px;
+  height: 2px;
+  background: var(--primary);
+  box-shadow: var(--glow-1), var(--glow-2);
 }
 
-.hint {
+.show {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 10px 4px 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s linear;
+}
+.show:hover {
+  background: color-mix(in oklch, var(--surface-2) 70%, transparent);
+}
+.show:last-child {
+  border-bottom: 0;
+}
+.show__who {
+  display: block;
+  min-width: 0;
+}
+.show__artist {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 15px/1.25 var(--font);
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+a.show__artist:hover {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--primary) 70%, transparent);
+  text-underline-offset: 3px;
+}
+.show__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 3px;
+  overflow: hidden;
+  font: 400 12.5px/1.25 var(--font);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.show__meta .venue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.show__meta .km {
+  flex: none;
+  font: 400 11.5px/1 var(--mono);
+  color: var(--text-2);
+}
+.show__meta .km b {
+  font-weight: 500;
+  color: var(--foreground);
+}
+.show__meta .dot {
+  color: var(--text-3);
+}
+.show__meta .status {
+  flex: none;
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+.show__go {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 32px;
+  color: var(--text-3);
+  transition: color 0.12s linear, translate 0.12s var(--ease);
+}
+.show:hover .show__go {
+  color: var(--foreground);
+  translate: 1px -1px;
+}
+
+/* ── the avatar: initials first, the face when it arrives ─────────────────────────────────────── */
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--size, 40px);
+  height: var(--size, 40px);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 600 calc(var(--size, 40px) * 0.29) / 1 var(--font);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.06) brightness(0.96);
+  opacity: 0;
+  animation: fade 0.2s linear both;
+  transition: filter 0.25s linear;
+}
+.avatar:hover img {
+  filter: grayscale(1) contrast(1.1) brightness(1.04);
+}
+.avatar--96 {
+  --size: 96px;
+  font-size: 26px;
+}
+.avatar--22 {
+  --size: 22px;
+  font-size: 10px;
+}
+.avatar--16 {
+  --size: 16px;
+  font-size: 10px;
+}
+.avatar[data-mine] {
+  box-shadow: 0 0 0 2px var(--primary), var(--glow-1), var(--glow-2);
+}
+
+/* ── states ───────────────────────────────────────────────────────────────────────────────────── */
+
+.state {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 64px 0;
+  animation: rise 0.18s var(--ease) both;
+}
+.state h2 {
+  font-size: 20px;
+  line-height: 1.25;
+}
+.state p {
   margin: 0;
   color: var(--text-2);
-  font: 400 12px/1.5 var(--font-golos);
-  max-width: 46ch;
+  font-size: 13.5px;
+  max-width: 42ch;
+}
+.state__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
 
-/* On a phone the palette is a bottom sheet, not a floating panel. */
-@media (max-width: 720px) {
-  .palette {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    translate: none;
-    width: 100%;
-    max-height: 82vh;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
-  }
+/* The skeleton is the board's own geometry: every box that arrives late has a placeholder of the
+   same width and height, so the page settles once. */
+.sk {
+  animation: fade 0.2s linear both;
+}
+.sk__sign {
+  height: 34px;
+  width: min(260px, 60%);
+  margin: 6px 0 14px;
+  background: var(--surface-2);
+  border-radius: 2px;
+}
+.sk__count {
+  height: 12px;
+  width: 120px;
+  margin-bottom: 22px;
+  background: var(--surface-2);
+  border-radius: 2px;
+}
+.sk__day {
+  height: 10px;
+  width: 84px;
+  margin: 22px 0 12px;
+  background: var(--surface-2);
+  border-radius: 2px;
+}
+.sk__row {
+  display: grid;
+  grid-template-columns: 40px 1fr 20px;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  border-bottom: 1px solid var(--border);
+}
+.sk__circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+.sk__line {
+  height: 11px;
+  border-radius: 2px;
+  background: var(--surface-2);
+}
+.sk__line--a {
+  width: 62%;
+  margin-bottom: 7px;
+}
+.sk__line--b {
+  width: 38%;
+  height: 9px;
 }
 
-.chip.on {
-  box-shadow:
-    0 0 1px color-mix(in oklab, var(--primary) 80%, transparent),
-    0 0 12px color-mix(in oklab, var(--primary) 26%, transparent);
-}
+/* ── the artist page ──────────────────────────────────────────────────────────────────────────── */
 
-/* ── the way back: canon §20 — one 32px outlined control, one arrow, the destination ─────────────── */
 .backlink {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 32px;
-  padding: 0 10px;
+  margin-top: 18px;
+  padding: 0 10px 0 6px;
   border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--foreground);
-  font: 500 14px/1 var(--font-golos);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  border-radius: 2px;
+  font: 400 12.5px/1 var(--font);
+  color: var(--text-2);
+  transition: color 0.12s linear, background 0.12s linear;
 }
 .backlink:hover {
+  color: var(--foreground);
   background: var(--surface-2);
 }
-.backlink:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-/* above a page heading it keeps the eyebrow's left edge and leaves the heading its room */
-.head > .backlink {
-  margin: 0 0 16px;
-}
-/* inside the palette it takes the flow's own 16px inset, so the back control and the heading share one left edge */
-.palette__body > .backlink {
-  margin: 16px 16px 14px;
-}
-.backlink svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-}
-
-/* ── skeletons: the board's own grid, so nothing jumps when the rows land ────────────────────────── */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-.skeleton {
-  padding-bottom: 40px;
-}
-.sk-line {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  /* the same tempo as the haze: it breathes, it does not sweep */
-  animation: sk 7s ease-in-out infinite alternate;
-}
-@keyframes sk {
-  from {
-    opacity: 0.5;
-  }
-  to {
-    opacity: 0.92;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sk-line {
-    animation: none;
-    opacity: 0.7;
-  }
-}
-.sk-line--eyebrow {
-  margin: 24px 20px 0;
-  width: 190px;
-  height: 10px;
-}
-.sk-line--sign {
-  margin: 16px 20px 0;
-  width: min(340px, 62%);
-  height: 36px;
-}
-.sk-line--ribbon {
-  margin: 22px 20px 0;
-  height: 44px;
-}
-.sk-row {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 16px;
-  column-gap: 14px;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid color-mix(in oklab, var(--foreground) 9%, var(--surface));
-}
-.sk-stack {
-  display: grid;
-  gap: 7px;
-}
-.sk-line--day {
-  height: 11px;
-  width: 34px;
-}
-.sk-line--artist {
-  height: 14px;
-  width: min(240px, 62%);
-}
-.sk-line--venue {
-  height: 11px;
-  width: min(170px, 40%);
-}
-/* three widths, so eight bars do not read as a barcode */
-.sk-row:nth-child(4n + 5) .sk-line--artist {
-  width: min(300px, 74%);
-}
-.sk-row:nth-child(4n + 6) .sk-line--artist {
-  width: min(180px, 48%);
-}
-.sk-row:nth-child(4n + 7) .sk-line--venue {
-  width: min(210px, 52%);
-}
-
-/* ── coverage: the line, and the panel behind its i ──────────────────────────────────────────────────── */
-.coverage {
-  position: relative;
-  margin-top: 18px;
-}
-/* The design gives the coverage band `z-index: 1`, which is its own stacking context: the panel's own z-index
-   cannot lift it over the rows until the band itself does. */
-.coverage:has(.coverage__panel) {
-  z-index: 40;
-}
-.coverage__line {
+.artist {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 36px;
-  padding: 0 20px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: none;
-  font: 600 10.5px/1 var(--font-golos);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  text-align: left;
-  cursor: pointer;
+  gap: 16px;
+  padding: 24px 0 10px;
 }
-.coverage__line:hover {
-  background: var(--surface-2);
+.artist__h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
-.coverage__line .g {
+.artist__credit {
+  margin-top: 6px;
+  font: 400 11px/1.4 var(--font);
   color: var(--text-3);
-  font-weight: 400;
 }
-.coverage__line .i {
-  margin-left: auto;
-  color: var(--text-2);
-  display: inline-flex;
+.artist__credit a {
+  border-bottom: 1px solid var(--border-strong);
 }
 
-.coverage__panel {
-  padding: 14px 16px 16px;
-  /* one surface step away from the sheet, in the direction each theme has room to step: elevation without a shadow */
-  background: var(--background);
-  border: 1px solid var(--border-strong);
-  /* the band above it is uppercase 10.5 mono; the panel is prose and figures, so it resets both */
-  text-transform: none;
-  letter-spacing: normal;
-  font-weight: 400;
-}
-.dark 
-.coverage__panel {
-  background: var(--surface-2);
-}
-.coverage__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 48px;
-  gap: 10px;
-  align-items: baseline;
-  padding: 7px 0;
-  font: 400 12.5px/1.35 var(--font-golos);
-  border-bottom: 1px solid var(--border);
-}
-.coverage__row--head {
-  font: 600 10px/1 var(--font-golos);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-/* a source id is machine meta: uppercase, tracked, but not as loud as the column heading */
-.coverage__row > span:first-child {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--foreground);
-}
-.coverage__row .num {
-  font: 400 12px var(--font-mono);
-  color: var(--foreground);
-  text-align: right;
-}
-.coverage__row .g {
-  color: var(--text-3);
-}
-.coverage__row .ok {
-  color: var(--text-2);
-}
-.coverage__row .bad {
-  color: var(--destructive);
-}
-.coverage__facts {
-  display: grid;
-  gap: 6px;
-  margin: 12px 0 0;
-}
-.coverage__facts div {
+/* ── footer: one line, machine meta only ─────────────────────────────────────────────────────── */
+
+.foot {
   display: flex;
-  gap: 10px;
-  font: 400 12px/1.4 var(--font-golos);
-}
-.coverage__facts dt {
-  min-width: 62px;
-  font: 600 10px/1.9 var(--font-golos);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.coverage__facts dd {
-  margin: 0;
-  color: var(--text-2);
-}
-.coverage__forget {
-  margin-top: 14px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--foreground);
-  font: 500 12px/1 var(--font-golos);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-.coverage__forget:hover:not(:disabled) {
-  background: var(--surface-2);
-  border-color: var(--destructive);
-  color: var(--destructive);
-}
-.coverage__forget:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.coverage__note {
-  margin: 8px 0 0;
-  color: var(--text-3);
-  font: 400 11.5px/1.45 var(--font-golos);
-  max-width: 46ch;
-}
-
-/* ── date range: square cells, hairlines, one accent ─────────────────────────────────────────────────── */
-.daterange {
-  margin-top: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 48px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
-}
-.daterange__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.daterange__head .lab {
-  flex: 1;
-  text-align: center;
-  font: 600 10.5px/1 var(--font-golos);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
-.daterange__nav {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--foreground);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-.daterange__nav svg {
-  width: 14px;
-  height: 14px;
-}
-.daterange__nav:hover:not(:disabled) {
-  background: var(--surface-2);
-}
-.daterange__nav:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.daterange__months {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-.daterange__title {
-  margin-bottom: 6px;
-  font: 600 10.5px/1 var(--font-golos);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font: 400 10px/1.4 var(--mono);
+  letter-spacing: 0.02em;
   color: var(--text-3);
 }
-.daterange__grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-}
-.daterange__wd {
-  padding-bottom: 4px;
-  text-align: center;
-  font: 400 10px/1 var(--font-mono);
-  text-transform: uppercase;
+.foot a {
   color: var(--text-3);
-}
-.daterange__pad {
-  height: 28px;
-}
-.daterange__day {
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: var(--foreground);
-  font: 400 12px/1 var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  position: relative;
-}
-.daterange__day:hover:not(:disabled) {
-  background: var(--surface-2);
-}
-.daterange__day[data-within] {
-  background: color-mix(in oklab, var(--primary) 14%, transparent);
-}
-.daterange__day[data-selected] {
-  background: color-mix(in oklab, var(--primary) 24%, transparent);
-  box-shadow: inset 0 0 0 2px var(--primary);
-  font-weight: 500;
-}
-.daterange__day:disabled {
-  opacity: 0.4;
-  color: var(--text-3);
-  cursor: default;
-}
-.daterange__day:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: -2px;
-}
-.daterange__foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-.daterange__foot .lab {
-  font: 400 11.5px var(--font-mono);
-  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
 }
 
-/* one month on a phone: two grids at 390px would put the cells under a fingertip's width */
-@media (max-width: 560px) {
-  .daterange__months {
-    grid-template-columns: 1fr;
+@media (min-width: 721px) {
+  .bar__name {
+    display: block;
   }
-  .daterange__month:nth-child(2) {
+  .head {
+    padding-top: 40px;
+  }
+  .sk__sign {
+    height: 52px;
+  }
+  .show {
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    padding-right: 8px;
+  }
+  .show__artist {
+    font-size: 16px;
+  }
+}
+
+/* ── the wide screen: the date becomes a rail, the shows become the page ──────────────────────────
+   A 720px column on a 1440 screen is a phone app in a sea of paper. Above 900px the day moves into a
+   left rail — sticky per day — so the width is used by the thing that was already there: the date. */
+
+@media (min-width: 900px) {
+  .page {
+    max-width: 960px;
+  }
+  .bar__row {
+    max-width: 960px;
+  }
+  .day {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    column-gap: 28px;
+  }
+  .day__head {
+    grid-column: 1;
+    grid-row: 1 / span 200;
+    align-self: start;
+    display: block;
+    position: sticky;
+    top: calc(var(--bar) + 16px);
+    padding: 22px 0 0;
+    border-bottom: 0;
+    background: none;
+    backdrop-filter: none;
+    font-size: 10.5px;
+  }
+  .day__head .day__dd {
+    display: block;
+    margin: 8px 0 2px;
+    font-size: 26px;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--text-2);
+  }
+  .day__head .day__n {
+    display: block;
+    margin: 10px 0 0;
+    font-size: 10px;
+  }
+  .day--today .day__head .day__dd {
+    color: var(--primary);
+  }
+  .day--today::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 22px;
+    width: 2px;
+    height: 44px;
+    background: var(--primary);
+    box-shadow: var(--glow-1), var(--glow-2);
+  }
+  .day--today .day__head::after {
     display: none;
   }
-}
-
-/* ── the calendar feed: one link, one address ─────────────────────────────────────────────────────────── */
-.coverage__cal {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-}
-.coverage__cal-link {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--foreground);
-  font: 500 14px/1 var(--font-golos);
-  text-decoration: none;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-.coverage__cal-link:hover {
-  background: var(--surface-2);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.coverage__copy {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text-2);
-  font: 500 14px/1 var(--font-golos);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-.coverage__copy:hover {
-  background: var(--surface-2);
-  color: var(--foreground);
-}
-
-
-/* ── the loading head ──────────────────────────────────────────────────────────────────────────────────────
-   Two facts arrive late (the day count and the build stamp) and two blocks arrive late (the title, the ribbon and
-   coverage band). Each gets a box of the size it will occupy, so the layout is settled before the data is. */
-.sk-num {
-  display: inline-block;
-  width: 26px;
-  height: 9px;
-  vertical-align: baseline;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  animation: sk 7s ease-in-out infinite alternate;
-}
-
-.sk-stamp {
-  display: inline-block;
-  width: 96px;
-  height: 9px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  animation: sk 7s ease-in-out infinite alternate;
-}
-
-.sk-h1 {
-  display: block;
-  height: 34px;
-  width: min(220px, 54%);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  animation: sk 7s ease-in-out infinite alternate;
-}
-
-.headsk {
-  display: block;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sk-num,
-  .sk-stamp,
-  .sk-h1 {
-    animation: none;
+  .day > .show {
+    grid-column: 2;
+  }
+  .show {
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    padding-right: 8px;
+  }
+  .show__artist {
+    font-size: 16px;
   }
 }

@@ -95,38 +95,12 @@ export function labelFor(key: string): string {
 }
 
 /**
- * The names a paste or the index taught us, keyed by identity key.
+ * The names a list arrives with, keyed by identity key.
  *
- * A URL carries keys because keys are the identity, but a key is a slug: read back on its own it turns "Björk"
- * into "Bjork" and "Sigur Rós" into "Sigur Ros". So the display names live in the browser — they are the reader's
- * own list, they are not secret, and losing them costs nothing but a spelling.
+ * A URL carries keys because keys are the identity, but a key is a slug: read back on its own it
+ * turns "Björk" into "Bjork". The picker supplies the spelling, `storage.ts` remembers the list, and
+ * a key with no label falls back to a readable form rather than to nothing.
  */
-const NAMES_KEY = "lineup.names";
-
-export function readNames(): TasteEntry[] {
-  try {
-    const raw = localStorage.getItem(NAMES_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (entry): entry is TasteEntry =>
-        !!entry && typeof entry === "object" && typeof (entry as TasteEntry).key === "string" && typeof (entry as TasteEntry).name === "string",
-    );
-  } catch {
-    return [];
-  }
-}
-
-/** Remembers the display names, capped so a huge paste cannot fill the quota. */
-export function writeNames(entries: TasteEntry[]): void {
-  try {
-    localStorage.setItem(NAMES_KEY, JSON.stringify(entries.slice(0, 400)));
-  } catch {
-    /* storage refused: chips fall back to the key, which is still a name */
-  }
-}
-
 export function toEntries(keys: string[], known: TasteEntry[] = []): TasteEntry[] {
   const names = new Map(known.map((entry) => [entry.key, entry.name]));
   return keys.map((key) => ({ key, name: names.get(key) ?? labelFor(key) }));

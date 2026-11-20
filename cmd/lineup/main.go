@@ -22,6 +22,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
+	"github.com/jakobbjelver/messer-lineup/internal/portraits"
 	"github.com/jakobbjelver/messer-lineup/internal/publish"
 	"github.com/jakobbjelver/messer-lineup/internal/server"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
@@ -62,6 +63,7 @@ func commands() []command {
 		{"mine", "sweep a platform and write the report a publish is based on", runMine},
 		{"publish", "copy a verified index into the public bucket", runPublish},
 		{"serve", "serve the index (and the board, once it is built) locally", runServe},
+		{"portraits", "resolve artist portraits (MusicBrainz → Wikimedia Commons) into the index", runPortraits},
 		{"findings", "emit the parser findings an agent acts on (P8)", notWired("P8", "the autonomous warden")},
 		{"version", "print the build stamp", runVersion},
 	}
@@ -149,6 +151,52 @@ func orDefault(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+// runPortraits resolves the published artists' faces. It is a separate step from `mine` on purpose: a portrait is
+// not an event fact, and a sweep must be able to publish without waiting on 500 lookups at one request per second.
+func runPortraits(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("lineup portraits", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	indexDir := fs.String("index", ".lineup-index", "the built index whose artists to resolve")
+	statePath := fs.String("state", "", "where resolved artists are remembered (default .lineup-state/portraits.json)")
+	out := fs.String("out", "", "the published file (default <index>/artists/portraits.json)")
+	limit := fs.Int("limit", 0, "resolve at most N new artists this run (0 = all)")
+	var only stringList
+	fs.Var(&only, "only", "resolve these names instead of the index: repeatable, or comma-separated (a probe, not a build)")
+	dryRun := fs.Bool("dry-run", false, "report what would be resolved; write nothing")
+	asJSON := fs.Bool("json", false, "print the report as JSON")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+
+	report, err := portraits.Run(context.Background(), portraits.Options{
+		IndexDir:  *indexDir,
+		StatePath: *statePath,
+		Out:       *out,
+		Limit:     *limit,
+		Only:      only,
+		DryRun:    *dryRun,
+		Log:       stderr,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup portraits: %v\n", err)
+		return exitRefused
+	}
+	if *asJSON {
+		if err := writeJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "lineup portraits: %v\n", err)
+			return exitRefused
+		}
+		return exitOK
+	}
+	fmt.Fprintf(stdout, "%d artists, %d already known, %d resolved, %d without a portrait, %d to retry%s\n",
+		report.Indexed, report.Cached, report.Found, report.Missed, report.Retry,
+		map[bool]string{true: " (dry run)"}[report.DryRun])
+	if !report.DryRun {
+		fmt.Fprintf(stdout, "wrote %s: %d portraits, %d bytes\n", report.Path, report.Written, report.Bytes)
+	}
+	return exitOK
 }
 
 func runPublish(args []string, stdout, stderr io.Writer) int {

@@ -14,6 +14,8 @@ export default defineConfig({
       "/manifest.json": "http://127.0.0.1:8016",
       "/towns.json": "http://127.0.0.1:8016",
       "/towns": "http://127.0.0.1:8016",
+      // The artist picker asks the same edge the live board asks; `lineup serve` answers the route too.
+      "/api": "http://127.0.0.1:8016",
     },
   },
   build: {
