@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // ErrDisallowed is returned instead of making a request that robots.txt forbids. A crawler that asks
@@ -226,7 +228,7 @@ type robotsEntry struct {
 func NewRobotsCache(ttl time.Duration, token string, now func() time.Time,
 	fetch func(ctx context.Context, origin string) (int, []byte, error)) *RobotsCache {
 	if now == nil {
-		now = time.Now
+		now = clock.Now
 	}
 	return &RobotsCache{ttl: ttl, token: token, now: now, fetch: fetch, entries: map[string]robotsEntry{}}
 }

@@ -14,6 +14,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // bucket is a tiny S3: it remembers what was PUT and answers HEAD from the same map.
@@ -250,7 +252,7 @@ func TestCredentialsAreRequiredUnlessDryRunning(t *testing.T) {
 	if err == nil {
 		t.Fatal("a publish without credentials was attempted")
 	}
-	if _, err := Run(context.Background(), Options{IndexDir: dir, DryRun: true, Now: time.Now()}); err != nil {
+	if _, err := Run(context.Background(), Options{IndexDir: dir, DryRun: true, Now: clock.Now()}); err != nil {
 		t.Fatalf("a dry run needs no credentials: %v", err)
 	}
 }

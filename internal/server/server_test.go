@@ -11,6 +11,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // buildIndex writes a two-town index and returns its directory.
@@ -232,7 +234,7 @@ func TestTheBoardServesWithAHistoryFallback(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(web, "index.html"), []byte("<html>board</html>"), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	handler, err := Handler(Options{IndexDir: dir, WebDir: web, Now: time.Now})
+	handler, err := Handler(Options{IndexDir: dir, WebDir: web, Now: clock.Now})
 	if err != nil {
 		t.Fatalf("handler: %v", err)
 	}

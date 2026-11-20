@@ -23,6 +23,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // Options configures a server.
@@ -46,7 +48,7 @@ func Handler(opts Options) (http.Handler, error) {
 		return nil, errors.New("server: no index directory")
 	}
 	if opts.Now == nil {
-		opts.Now = time.Now
+		opts.Now = clock.Now
 	}
 	manifest, err := index.ReadManifest(opts.IndexDir)
 	if err != nil {
