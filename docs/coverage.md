@@ -87,19 +87,19 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_tickster · measured · 2026-11-20T19:13:42Z_
+_tickster · measured · 2026-11-20T19:37:37Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 49 | 24 | 12 | 0 | 0 | 27 |
-| gothenburg | tickster | 696 | 270 | 259 | 0 | 0 | 390 |
-| stockholm | tickster | 978 | 331 | 441 | 0 | 0 | 534 |
-| **total** | | **1723** | **625** | **712** | **0** | **0** | |
+| copenhagen | tickster | 49 | 24 | 12 | 0 | 0 | 28 |
+| gothenburg | tickster | 696 | 268 | 261 | 0 | 0 | 385 |
+| stockholm | tickster | 975 | 327 | 442 | 0 | 0 | 548 |
+| **total** | | **1720** | **619** | **715** | **0** | **0** | |
 
-Music policy: **712** rows dropped (form:buffe 1, form:fotboll 3, form:frukost 1, form:humor 2, form:julbord 1, form:kidz 1, form:marknad 1, form:middag 11, form:musikal 2, form:provning 32, form:quiz 3, form:stand-up 3, form:standup 2, form:tasting 4, form:vendors 1, form:wrestling 3, venue 641).
+Music policy: **715** rows dropped (form:allsang 1, form:buffe 1, form:dinner 2, form:fotboll 3, form:frukost 1, form:humor 2, form:julbord 1, form:kidz 1, form:marknad 1, form:middag 11, form:musical 2, form:musikal 2, form:provning 32, form:quiz 3, form:stand-up 3, form:standup 2, form:tasting 4, form:vendors 1, form:wrestling 3, venue 639).
 
-Merged: **625** rows → **603** shows, duplicate rate **3.5 %**. Towns discovered: **3**.
-Index: **3** shard(s), 603 rows published, 0 outside the window, 0 refused, 36 807 bytes.
+Merged: **619** rows → **598** shows, duplicate rate **3.4 %**. Towns discovered: **3**.
+Index: **3** shard(s), 598 rows published, 0 outside the window, 0 refused, 36 479 bytes.
 <!-- mine:end -->
 
 ## The hit rate, measured after three towns
