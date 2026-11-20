@@ -129,7 +129,6 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
    */
   useEffect(() => {
     if (hits.length === 0) {
-      setFaces(new Map());
       setWaiting([]);
       return;
     }
@@ -141,7 +140,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
     resolvePortraits(unknown)
       .then((next) => {
         if (!live) return;
-        setFaces(next);
+        // Merged, not replaced: a face resolved for a search hit is still the face of the badge that came from it.
+        setFaces((prev) => new Map([...prev, ...next]));
         setWaiting([]);
       })
       .catch(() => {
