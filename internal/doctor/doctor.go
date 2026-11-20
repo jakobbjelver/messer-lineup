@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jakobbjelver/messer-lineup/internal/index"
+	"github.com/jakobbjelver/messer-lineup/internal/venues"
 	"github.com/jakobbjelver/messer-lineup/internal/version"
 )
 
@@ -25,7 +26,17 @@ type Report struct {
 	Now      time.Time   `json:"now"`
 	Index    IndexState  `json:"index"`
 	Sources  SourceState `json:"sources"`
+	Venues   VenueState  `json:"venues"`
 	Problems []string    `json:"problems"`
+}
+
+// VenueState is the music policy registry: which rooms are classified, and how. An empty registry is a
+// state, not a problem — the policy then keeps everything and the coverage record says so.
+type VenueState struct {
+	Path  string   `json:"path"`
+	Files []string `json:"files"`
+	Music int      `json:"music"`
+	Other int      `json:"other"`
 }
 
 // IndexState is what the index directory holds.
@@ -84,6 +95,20 @@ func Probe(indexDir, sourcesDir string, now time.Time) Report {
 	rep.Sources.Path = sourcesDir
 	rep.Sources.Countries = tomlNames(filepath.Join(sourcesDir, "countries"))
 	rep.Sources.Platforms = tomlNames(filepath.Join(sourcesDir, "platforms"))
+
+	rep.Venues.Path = filepath.Join(sourcesDir, "venues")
+	if files, _ := filepath.Glob(filepath.Join(rep.Venues.Path, "*.json")); len(files) > 0 {
+		for _, path := range files {
+			rep.Venues.Files = append(rep.Venues.Files, strings.TrimSuffix(filepath.Base(path), ".json"))
+		}
+		sort.Strings(rep.Venues.Files)
+		reg, err := venues.LoadDir(rep.Venues.Path)
+		if err != nil {
+			rep.Problems = append(rep.Problems, "venues: "+err.Error())
+		} else {
+			rep.Venues.Music, rep.Venues.Other = reg.Counts()
+		}
+	}
 
 	return rep
 }

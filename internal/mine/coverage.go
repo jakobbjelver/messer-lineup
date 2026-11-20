@@ -26,8 +26,8 @@ func RenderCoverageBlock(r Report) string {
 	}
 	fmt.Fprintf(&b, "_%s · %s · %s_\n\n", strings.Join(r.Sources, ", "), mode, r.StartedAt.UTC().Format(time.RFC3339))
 
-	b.WriteString("| Town | Source | Candidates | Rows | Filtered | Failures | Seconds |\n")
-	b.WriteString("|---|---|---:|---:|---:|---:|---:|\n")
+	b.WriteString("| Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |\n")
+	b.WriteString("|---|---|---:|---:|---:|---:|---:|---:|\n")
 	towns := append([]TownReport(nil), r.Towns...)
 	sort.SliceStable(towns, func(i, j int) bool { return towns[i].Slug < towns[j].Slug })
 	for _, town := range towns {
@@ -35,15 +35,54 @@ func RenderCoverageBlock(r Report) string {
 		sort.SliceStable(sources, func(i, j int) bool { return sources[i].ID < sources[j].ID })
 		for _, src := range sources {
 			if src.Error != "" {
-				fmt.Fprintf(&b, "| %s | %s | — | — | — | — | — |\n", town.Slug, src.ID)
+				fmt.Fprintf(&b, "| %s | %s | — | — | — | — | — | — |\n", town.Slug, src.ID)
 				continue
 			}
-			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d | %d | %.0f |\n",
-				town.Slug, src.ID, src.Candidates, src.Rows, src.Filtered, failures(src), src.Seconds)
+			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d | %d | %d | %.0f |\n",
+				town.Slug, src.ID, src.Candidates, src.Rows, src.NotMusic, src.Filtered, failures(src), src.Seconds)
 		}
 	}
-	fmt.Fprintf(&b, "| **total** | | **%d** | **%d** | **%d** | **%d** | |\n",
-		r.Totals.Candidates, r.Totals.Rows, r.Totals.Filtered, r.Totals.Failures)
+	fmt.Fprintf(&b, "| **total** | | **%d** | **%d** | **%d** | **%d** | **%d** | |\n",
+		r.Totals.Candidates, r.Totals.Rows, r.Totals.NotMusic, r.Totals.Filtered, r.Totals.Failures)
+
+	// The policy is part of the measurement: a reader must see that the board is a music board, how much was
+	// dropped to make it one, and which rooms are still unclassified.
+	if r.Totals.NotMusic > 0 || r.Totals.Unclassified > 0 {
+		byReason := map[string]int{}
+		unclassified := map[string]int{}
+		for _, town := range towns {
+			for _, src := range town.Sources {
+				for reason, n := range src.Why {
+					byReason[reason] += n
+				}
+				for venue, n := range src.UnclassifiedVenues {
+					unclassified[venue] += n
+				}
+			}
+		}
+		fmt.Fprintf(&b, "\nMusic policy: **%d** rows dropped", r.Totals.NotMusic)
+		reasons := make([]string, 0, len(byReason))
+		for reason := range byReason {
+			reasons = append(reasons, reason)
+		}
+		sort.Strings(reasons)
+		for i, reason := range reasons {
+			if i == 0 {
+				b.WriteString(" (")
+			} else {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "%s %d", reason, byReason[reason])
+		}
+		if len(reasons) > 0 {
+			b.WriteString(")")
+		}
+		b.WriteString(".\n")
+		if len(unclassified) > 0 {
+			fmt.Fprintf(&b, "%d rows at %d unclassified room(s): %s. Published, and the next pass in `sources/venues` classifies them.\n",
+				r.Totals.Unclassified, len(unclassified), venueList(unclassified, 8))
+		}
+	}
 
 	if r.Merge.Raw > 0 {
 		fmt.Fprintf(&b, "\nMerged: **%d** rows → **%d** shows, duplicate rate **%.1f %%**. Towns discovered: **%d**.\n",
@@ -110,14 +149,30 @@ func aggregatedFailures(towns []TownReport) []reasonCount {
 // thousands renders a byte count so a table stays readable without a unit library.
 func thousands(n int) string {
 	s := fmt.Sprintf("%d", n)
-	var out []byte
-	for i, c := range []byte(s) {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			out = append(out, ' ')
-		}
-		out = append(out, c)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + " " + s[i:]
 	}
-	return string(out)
+	return s
+}
+
+// venueList names the rooms in a counter, most rows first, so the curation list in the coverage record is
+// readable rather than a map dump.
+func venueList(counts map[string]int, limit int) string {
+	names := make([]string, 0, len(counts))
+	for name := range counts {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		if counts[names[i]] != counts[names[j]] {
+			return counts[names[i]] > counts[names[j]]
+		}
+		return names[i] < names[j]
+	})
+	if len(names) > limit {
+		more := len(names) - limit
+		return fmt.Sprintf("%s and %d more", strings.Join(names[:limit], ", "), more)
+	}
+	return strings.Join(names, ", ")
 }
 
 // UpdateCoverageFile replaces the measured block in path, leaving the prose alone. A file without the markers is

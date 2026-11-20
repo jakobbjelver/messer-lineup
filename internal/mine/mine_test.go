@@ -14,6 +14,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
+	"github.com/jakobbjelver/messer-lineup/internal/venues"
 )
 
 // fakeAdapter is a platform in a map: a town lists candidates, a candidate URL is a show or an error.
@@ -306,9 +307,9 @@ func TestCoverageBlockAndRewrite(t *testing.T) {
 	block := RenderCoverageBlock(report)
 	for _, want := range []string{
 		CoverageBegin, CoverageEnd,
-		"| berlin | dice | 30 | 30 |",
-		"| copenhagen | tickster | 30 | 28 | 1 | 1 |",
-		"| **total** | | **60** | **58** |",
+		"| berlin | dice | 30 | 30 | 0 |",
+		"| copenhagen | tickster | 30 | 28 | 0 | 1 | 1 |",
+		"| **total** | | **60** | **58** | **0** |",
 		"duplicate rate **13.8 %**",
 		"gone (404/410) ×1",
 		"Towns discovered: **2**",
@@ -536,5 +537,59 @@ func TestARetryThatKeepsFailingIsGivenUp(t *testing.T) {
 	}
 	if _, _, total := opened.JobStats(now); total != 0 {
 		t.Fatalf("the queue still holds %d jobs after the attempts ran out", total)
+	}
+}
+
+// The music policy is part of the sweep, not a client-side filter: a theatre's rows never reach the index,
+// and a room nobody has classified is published and counted so the curation has a work list.
+func TestRunAppliesTheMusicPolicy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "se.json")
+	registry := `{"format":"lineup-venues/1","market":"se","venues":[
+		{"name":"Debaser Strand","class":"music"},
+		{"name":"Orionteatern","class":"other"}]}`
+	if err := os.WriteFile(path, []byte(registry), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rooms, err := venues.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	day := time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC)
+	fake := &fakeAdapter{
+		id:    "tickster",
+		towns: map[string][]string{"stockholm": {"u1", "u2", "u3", "u4"}},
+		shows: map[string]model.Show{
+			"u1": showAt("u1", "Viagra Boys", "Debaser Strand", "stockholm-se", day, "tickster"),
+			"u2": showAt("u2", "Fairy Queen", "Orionteatern", "stockholm-se", day, "tickster"),
+			"u3": showAt("u3", "Julbord - eftermiddag", "Debaser Strand", "stockholm-se", day, "tickster"),
+			"u4": showAt("u4", "Nytt Band", "Nya Klubben", "stockholm-se", day, "tickster"),
+		},
+	}
+	report := run(t, Options{
+		Adapters: []Adapter{fake},
+		Towns:    []string{"stockholm"},
+		DryRun:   true,
+		Venues:   rooms,
+	})
+	if report.Totals.Rows != 2 {
+		t.Fatalf("rows = %d, want the gig and the unclassified room (2)", report.Totals.Rows)
+	}
+	if report.Totals.NotMusic != 2 {
+		t.Fatalf("not music = %d, want the theatre and the julbord (2)", report.Totals.NotMusic)
+	}
+	if report.Totals.Unclassified != 1 {
+		t.Fatalf("unclassified = %d, want 1", report.Totals.Unclassified)
+	}
+	src := report.Towns[0].Sources[0]
+	if src.Why["venue"] != 1 || src.Why["form:julbord"] != 1 {
+		t.Fatalf("why = %v", src.Why)
+	}
+	if src.DroppedVenues["Orionteatern"] != 1 {
+		t.Fatalf("dropped venues = %v", src.DroppedVenues)
+	}
+	if src.UnclassifiedVenues["Nya Klubben"] != 1 {
+		t.Fatalf("unclassified venues = %v", src.UnclassifiedVenues)
 	}
 }
