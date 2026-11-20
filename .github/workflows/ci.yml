@@ -23,8 +23,17 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # The SPA joins this job at P4: npm ci + npm test + npm run build, then vet/test/build,
-      # because the binary embeds web/dist. Nothing in P0 depends on node.
+      # The board is a build product of its own: `make check` is Go only, so without this step a TypeScript
+      # error reaches main and is only discovered by the deploy that has no dist to upload.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Board
+        run: cd web && npm ci && npm run build
+
       - name: Gate
         run: make check
 
