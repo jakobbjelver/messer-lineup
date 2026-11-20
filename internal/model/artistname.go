@@ -46,8 +46,17 @@ func CleanArtistName(raw, venue string) string {
 	name = leadingDate.ReplaceAllString(name, "")
 	name = stripCompactDate(name)
 
-	if left, right, ok := strings.Cut(name, "|"); ok && looksLikeVenue(right, venue) {
-		name = left
+	// Every trailing pipe fragment that looks like the venue goes, not just the one after the first pipe:
+	// "FUNERAL | THE CRYPT | DEBASER NOVA" carries two separators and only the last one is the room.
+	if parts := strings.Split(name, "|"); len(parts) > 1 {
+		for len(parts) > 1 && looksLikeVenue(parts[len(parts)-1], venue) {
+			parts = parts[:len(parts)-1]
+		}
+		trimmed := make([]string, len(parts))
+		for i, part := range parts {
+			trimmed[i] = strings.TrimSpace(part)
+		}
+		name = strings.Join(trimmed, " | ")
 	}
 
 	name = strings.TrimSpace(name)

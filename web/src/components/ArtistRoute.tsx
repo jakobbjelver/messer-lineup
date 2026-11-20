@@ -22,6 +22,11 @@ type Phase =
  * playing two towns is exactly the case a single-town board hides, and each row says which town it is
  * in instead of printing a distance that would be measured from a town's centre.
  */
+/** The source's own name: a lead image from an article is Wikipedia's, a Commons file page is Commons'. */
+function creditLabel(url: string): string {
+  return url.includes("commons.wikimedia.org") ? "Wikimedia Commons" : "Wikipedia";
+}
+
 export default function ArtistRoute({ artistKey }: { artistKey: string }) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [portraits, setPortraits] = useState<PortraitMap | undefined>(undefined);
@@ -86,7 +91,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
                 <p className="artist__credit">
                   Portrait from{" "}
                   <a href={portrait.c} target="_blank" rel="noopener noreferrer">
-                    Wikimedia Commons
+                    {creditLabel(portrait.c)}
                   </a>
                 </p>
               ) : null}
