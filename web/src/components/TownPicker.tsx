@@ -92,7 +92,11 @@ export default function TownPicker({
                   ? "Location off"
                   : "Use my location"}
           </span>
-          {located ? <span className="locate__tag">on</span> : null}
+          {/* Both states carry the tag: it is the one thing on the control that is a state, and a lamp with no
+              counterpart reads as decoration rather than as "on". */}
+          <span className={located ? "locate__tag locate__tag--on" : "locate__tag"}>
+            {located ? "on" : "off"}
+          </span>
         </button>
       ) : null}
 

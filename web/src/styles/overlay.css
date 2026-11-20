@@ -227,6 +227,26 @@
   gap: 6px;
   min-height: 32px;
 }
+.badges__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+/* A ghost action: no box, no rule, the muted ink until you reach for it. */
+.ghostbtn {
+  height: 22px;
+  padding: 0 6px;
+  margin-right: -6px;
+  font: 500 10.5px/1 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.12s linear, background 0.12s linear;
+}
+.ghostbtn:hover {
+  color: var(--foreground);
+  background: var(--surface-2);
+}
 .import {
   display: flex;
   align-items: center;
@@ -236,6 +256,11 @@
   color: var(--text-3);
   border-top: 1px solid var(--border);
   padding-top: 14px;
+}
+/* A provider that is not wired up says so in the row it was offered from, not in a red box of its own. */
+.import__error {
+  width: 100%;
+  color: var(--text-2);
 }
 .import button {
   color: var(--text-2);
@@ -579,6 +604,10 @@
 
 /* ── two small pieces the pickers needed ───────────────────────────────────────────────────────── */
 
+/* One control, two states, and **one green**. Off is the accent as light (the glow) with neutral ink; on is the
+   accent as a hairline border with neutral ink and the tag lit. The label never changes colour, so the two states
+   cannot read as two different greens — `--primary` and `--primary-line` are the same bytes (#a6e146 dark,
+   #4b7900 light, measured), and the button now names only `--primary` for both. */
 .locate {
   display: flex;
   align-items: center;
@@ -593,22 +622,28 @@
   font: 600 14px/1 var(--font);
   color: var(--foreground);
   box-shadow: var(--glow-1), var(--glow-2), var(--glow-3);
-  transition: background 0.12s linear, box-shadow 0.14s linear, color 0.12s linear;
+  transition: background 0.12s linear, box-shadow 0.14s linear, border-color 0.14s linear;
 }
 .locate:hover {
   background: var(--surface-2);
 }
+.locate svg {
+  color: currentColor;
+}
 .locate--on {
   /* Not `cursor: default`: pressing a located button releases the pin, so it stays a control. */
   box-shadow: none;
-  border-color: var(--primary-line);
-  color: var(--primary);
+  border-color: var(--primary);
+  color: var(--foreground);
 }
 .locate__tag {
   margin-left: auto;
   font: 500 10.5px/1 var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--text-3);
+}
+.locate__tag--on {
   color: var(--primary);
 }
 

@@ -49,7 +49,9 @@
   --font: "Golos Text", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --bar: 48px;
+  /* The bar is 56 on a phone and 62 on a desk. At 48 the wordmark and the settings control were the smallest things
+     on a page whose rows are 64px, and the lockup read as a browser toolbar rather than as the product's mark. */
+  --bar: 56px;
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   color-scheme: light;
 }
@@ -150,7 +152,7 @@ h3 {
   letter-spacing: -0.02em;
 }
 h1 {
-  font-size: 34px;
+  font-size: 40px;
   line-height: 1.02;
 }
 a {
@@ -249,8 +251,8 @@ img {
 .iconbtn {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: 1px solid transparent;
   border-radius: 0;
   color: var(--text-2);
@@ -399,7 +401,7 @@ img {
 
 @media (min-width: 721px) {
   h1 {
-    font-size: 52px;
+    font-size: 60px;
   }
 }
 

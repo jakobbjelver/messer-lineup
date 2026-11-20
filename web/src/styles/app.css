@@ -13,11 +13,11 @@
 .bar__row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   height: calc(var(--bar) - 1px);
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 12px 0 16px;
+  padding: 0 14px 0 18px;
 }
 /* The mark is the glyph itself, in the foreground, lit — the glow lives on the icon, not on a tile. The tile
    belongs to the favicon, where a glowing glyph needs something opaque behind it. */
@@ -31,8 +31,8 @@
 .bar__mark {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   color: var(--foreground);
 }
 .bar__mark svg {
@@ -45,7 +45,7 @@
 }
 .bar__name {
   display: block;
-  font: 600 12px/1 var(--font);
+  font: 600 13px/1 var(--font);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -64,10 +64,18 @@
 /* ── the page ────────────────────────────────────────────────────────────────────────────────────
    One column on the page, no card, no shadow: the hairlines and the faces do the structure. */
 
+/* The page is at least the viewport tall, so the footer is always the end of the page and never a line across the
+   middle of it when a town has three shows. `#board` takes the slack. */
 .page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--bar));
   max-width: 720px;
   margin: 0 auto;
   padding: 0 24px 96px;
+}
+#board {
+  flex: 1;
 }
 .page[data-view="calendar"] {
   max-width: 960px;
@@ -524,6 +532,9 @@ a.show__artist:hover {
 }
 
 @media (min-width: 721px) {
+  :root {
+    --bar: 62px;
+  }
   .head {
     padding-top: 40px;
   }
