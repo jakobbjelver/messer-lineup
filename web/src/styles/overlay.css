@@ -56,6 +56,7 @@
 /* Tabs: two words, one lit rule under the active one — never a filled pill. */
 .ui-tabs {
   display: flex;
+  justify-content: center;
   gap: 2px;
   padding: 4px 16px 0;
   border-bottom: 1px solid var(--border);
@@ -517,7 +518,7 @@
 }
 .locate--on {
   box-shadow: none;
-  border-color: color-mix(in oklch, var(--primary) 35%, var(--border-strong));
+  border-color: var(--primary-line);
   color: var(--primary);
   cursor: default;
 }
@@ -527,20 +528,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--primary);
-}
-
-.picker__busy {
-  flex: none;
-  width: 14px;
-  height: 2px;
-  background: var(--primary);
-  box-shadow: var(--glow-1), var(--glow-2);
-  animation: busy 1s ease-in-out infinite;
-}
-@keyframes busy {
-  50% {
-    opacity: 0.2;
-  }
 }
 
 .board__sentinel {

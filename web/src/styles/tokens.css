@@ -35,7 +35,14 @@
   --glow-1: 0 0 1px color-mix(in oklch, var(--primary) 90%, transparent);
   --glow-2: 0 0 10px color-mix(in oklch, var(--primary) 30%, transparent);
   --glow-3: 0 0 26px color-mix(in oklch, var(--primary) 12%, transparent);
-  --sign-glow: 0;
+  /* The sign's halo is a lighter tint of the accent, not a second colour: a dark green blur behind dark ink
+     reads as a smudge, and "more colour" means more of the light, not a new hue. */
+  --sign-halo: oklch(0.78 0.17 128);
+  --sign-ink: var(--foreground);
+  --sign-glow: 0.42;
+  /* Solid values for borders and outlines: a colour behind `var()` that an engine cannot parse falls back to
+     the user agent's own, which is how a blue ring appears on a page that has no blue in it. */
+  --primary-line: #4b7900;
   --stage-a: 5%;
   --stage-b: 3.5%;
 
@@ -64,7 +71,11 @@
   --glow-1: 0 0 1px color-mix(in oklch, var(--primary) 95%, transparent);
   --glow-2: 0 0 12px color-mix(in oklch, var(--primary) 55%, transparent);
   --glow-3: 0 0 34px color-mix(in oklch, var(--primary) 26%, transparent);
-  --sign-glow: 0.5;
+  --sign-halo: var(--primary);
+  /* In the dark room the word itself is the gas; on paper the accent is a highlight and the ink stays ink. */
+  --sign-ink: var(--primary);
+  --sign-glow: 0.68;
+  --primary-line: #a6e146;
   --stage-a: 6%;
   --stage-b: 4%;
   color-scheme: dark;
@@ -76,6 +87,8 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  /* A ring the user agent draws for itself (Safari does, on controls it thinks are native) must be ours. */
+  outline-color: var(--primary-line);
 }
 html {
   accent-color: var(--primary);
@@ -97,7 +110,7 @@ button {
   outline: none;
 }
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--primary-line);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 22%, transparent);
 }
@@ -356,5 +369,62 @@ img {
 @media (min-width: 721px) {
   h1 {
     font-size: 52px;
+  }
+}
+
+/* ── the loader ────────────────────────────────────────────────────────────────────────────────────
+   Aurral's 3×3 dot helix, with the peak dot growing instead of only fading, so the wave travels.
+   The one loading state on the surface: no skeletons anywhere. */
+
+.loader {
+  display: inline-grid;
+  grid-template-columns: repeat(3, var(--t));
+  grid-template-rows: repeat(3, var(--t));
+  gap: var(--g);
+  vertical-align: middle;
+}
+.loader i {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.16;
+  animation: loader-dot 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes loader-dot {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: scale(0.72);
+  }
+  32% {
+    opacity: 1;
+    transform: scale(1.06);
+    box-shadow: 0 0 2px var(--primary), 0 0 12px color-mix(in oklch, var(--primary) 45%, transparent);
+  }
+  52% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+}
+.loading {
+  display: grid;
+  place-items: center;
+  /* The whole page area under the bar, so the loader is centred on the screen rather than near the top. */
+  min-height: calc(100dvh - var(--bar) - 1px);
+  animation: fade 0.2s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loader i {
+    animation: loader-dot-still 2.4s ease-in-out infinite !important;
+  }
+}
+@keyframes loader-dot-still {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.9;
   }
 }

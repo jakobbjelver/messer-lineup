@@ -61,6 +61,7 @@ type Options struct {
 	LookupURL    string // MusicBrainz artist lookup; a test seam
 	CommonsURL   string // Special:FilePath base; a test seam
 	WikipediaURL string // Wikipedia summary; a test seam
+	DeezerURL    string // Deezer artist search; a test seam
 }
 
 // Report is what a run did.
@@ -95,6 +96,7 @@ const (
 	defaultLookup    = "https://musicbrainz.org/ws/2/artist/"
 	defaultCommons   = "https://commons.wikimedia.org/wiki/Special:FilePath/"
 	defaultWikipedia = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+	defaultDeezer    = "https://api.deezer.com/search/artist?q="
 	missTTL          = 30 * 24 * time.Hour
 	userAgent        = "MesserLineup/0.2 (https://lineup.messer.wtf)"
 )
@@ -131,6 +133,9 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	}
 	if opts.WikipediaURL == "" {
 		opts.WikipediaURL = defaultWikipedia
+	}
+	if opts.DeezerURL == "" {
+		opts.DeezerURL = defaultDeezer
 	}
 	logf := func(format string, args ...any) {
 		if opts.Log != nil {
@@ -296,15 +301,47 @@ func resolve(ctx context.Context, opts Options, name string, logf func(string, .
 		return Portrait{}, none
 	}
 
-	// Two sources, best first. MusicBrainz's own `image` relations are the most precise (Björk carries nine), but
-	// they are rare: a small band usually has none (measured — two exact-name hits, zero image relations). So the
-	// fallback is the artist's Wikipedia lead image, which is one call and is the same Commons file behind a
-	// different door. Both are credited; a miss is a miss and the avatar keeps its initials.
-	portrait, kind := fromRelations(ctx, opts, hit.ID, logf, name)
-	if kind != none {
+	// Three sources, best coverage first. MusicBrainz hosts no images at all — its `image` relations are links to
+	// Commons, and most artists have none (measured: two exact-name hits, zero relations), so it cannot be the
+	// primary. Deezer's public artist search carries a press photo for almost everyone and answers without a key;
+	// Wikipedia's lead image is the credited fallback. A miss is a miss, and the avatar keeps its initials.
+	if portrait, kind := fromDeezer(ctx, opts, name); kind != none {
+		return portrait, kind
+	}
+	if portrait, kind := fromRelations(ctx, opts, hit.ID, logf, name); kind != none {
 		return portrait, kind
 	}
 	return fromWikipedia(ctx, opts, name, logf)
+}
+
+// fromDeezer is the coverage source: one call, `picture_xl` is 1000×1000, and the identity rule is the same one
+// every source passes — the returned artist's name must be the name we asked about.
+func fromDeezer(ctx context.Context, opts Options, name string) (Portrait, outcome) {
+	var answer struct {
+		Data []struct {
+			ID       int64  `json:"id"`
+			Name     string `json:"name"`
+			PictureX string `json:"picture_xl"`
+		} `json:"data"`
+	}
+	if err := getJSON(ctx, opts, opts.DeezerURL+url.QueryEscape(name)+"&limit=1", &answer); err != nil {
+		// Deezer answers 404 with a JSON body for "no result"; a transport failure is still a retry.
+		if strings.Contains(err.Error(), "status 4") {
+			return Portrait{}, none
+		}
+		return Portrait{}, retry
+	}
+	if len(answer.Data) == 0 {
+		return Portrait{}, none
+	}
+	artist := answer.Data[0]
+	if artist.PictureX == "" || model.Key(artist.Name) != model.Key(name) {
+		return Portrait{}, none
+	}
+	return Portrait{
+		URL:    artist.PictureX,
+		Credit: fmt.Sprintf("https://www.deezer.com/artist/%d", artist.ID),
+	}, found
 }
 
 // fromRelations is the MusicBrainz path: the first `image` relation that points at a Commons file.

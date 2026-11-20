@@ -5,7 +5,8 @@ import Calendar, { DaySheet } from "./components/Calendar";
 import Chrome from "./components/Chrome";
 import Preferences, { type Panel } from "./components/Preferences";
 import Wizard from "./components/Wizard";
-import { Empty, Failed, Skeleton } from "./components/states";
+import Loader from "./components/Loader";
+import { Empty, Failed } from "./components/states";
 import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf } from "./lib/board";
 import { distanceKm, pointOf, type Point } from "./lib/geo";
 import {
@@ -20,7 +21,7 @@ import {
   type TownEntry,
 } from "./lib/indexData";
 import { locationSupported, useDevicePosition } from "./lib/location";
-import { loadPortraits, type PortraitMap } from "./lib/portraits";
+import { loadPortraits, sourceNames, type PortraitMap } from "./lib/portraits";
 import { readOnboarded, readTaste, readTown, readView, writeOnboarded, writeTaste, writeTown, writeView, type View } from "./lib/storage";
 import { readNamesParam, readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
 import { useTheme } from "./lib/theme";
@@ -294,7 +295,13 @@ export default function App() {
         />
       );
     }
-    if (!loaded || !town || !rows) return <Skeleton />;
+    if (!loaded || !town || !rows) {
+      return (
+        <div className="loading">
+          <Loader size={46} label="Reading the board" />
+        </div>
+      );
+    }
     if (rows.length === 0) {
       return (
         <Empty
@@ -358,9 +365,9 @@ export default function App() {
         </span>
       </span>
       {portraits && portraits.size > 0 ? (
-        <a href="https://commons.wikimedia.org" target="_blank" rel="noopener noreferrer">
-          Portraits · Wikimedia Commons
-        </a>
+        <span className="foot__credit">
+          Portraits · {sourceNames(portraits).join(" · ")}
+        </span>
       ) : null}
     </div>
   );
@@ -368,20 +375,11 @@ export default function App() {
   return (
     <>
       <div className="stage" aria-hidden="true" />
-      <Chrome
-        view={view}
-        onView={applyView}
-        onPanel={() => openPanel("taste")}
-        location={
-          canLocate
-            ? { state: position.state, canLocate, onLocate: locate }
-            : undefined
-        }
-      />
+      <Chrome view={view} onView={applyView} onPanel={() => openPanel("taste")} />
       <main className="page" data-view={view} data-switching={switching || undefined}>
-        {head}
+        {rows ? head : null}
         <div id="board">{body}</div>
-        {foot}
+        {rows ? foot : null}
       </main>
 
       {loaded && town && (setup || panel !== null) ? (
