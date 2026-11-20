@@ -70,6 +70,13 @@ const REQUESTS = [
     compare: { kind: "error", code: "not_implemented", status: 501 },
   },
   { method: "DELETE", path: "/api/v1/session", compare: { kind: "error", code: "not_implemented", status: 501 } },
+  // The artist picker's search is real in both runtimes: one query that matches nothing, so the assertion is the
+  // shape (an `artists` array) rather than an upstream result that could change between two calls.
+  {
+    method: "GET",
+    path: "/api/v1/artists/search?q=zzzzqqq",
+    compare: { kind: "shape", keys: ["artists"] },
+  },
   // The one document route: both runtimes must answer an artist link with the SPA's document, not a 404. On the
   // Worker this goes script → ASSETS → `single-page-application`; on the Go server it is the history fallback.
   { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },

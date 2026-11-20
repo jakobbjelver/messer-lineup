@@ -12,9 +12,6 @@
 
 export type Point = { lat: number; lon: number };
 
-/** Where a distance is measured from, and why it is allowed to be printed. */
-export type Origin = { basis: "device"; point: Point };
-
 // The same radius the edge's `/where` uses (`internal/server/where.go`): one product, one earth.
 const EARTH_KM = 6371;
 
@@ -68,10 +65,4 @@ export function nearestTown<T extends { lat: number; lon: number }>(towns: T[], 
     if (!best || km < best.km) best = { town, km };
   }
   return best;
-}
-
-/** Whether a row can be judged against a `reach`. Rows that cannot are counted, never silently kept or dropped. */
-export function withinReach(row: { g?: [number, number] }, origin: Origin, reach: number): boolean {
-  const point = pointOf(row);
-  return point !== null && distanceKm(origin.point, point) <= reach;
 }

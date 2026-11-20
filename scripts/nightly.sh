@@ -54,6 +54,13 @@ if ! ./bin/lineup mine --source tickster --town "$TOWNS" --index "$INDEX" --stat
 fi
 TOOK=$(( $(date +%s) - START ))
 
+# Portraits are their own artifact and their own budget: a slow MusicBrainz lookup must never hold the rows back,
+# and a failure here is not a reason to skip the publish — initials are a supported state. The cap keeps a nightly
+# run bounded; the state file makes progress compound across nights.
+if ! ./bin/lineup portraits --index "$INDEX" --state "$STATE/portraits.json" --limit 80; then
+  echo "nightly: portraits failed; publishing without a portrait refresh"
+fi
+
 # Publish only what verifies and only what the guards allow. A refusal is a result, not an incident: the published
 # index stays, which is the whole point of content-addressed shards.
 if ./bin/lineup publish; then

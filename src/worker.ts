@@ -175,6 +175,35 @@ function haversine(a: { lat: number; lon: number }, b: { lat: number; lon: numbe
 
 // The five JSON routes from plan §5.6, plus the calendar feed. Until P5 they answer honestly rather than
 // pretending to be a 404: the board can tell "not mine" from "not yet".
+// Registered before the 501 wildcard below: Hono matches in order, so a specific route declared after it is
+// unreachable — the wildcard answers first and the search looks like a stub that was never built.
+app.get("/api/v1/artists/search", async (c) => {
+  const q = (c.req.query("q") ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  if ([...q].length < 2) {
+    return c.json({ artists: [] }, 200, { "cache-control": "public, max-age=21600" });
+  }
+  const cache = caches.default;
+  const key = new Request(`https://lineup.messer.wtf/api/v1/artists/search?q=${encodeURIComponent(q)}`);
+  const hit = await cache.match(key);
+  if (hit) {
+    return new Response(hit.body, {
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" },
+    });
+  }
+  let body: { artists: ArtistHit[]; unavailable?: boolean };
+  try {
+    body = await musicBrainzSearch(q);
+  } catch {
+    body = { artists: [], unavailable: true };
+  }
+  const answer = new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" },
+  });
+  c.executionCtx.waitUntil(cache.put(key, answer.clone()));
+  return answer;
+});
+
+
 app.all("/api/v1/*", (c) =>
   c.json(
     errorBody(
@@ -345,6 +374,66 @@ async function townLabel(url: URL, id: string): Promise<string> {
     return id;
   }
 }
+
+/**
+ * `/api/v1/artists/search?q=` — the artist picker's combobox, proxied.
+ *
+ * MusicBrainz sends `ACAO: *`, so the proxy is not about CORS: it is about the `503 busy` a burst earns
+ * (measured), and about caching. One upstream call at a time, one per second at most, and six hours of cache per
+ * normalised query — a combobox is exactly the client that would otherwise provoke the limiter.
+ */
+type ArtistHit = {
+  name: string;
+  mbid: string;
+  type?: string;
+  country?: string;
+  disambiguation?: string;
+  score?: number;
+};
+
+let mbChain: Promise<unknown> = Promise.resolve();
+let mbLast = 0;
+
+async function musicBrainzSearch(q: string): Promise<{ artists: ArtistHit[]; unavailable?: boolean }> {
+  const run = async () => {
+    const wait = 1100 - (Date.now() - mbLast);
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    mbLast = Date.now();
+    const res = await fetch(
+      `https://musicbrainz.org/ws/2/artist?query=${encodeURIComponent(q)}&fmt=json&limit=6`,
+      {
+        headers: {
+          // Their terms ask every client to identify itself; a browser UA cannot be set from a page, which is
+          // another reason this call lives on the Worker.
+          "user-agent": "MesserLineup/0.2 (https://lineup.messer.wtf)",
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    if (!res.ok) return { artists: [], unavailable: true };
+    const body = (await res.json()) as {
+      artists?: { id?: string; name?: string; type?: string; country?: string; disambiguation?: string; score?: number }[];
+    };
+    const artists = (body.artists ?? [])
+      .filter((a) => a.id && a.name && (a.score ?? 0) >= 60)
+      .slice(0, 6)
+      .map((a) => ({
+        name: a.name!,
+        mbid: a.id!,
+        type: a.type?.toLowerCase(),
+        country: a.country,
+        disambiguation: a.disambiguation,
+        score: a.score,
+      }));
+    return { artists };
+  };
+  // Serialised across requests: the chain continues even after a failure, so one bad call cannot wedge it.
+  const next = mbChain.then(run, run);
+  mbChain = next.catch(() => undefined);
+  return next as Promise<{ artists: ArtistHit[]; unavailable?: boolean }>;
+}
+
 
 app.notFound((c) => {
   // Assets are served before the script, so reaching this means the path is neither a file nor an API route. Two

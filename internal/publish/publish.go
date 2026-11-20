@@ -28,6 +28,7 @@ import (
 
 	lineupindex "github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+	"github.com/jakobbjelver/messer-lineup/internal/portraits"
 )
 
 // Cache lifetimes. A shard is immutable for a year; the two files a client polls are minutes old at worst.
@@ -190,6 +191,17 @@ func collect(dir string) ([]Object, error) {
 	shards, err := os.ReadDir(filepath.Join(dir, "towns"))
 	if err != nil {
 		return nil, fmt.Errorf("publish: no shards: %w", err)
+	}
+	// The portraits artifact is optional on purpose: a build that has not resolved any is a supported state, and
+	// the board falls back to initials. When it exists, it is immutable and cached like a shard.
+	if info, err := os.Stat(filepath.Join(dir, portraits.File)); err == nil {
+		objects = append(objects, Object{
+			Key:          portraits.File,
+			Path:         filepath.Join(dir, portraits.File),
+			Size:         info.Size(),
+			CacheControl: cacheControl(ShardMaxAge),
+			ContentType:  "application/json; charset=utf-8",
+		})
 	}
 	for _, entry := range shards {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".jsonl.gz") {

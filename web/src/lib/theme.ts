@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 export type Theme = "light" | "dark";
 
 const KEY = "lineup.theme";
-const CHROME: Record<Theme, string> = { dark: "#08080a", light: "#f7f6f4" };
+const CHROME: Record<Theme, string> = { dark: "#08080a", light: "#f6f5f3" };
 
 export function useTheme(): { theme: Theme; toggle: () => void } {
   const [theme, setTheme] = useState<Theme>(() =>

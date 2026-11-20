@@ -44,3 +44,6 @@ docs/SKILL.template.md
 # The built index (a publish artifact, never source).
 .lineup-index/
 .lineup-state/
+
+# TypeScript build info (regenerated on every build)
+*.tsbuildinfo
