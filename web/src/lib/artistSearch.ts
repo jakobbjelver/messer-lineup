@@ -43,7 +43,9 @@ function settle(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 async function once(q: string, signal: AbortSignal): Promise<SearchResult> {
-  const res = await fetch(`/api/v1/artists/search?q=${encodeURIComponent(q)}`, { signal });
+  // `no-store`: the edge caches real answers, and a browser must never pin one — an unavailable answer cached for
+  // six hours in localStorage of the tab is the same bug the proxy had, one layer further out.
+  const res = await fetch(`/api/v1/artists/search?q=${encodeURIComponent(q)}`, { signal, cache: "no-store" });
   if (!res.ok) return { hits: [], unavailable: res.status >= 500 };
   // A JSON route that answers HTML is a missing route behind an SPA fallback, not an empty result list.
   if (!(res.headers.get("content-type") ?? "").includes("json")) return { hits: [], unavailable: true };

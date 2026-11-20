@@ -185,6 +185,12 @@ func (s *server) artistSearch(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, artistAnswer{Artists: []artistHit{}})
 		return
 	}
-	w.Header().Set("Cache-Control", "public, max-age=21600")
-	writeJSON(w, http.StatusOK, s.search.lookup(q))
+	answer := s.search.lookup(q)
+	// A real answer is worth six hours in a browser; "the upstream was busy" is a fact about a minute.
+	if answer.Unavailable {
+		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=21600")
+	}
+	writeJSON(w, http.StatusOK, answer)
 }
