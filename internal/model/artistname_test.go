@@ -15,6 +15,8 @@ func TestCleanArtistName(t *testing.T) {
 		// Already clean: no date, no pipe.
 		{"Archspire + Crown Magnetar + The Zenith Passage", "Kollektivet Livet", "Archspire + Crown Magnetar + The Zenith Passage"},
 		{"Näääk & Nimo", "Debaser Strand", "Näääk & Nimo"},
+		// Two separators: only the trailing room goes, the co-headline stays.
+		{"FUNERAL | THE CRYPT | DEBASER NOVA", "Debaser Nova", "FUNERAL | THE CRYPT"},
 		// A co-headline whose second half is not the room survives whole.
 		{"The Bug | Flowdan", "Vega", "The Bug | Flowdan"},
 		// An artist that begins with digits is not a date unless it carries a slash.

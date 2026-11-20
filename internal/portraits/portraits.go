@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -85,6 +86,9 @@ const (
 	found
 	retry
 )
+
+// musicDescription is the vocabulary a Wikipedia lead page must use before its image may be an artist's portrait.
+var musicDescription = regexp.MustCompile(`(?i)\b(band|musician|singer|songwriter|composer|rapper|dj|duo|trio|quartet|group|orchestra|ensemble|producer|vocalist|guitarist|drummer|bassist|pianist|conductor|singer-songwriter)\b`)
 
 const (
 	defaultBase      = "https://musicbrainz.org/ws/2/artist?query="
@@ -338,9 +342,10 @@ func fromRelations(ctx context.Context, opts Options, mbid string, logf func(str
 // fromWikipedia is the fallback: the article's own lead image, which lives on the same Commons CDN.
 func fromWikipedia(ctx context.Context, opts Options, name string, logf func(string, ...any)) (Portrait, outcome) {
 	var summary struct {
-		Type      string `json:"type"`
-		Title     string `json:"title"`
-		Thumbnail struct {
+		Type        string `json:"type"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Thumbnail   struct {
 			Source string `json:"source"`
 		} `json:"thumbnail"`
 		ContentURLs struct {
@@ -360,6 +365,12 @@ func fromWikipedia(ctx context.Context, opts Options, name string, logf func(str
 	}
 	// A disambiguation page has no lead image that belongs to this artist.
 	if summary.Type != "standard" || summary.Thumbnail.Source == "" {
+		return Portrait{}, none
+	}
+	// A Wikipedia title is not a search: "Fatherland" resolves to the concept (and its lead image is a Delacroix
+	// painting), "Wicker" to woven material. Only an article that says it is about music may supply a face. This
+	// is the check that keeps a wrong portrait off a row, which is worse than no portrait at all.
+	if !musicDescription.MatchString(summary.Description) {
 		return Portrait{}, none
 	}
 	if !strings.HasPrefix(summary.Thumbnail.Source, "https://upload.wikimedia.org/") &&
