@@ -41,7 +41,7 @@ var cities = map[string]string{
 	"odense":     "/dk/da/events/in/odense",
 	"aalborg":    "/dk/da/events/in/aalborg",
 	"malmo":      "/se/sv/events/in/malm%C3%B6",
-	"goteborg":   "/se/sv/events/in/g%C3%B6teborg",
+	"gothenburg": "/se/sv/events/in/g%C3%B6teborg",
 	"oslo":       "/no/nb/events/in/oslo",
 	"bergen":     "/no/nb/events/in/bergen",
 }
@@ -111,6 +111,9 @@ var towns = map[string]string{
 	"copenhagen":    "copenhagen",
 	"frederiksberg": "copenhagen", // its own municipality, one metro area on the board
 	"stockholm":     "stockholm",
+	"göteborg":      "gothenburg",
+	"goteborg":      "gothenburg",
+	"gothenburg":    "gothenburg",
 	"arhus":         "aarhus",
 	"århus":         "aarhus",
 	"odense":        "odense",

@@ -114,9 +114,12 @@ func usage(only string) string {
 func runServe(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("lineup serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	indexDir := fs.String("index", ".lineup-index", "the index to serve")
-	addr := fs.String("addr", "127.0.0.1:8016", "listen address")
-	webDir := fs.String("web", "", "the built board (web/dist); empty serves the index only")
+	// Defaults come from the environment first, so a container can be configured by `ENV` alone (the image bakes
+	// the paths, compose carries the overrides) while a developer on the mini still gets the local defaults. A flag
+	// always wins.
+	indexDir := fs.String("index", orDefault(os.Getenv("LINEUP_INDEX"), ".lineup-index"), "the index to serve (default $LINEUP_INDEX)")
+	addr := fs.String("addr", orDefault(os.Getenv("LINEUP_ADDR"), "127.0.0.1:8016"), "listen address (default $LINEUP_ADDR)")
+	webDir := fs.String("web", os.Getenv("LINEUP_WEB"), "the built board (web/dist); empty serves the index only (default $LINEUP_WEB)")
 	lastfmKey := fs.String("lastfm-key", os.Getenv("LASTFM_KEY"), "Last.fm API key for the taste import (default $LASTFM_KEY)")
 	nowFlag := fs.String("now", "", "pin the clock (also accepted as --frozen-clock for fixtures)")
 	if err := fs.Parse(args); err != nil {

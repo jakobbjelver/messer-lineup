@@ -127,6 +127,19 @@ With a rolling 120-day window a partial sweep is usable and shards can rotate ac
 version of this that mines the world in ten minutes, and speeding it up by hitting the host harder is not a
 trade worth making.
 
+**Tickster, the source the nightly actually runs** (measured on the mini, robots delay honoured):
+
+| Town | Events walked | Rows | Sweep |
+|---|---|---|---|
+| Stockholm | 979 | 331 | 546 s |
+| Copenhagen | 49 | 24 | 27 s |
+| Gothenburg | 698 | 471 (before the room policy) | 392 s |
+
+A nightly over three towns is therefore **~16 minutes**, and the cost is linear in candidates because every
+candidate is one detail fetch at the publisher's delay. The town walk is capped (`maxPages = 120`, 1 920
+events): the cap is a bound, not a target — a town that reaches it **fails the run** rather than publishing
+half of itself.
+
 ## The parser lesson this record exists for
 
 The first wide sample produced 656 rows from 720 candidates (91 %) and looked like a source limitation. It was
