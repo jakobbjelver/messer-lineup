@@ -110,9 +110,13 @@
   max-width: 100%;
   border-radius: 0;
 }
-/* The scope's glyph: ink, not accent — "anywhere" is an identity, not a state, and the accent is spent on state. */
+/* The scope's glyph: ink, not accent — "anywhere" is an identity, not a state, and the accent is spent on state.
+   Sized against the sign beside it (a fixed px glyph reads as a speck next to a 52px word), and never rotated by
+   the caret's rule. */
 .townbtn .globe {
   flex: none;
+  width: 0.52em;
+  height: 0.52em;
   color: var(--text-2);
 }
 .townbtn .sign {
@@ -499,6 +503,12 @@ a.show__artist:hover {
 }
 .state__more .subs__link {
   margin: 0 auto;
+}
+/* In a centred state the sentence and its state sit as one centred group: spreading them to the edges of a 36ch
+   block puts the chip on the page's centre line, which reads as belonging to nothing. */
+.state__more .subs__foot {
+  justify-content: center;
+  gap: 4px 12px;
 }
 
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */

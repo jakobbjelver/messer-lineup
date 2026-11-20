@@ -690,6 +690,13 @@
   height: 44px;
   border-color: var(--border-strong);
 }
+.subs__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+}
 .subs__note {
   margin: 0;
   font: 400 12px/1.5 var(--font);
@@ -744,4 +751,70 @@
 }
 .pick[aria-checked="true"] .pick__globe {
   color: var(--foreground);
+}
+
+/* ── a feed that follows a source ──────────────────────────────────────────────────────────────────
+   One state, said in four letters, with its explanation behind a mark. The dot pulses slowly because a still
+   dot beside the word "Live" reads as an ornament; the pulse is the only motion on the sheet, and it stops
+   under `prefers-reduced-motion`. Square, like every other shape here. */
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 10.5px/1 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.live__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  background: var(--primary);
+  animation: live 3s var(--ease) infinite;
+}
+@keyframes live {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live__dot {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* The answer to "what does that mean": a mark, and one or two sentences behind it. No `title` attributes, and no
+   paragraph on the page. */
+.info {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--text-3);
+  transition: color 0.12s linear;
+}
+.info:hover,
+.info[data-state="open"] {
+  color: var(--foreground);
+}
+.info__body {
+  z-index: 70;
+  max-width: 32ch;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font: 400 12px/1.5 var(--font);
+  animation: fade 0.14s var(--ease) both;
+}
+.info__body:focus-visible {
+  outline: 1px solid var(--primary-line);
 }

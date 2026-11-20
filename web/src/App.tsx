@@ -342,8 +342,8 @@ export default function App() {
           disabled={!town}
         >
           {/* The scope is not a town, so it wears the glyph that says so — ink, not accent: the accent is for state,
-              and "anywhere" is an identity. */}
-          {anywhere ? <GlobeHemisphereWest size={17} className="globe" aria-hidden="true" /> : null}
+              and "anywhere" is an identity. Sized in `em` so it scales with the sign it sits beside. */}
+          {anywhere ? <GlobeHemisphereWest size={24} className="globe" aria-hidden="true" /> : null}
           <span className="sign" data-t={townName}>
             {townName}
           </span>

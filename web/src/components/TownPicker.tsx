@@ -141,8 +141,8 @@ export default function TownPicker({
             onClick={() => onChange(ANYWHERE)}
           >
             <span className="pick__dot" aria-hidden="true" />
-            <GlobeHemisphereWest size={15} className="pick__globe" aria-hidden="true" />
             <span className="pick__name">Anywhere</span>
+            <GlobeHemisphereWest size={15} className="pick__globe" aria-hidden="true" />
             <span className="pick__meta">
               {total} {total === 1 ? "show" : "shows"}
             </span>
