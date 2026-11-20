@@ -62,6 +62,8 @@ export default function App() {
   const [portraits, setPortraits] = useState<PortraitMap | undefined>(undefined);
   /** Which town's shard is on screen or in flight — the effect's own guard, so it never depends on its output. */
   const loadedTown = useRef<string | null>(null);
+  /** Whether a setting changed while a panel was open: closing must then keep the URL, not pop back to a stale one. */
+  const panelDirty = useRef(false);
 
   const { theme, toggle: toggleTheme } = useTheme();
   const { position, request: locate } = useDevicePosition();
@@ -126,6 +128,7 @@ export default function App() {
     setTaste(entries);
     writeTaste(entries);
     const next = writeTasteParam(entries, location.href);
+    if (history.state && typeof history.state === "object" && "panel" in history.state) panelDirty.current = true;
     history.replaceState(history.state, "", next);
     if (entries.length === 0) setFilter("all");
   }, []);
@@ -137,6 +140,10 @@ export default function App() {
     const url = new URL(location.href);
     if (url.searchParams.get("town") === id) return;
     url.searchParams.set("town", id);
+    // A change made inside the settings sheet must survive the sheet closing. `closePanel` pops the history entry
+    // it pushed, which would restore the town that was on screen before the sheet opened — so the change is
+    // recorded, and closing rewrites the current entry instead of popping.
+    if (history.state && typeof history.state === "object" && "panel" in history.state) panelDirty.current = true;
     history.replaceState(history.state, "", url);
   }, []);
 
@@ -158,12 +165,15 @@ export default function App() {
 
   const closePanel = useCallback(() => {
     setPanel(null);
-    if (history.state && typeof history.state === "object" && "panel" in history.state) history.back();
-    else {
-      const url = new URL(location.href);
-      url.searchParams.delete("panel");
-      history.replaceState(null, "", url);
+    const pushed = history.state !== null && typeof history.state === "object" && "panel" in history.state;
+    const url = new URL(location.href);
+    url.searchParams.delete("panel");
+    if (pushed && !panelDirty.current) {
+      history.back();
+      return;
     }
+    panelDirty.current = false;
+    history.replaceState(null, "", url);
   }, []);
 
   useEffect(() => {
