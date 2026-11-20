@@ -2,127 +2,769 @@
   "format": "lineup-venues/1",
   "market": "se",
   "venues": [
-    {"name": "ABBA The Museum", "class": "other"},
-    {"name": "ABF Stockholm", "class": "other"},
-    {"name": "ABF-huset, Sveavägen 41", "class": "other"},
-    {"name": "Allhelgonakyrkan", "class": "music"},
-    {"name": "Arenatältet", "class": "other"},
-    {"name": "Armémuseum", "class": "other"},
-    {"name": "B-K", "class": "music"},
-    {"name": "Banankompaniet", "class": "music"},
-    {"name": "BAR15", "class": "music"},
-    {"name": "Berns", "class": "music"},
-    {"name": "Biblioteket Live", "class": "music"},
-    {"name": "Bio Skandia", "class": "other"},
-    {"name": "BOQUERIA", "class": "other"},
-    {"name": "Börsen", "class": "music"},
-    {"name": "Café Opera", "class": "music"},
-    {"name": "Ccap", "class": "other"},
-    {"name": "China teatern", "class": "other"},
-    {"name": "Clarion Hotel Amaranten", "class": "other"},
-    {"name": "Clarion Hotel Stockholm", "class": "other"},
-    {"name": "Clarion Hotel® Sign", "class": "other"},
-    {"name": "Debaser", "class": "music"},
-    {"name": "DEBASER NOVA", "class": "music"},
-    {"name": "Debaser Strand", "class": "music"},
-    {"name": "Drakenbergssalen, Hornstull", "class": "other"},
-    {"name": "Eataly", "class": "other"},
-    {"name": "Ekonomiska museet – Kungliga myntkabinettet", "class": "other"},
-    {"name": "Engelska Kyrkan", "class": "music"},
-    {"name": "Ersta kyrka", "class": "music"},
-    {"name": "Etnografiska museet", "class": "other"},
-    {"name": "Filmhuset Bio Mauritz", "class": "other"},
-    {"name": "FRYSHUSET KLUBBEN", "class": "music"},
-    {"name": "Frälsningsarmén, Vasakåren", "class": "music"},
-    {"name": "Fylkingen", "class": "music"},
-    {"name": "FÅLLAN", "class": "music"},
-    {"name": "Golden Hits", "class": "other"},
-    {"name": "Golden Hits, Studion", "class": "other"},
-    {"name": "Grekiskacompagniet Première at Bistro Marie Gamla Stan - Greek and Dance Music Party", "class": "music"},
-    {"name": "Gustav Vasa Kyrka", "class": "music"},
-    {"name": "Hallwylska museet", "class": "other"},
-    {"name": "Hedvig Eleonora församlingshem", "class": "other"},
-    {"name": "Hedvig Eleonora kyrka", "class": "music"},
-    {"name": "Hemlig venue", "class": "music"},
-    {"name": "Hilton Stockholm Slussen", "class": "other"},
-    {"name": "Historiska museet", "class": "other"},
-    {"name": "Historiska Museet - Stockholm, Barocksalen", "class": "music"},
-    {"name": "Historiska Museet i Stockholm", "class": "other"},
-    {"name": "Historiska museet, Barocksalen", "class": "music"},
-    {"name": "House of Q", "class": "music"},
-    {"name": "HYDE Stockholm", "class": "music"},
-    {"name": "Högalidskyrkan", "class": "music"},
-    {"name": "Kasai", "class": "music"},
-    {"name": "KASAI STHLM", "class": "music"},
-    {"name": "Kollektivet Livet", "class": "music"},
-    {"name": "Konstakademien", "class": "other"},
-    {"name": "KTH-Hallen", "class": "other"},
-    {"name": "Kulturskolan, Medborgarhuset, Stockholm", "class": "other"},
-    {"name": "Kungsgatan 62", "class": "other"},
-    {"name": "Kägelbanan Södra Teatern", "class": "music"},
-    {"name": "Källarbyn", "class": "other"},
-    {"name": "Le Bistrot de Wasahof", "class": "other"},
-    {"name": "Livrustkammaren", "class": "other"},
-    {"name": "Magasin 9", "class": "music"},
-    {"name": "Mariatorget Pitchers-Casino", "class": "other"},
-    {"name": "Maxim", "class": "other"},
-    {"name": "Medelhavsmuseet", "class": "other"},
-    {"name": "Mötesplats Mariatorget", "class": "music"},
-    {"name": "Münchenbryggeriet Mässhallen", "class": "other"},
-    {"name": "Nalen Klubb, Stockholm", "class": "music"},
-    {"name": "Nalen Restaurang", "class": "other"},
-    {"name": "Nalen – Stora Salen, Stockholm", "class": "music"},
-    {"name": "Nordic Light Hotel", "class": "other"},
-    {"name": "Nordiska Museet", "class": "music"},
-    {"name": "Norrmalmskyrkan", "class": "music"},
-    {"name": "Operaterrassen & Rotundan", "class": "music"},
-    {"name": "Orionteatern", "class": "other"},
-    {"name": "Oscarskyrkan", "class": "music"},
-    {"name": "Oscarsteatern", "class": "other"},
-    {"name": "Playhouse Teater", "class": "other"},
-    {"name": "Prins Eugens Waldemarsudde", "class": "other"},
-    {"name": "Pygméteatern", "class": "other"},
-    {"name": "Reimersholme Hotel", "class": "music"},
-    {"name": "Riddarhuset", "class": "music"},
-    {"name": "Rival", "class": "music"},
-    {"name": "Scalateatern", "class": "music"},
-    {"name": "Scandic Continental", "class": "other"},
-    {"name": "Scandic Malmen", "class": "other"},
-    {"name": "Scandic Sjöfartshotellet", "class": "other"},
-    {"name": "Scenkonstmuseet", "class": "music"},
-    {"name": "Sibeliussalen", "class": "music"},
-    {"name": "Slaktkyrkan", "class": "music"},
-    {"name": "Snövit", "class": "music"},
-    {"name": "Solvalla", "class": "other"},
-    {"name": "Stallet - Världens Musik", "class": "music"},
-    {"name": "Stockholm Waterfront", "class": "other"},
-    {"name": "Studion i Hjorthagens Kulturhus", "class": "other"},
-    {"name": "Sturecompagniet", "class": "music"},
-    {"name": "Södra Teaterns alla scener", "class": "music"},
-    {"name": "Södra Teaterns Stora Scen", "class": "music"},
-    {"name": "Teater Brunnsgatan Fyra", "class": "other"},
-    {"name": "Teater Rival", "class": "music"},
-    {"name": "Teaterbrasseriet", "class": "other"},
-    {"name": "Teatern i Hjorthagens Kulturhus", "class": "music"},
-    {"name": "The Kings Fox", "class": "music"},
-    {"name": "The Node", "class": "music"},
-    {"name": "The Node - Under The Fountain - Sergels Torg, Stockholm", "class": "music"},
-    {"name": "Thielska Galleriet", "class": "other"},
-    {"name": "Torsgatan 19", "class": "other"},
-    {"name": "Trädgården", "class": "music"},
-    {"name": "Twang", "class": "music"},
-    {"name": "Tyrgatan 8", "class": "other"},
-    {"name": "Tyska kyrkan", "class": "music"},
-    {"name": "Under bron", "class": "music"},
-    {"name": "Unga Klara, Kulturhuset Stadsteatern", "class": "other"},
-    {"name": "Vasateatern", "class": "other"},
-    {"name": "Vinterträdgården", "class": "other"},
-    {"name": "Värtahamnen", "class": "other"},
-    {"name": "WE ARE ONE Church", "class": "music"},
-    {"name": "Winterviken Scen", "class": "music"},
-    {"name": "Zita", "class": "other"},
-    {"name": "Åkeshovs Arena", "class": "other"},
-    {"name": "Ångfartyget Blidösund", "class": "other"},
-    {"name": "Östasiastiska museet", "class": "other"}
+    {
+      "name": "3:e Våningen",
+      "class": "music"
+    },
+    {
+      "name": "ABBA The Museum",
+      "class": "other"
+    },
+    {
+      "name": "ABF-huset, Sveavägen 41",
+      "class": "other"
+    },
+    {
+      "name": "ABF Stockholm",
+      "class": "other"
+    },
+    {
+      "name": "Åkeshovs Arena",
+      "class": "other"
+    },
+    {
+      "name": "Allhelgonakyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Ångfartyget Blidösund",
+      "class": "other"
+    },
+    {
+      "name": "Annedalskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Arenatältet",
+      "class": "other"
+    },
+    {
+      "name": "Armémuseum",
+      "class": "other"
+    },
+    {
+      "name": "Atalante",
+      "class": "other"
+    },
+    {
+      "name": "B-K",
+      "class": "music"
+    },
+    {
+      "name": "Banankompaniet",
+      "class": "music"
+    },
+    {
+      "name": "Bananpiren, Kajskjul 105",
+      "class": "other"
+    },
+    {
+      "name": "BAR15",
+      "class": "music"
+    },
+    {
+      "name": "Barabicu",
+      "class": "other"
+    },
+    {
+      "name": "Berns",
+      "class": "music"
+    },
+    {
+      "name": "Biblioteket Live",
+      "class": "music"
+    },
+    {
+      "name": "Big Stage (Jacy'z)",
+      "class": "music"
+    },
+    {
+      "name": "Bio Skandia",
+      "class": "other"
+    },
+    {
+      "name": "BOQUERIA",
+      "class": "other"
+    },
+    {
+      "name": "Börsen",
+      "class": "music"
+    },
+    {
+      "name": "Brödernas Nordstan",
+      "class": "other"
+    },
+    {
+      "name": "Bubblan",
+      "class": "music"
+    },
+    {
+      "name": "Café Opera",
+      "class": "music"
+    },
+    {
+      "name": "Ccap",
+      "class": "other"
+    },
+    {
+      "name": "China teatern",
+      "class": "other"
+    },
+    {
+      "name": "Christinae kyrka Göteborg (Tyska kyrkan)",
+      "class": "music"
+    },
+    {
+      "name": "Cinnober teater",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel Amaranten",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel Draken",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel® Sign",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel Stockholm",
+      "class": "other"
+    },
+    {
+      "name": "Contrast Public House",
+      "class": "other"
+    },
+    {
+      "name": "Crime Walks, Drottningtorget",
+      "class": "other"
+    },
+    {
+      "name": "Crime Walks, Kronhusgården",
+      "class": "other"
+    },
+    {
+      "name": "Debaser",
+      "class": "music"
+    },
+    {
+      "name": "DEBASER NOVA",
+      "class": "music"
+    },
+    {
+      "name": "Debaser Strand",
+      "class": "music"
+    },
+    {
+      "name": "Draken Live",
+      "class": "music"
+    },
+    {
+      "name": "Drakenbergssalen, Hornstull",
+      "class": "other"
+    },
+    {
+      "name": "Eataly",
+      "class": "other"
+    },
+    {
+      "name": "Ekonomiska museet – Kungliga myntkabinettet",
+      "class": "other"
+    },
+    {
+      "name": "Engelska Kyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Eriksbergshallen",
+      "class": "music"
+    },
+    {
+      "name": "Ersta kyrka",
+      "class": "music"
+    },
+    {
+      "name": "Etnografiska museet",
+      "class": "other"
+    },
+    {
+      "name": "FÅLLAN",
+      "class": "music"
+    },
+    {
+      "name": "Filmhuset Bio Mauritz",
+      "class": "other"
+    },
+    {
+      "name": "Filmstudion",
+      "class": "music"
+    },
+    {
+      "name": "Frälsningsarmén, Vasakåren",
+      "class": "music"
+    },
+    {
+      "name": "Frihamnen Arena",
+      "class": "other"
+    },
+    {
+      "name": "Frihamnen Kajskjul 105",
+      "class": "music"
+    },
+    {
+      "name": "Frihamnskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Front Lindholmen",
+      "class": "other"
+    },
+    {
+      "name": "FRYSHUSET KLUBBEN",
+      "class": "music"
+    },
+    {
+      "name": "Fylkingen",
+      "class": "music"
+    },
+    {
+      "name": "Fyrens Ölkafé",
+      "class": "music"
+    },
+    {
+      "name": "Gamlestadens medborgarhus",
+      "class": "other"
+    },
+    {
+      "name": "Golden Hits",
+      "class": "other"
+    },
+    {
+      "name": "Golden Hits, Studion",
+      "class": "other"
+    },
+    {
+      "name": "GöteborgsOperan",
+      "class": "music"
+    },
+    {
+      "name": "Gothenburg Film Studios",
+      "class": "music"
+    },
+    {
+      "name": "Grekiskacompagniet Première at Bistro Marie Gamla Stan - Greek and Dance Music Party",
+      "class": "music"
+    },
+    {
+      "name": "Gustav Vasa Kyrka",
+      "class": "music"
+    },
+    {
+      "name": "Hallwylska museet",
+      "class": "other"
+    },
+    {
+      "name": "Hedvig Eleonora församlingshem",
+      "class": "other"
+    },
+    {
+      "name": "Hedvig Eleonora kyrka",
+      "class": "music"
+    },
+    {
+      "name": "Hemlig venue",
+      "class": "music"
+    },
+    {
+      "name": "Hilton Stockholm Slussen",
+      "class": "other"
+    },
+    {
+      "name": "Hiphop Revolution Festival",
+      "class": "music"
+    },
+    {
+      "name": "Historiska museet",
+      "class": "other"
+    },
+    {
+      "name": "Historiska museet, Barocksalen",
+      "class": "music"
+    },
+    {
+      "name": "Historiska Museet i Stockholm",
+      "class": "other"
+    },
+    {
+      "name": "Historiska Museet - Stockholm, Barocksalen",
+      "class": "music"
+    },
+    {
+      "name": "Högalidskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Hotel Draken",
+      "class": "other"
+    },
+    {
+      "name": "House of Q",
+      "class": "music"
+    },
+    {
+      "name": "HYDE Stockholm",
+      "class": "music"
+    },
+    {
+      "name": "J. mat & mer på Stora Holms Säteri",
+      "class": "other"
+    },
+    {
+      "name": "Jacy'z",
+      "class": "other"
+    },
+    {
+      "name": "Jacy'z Hotel",
+      "class": "other"
+    },
+    {
+      "name": "Jazzklubben Playhouse på Valand",
+      "class": "music"
+    },
+    {
+      "name": "Johannebergskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Kägelbanan Södra Teatern",
+      "class": "music"
+    },
+    {
+      "name": "Källarbyn",
+      "class": "other"
+    },
+    {
+      "name": "Kasai",
+      "class": "music"
+    },
+    {
+      "name": "KASAI STHLM",
+      "class": "music"
+    },
+    {
+      "name": "Kollektivet Livet",
+      "class": "music"
+    },
+    {
+      "name": "Konstakademien",
+      "class": "other"
+    },
+    {
+      "name": "KTH-Hallen",
+      "class": "other"
+    },
+    {
+      "name": "Kulturskolan, Medborgarhuset, Stockholm",
+      "class": "other"
+    },
+    {
+      "name": "Kungsgatan 62",
+      "class": "other"
+    },
+    {
+      "name": "Le Bistrot de Wasahof",
+      "class": "other"
+    },
+    {
+      "name": "Lisebergsteatern",
+      "class": "other"
+    },
+    {
+      "name": "Livrustkammaren",
+      "class": "other"
+    },
+    {
+      "name": "Made in Ringön",
+      "class": "music"
+    },
+    {
+      "name": "Magasin 9",
+      "class": "music"
+    },
+    {
+      "name": "Mariatorget Pitchers-Casino",
+      "class": "other"
+    },
+    {
+      "name": "Masthuggskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Maxim",
+      "class": "other"
+    },
+    {
+      "name": "Medelhavsmuseet",
+      "class": "other"
+    },
+    {
+      "name": "Monument",
+      "class": "music"
+    },
+    {
+      "name": "Monument 031",
+      "class": "music"
+    },
+    {
+      "name": "Mötesplats Mariatorget",
+      "class": "music"
+    },
+    {
+      "name": "Münchenbryggeriet Mässhallen",
+      "class": "other"
+    },
+    {
+      "name": "Musikens Hus",
+      "class": "music"
+    },
+    {
+      "name": "Musikens Hus / Hängmattan Scen",
+      "class": "music"
+    },
+    {
+      "name": "Musikens Hus Stora Scen",
+      "class": "music"
+    },
+    {
+      "name": "Nalen Klubb, Stockholm",
+      "class": "music"
+    },
+    {
+      "name": "Nalen Restaurang",
+      "class": "other"
+    },
+    {
+      "name": "Nalen – Stora Salen, Stockholm",
+      "class": "music"
+    },
+    {
+      "name": "Nefertiti",
+      "class": "music"
+    },
+    {
+      "name": "Nordic Light Hotel",
+      "class": "other"
+    },
+    {
+      "name": "Nordiska Museet",
+      "class": "music"
+    },
+    {
+      "name": "Norrmalmskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Operaterrassen & Rotundan",
+      "class": "music"
+    },
+    {
+      "name": "Orionteatern",
+      "class": "other"
+    },
+    {
+      "name": "Oscar Fredriks kyrka",
+      "class": "music"
+    },
+    {
+      "name": "Oscarskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Oscarsteatern",
+      "class": "other"
+    },
+    {
+      "name": "Östasiastiska museet",
+      "class": "other"
+    },
+    {
+      "name": "Playhouse Teater",
+      "class": "other"
+    },
+    {
+      "name": "Porter-Pelle",
+      "class": "music"
+    },
+    {
+      "name": "Prins Eugens Waldemarsudde",
+      "class": "other"
+    },
+    {
+      "name": "Push",
+      "class": "music"
+    },
+    {
+      "name": "Pustervik",
+      "class": "music"
+    },
+    {
+      "name": "Pygméteatern",
+      "class": "other"
+    },
+    {
+      "name": "Radisson Blu Scandinavia",
+      "class": "other"
+    },
+    {
+      "name": "Reimersholme Hotel",
+      "class": "music"
+    },
+    {
+      "name": "Riddarhuset",
+      "class": "music"
+    },
+    {
+      "name": "Rival",
+      "class": "music"
+    },
+    {
+      "name": "Rockbaren",
+      "class": "music"
+    },
+    {
+      "name": "Röda Sten Konsthall",
+      "class": "other"
+    },
+    {
+      "name": "Rondo",
+      "class": "other"
+    },
+    {
+      "name": "Sankta Birgittas kapell",
+      "class": "music"
+    },
+    {
+      "name": "Scalateatern",
+      "class": "music"
+    },
+    {
+      "name": "Scandic Continental",
+      "class": "other"
+    },
+    {
+      "name": "Scandic Göteborg Central",
+      "class": "other"
+    },
+    {
+      "name": "Scandic Malmen",
+      "class": "other"
+    },
+    {
+      "name": "Scandic Opalen",
+      "class": "other"
+    },
+    {
+      "name": "Scandic Sjöfartshotellet",
+      "class": "other"
+    },
+    {
+      "name": "Scenkonstmuseet",
+      "class": "music"
+    },
+    {
+      "name": "Sibeliussalen",
+      "class": "music"
+    },
+    {
+      "name": "Skeppet GBG",
+      "class": "music"
+    },
+    {
+      "name": "Slaktkyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Snövit",
+      "class": "music"
+    },
+    {
+      "name": "Sockerbruket Arena",
+      "class": "music"
+    },
+    {
+      "name": "Södra Teaterns alla scener",
+      "class": "music"
+    },
+    {
+      "name": "Södra Teaterns Stora Scen",
+      "class": "music"
+    },
+    {
+      "name": "Solvalla",
+      "class": "other"
+    },
+    {
+      "name": "Stallet - Världens Musik",
+      "class": "music"
+    },
+    {
+      "name": "Stockholm Waterfront",
+      "class": "other"
+    },
+    {
+      "name": "Studion i Hjorthagens Kulturhus",
+      "class": "other"
+    },
+    {
+      "name": "Sturecompagniet",
+      "class": "music"
+    },
+    {
+      "name": "Surr Arena",
+      "class": "music"
+    },
+    {
+      "name": "SURR Arena - Åvägen 24",
+      "class": "music"
+    },
+    {
+      "name": "Teater Brunnsgatan Fyra",
+      "class": "other"
+    },
+    {
+      "name": "Teater Rival",
+      "class": "music"
+    },
+    {
+      "name": "Teater Scarlet - Vasagatan 24",
+      "class": "other"
+    },
+    {
+      "name": "Teaterbrasseriet",
+      "class": "other"
+    },
+    {
+      "name": "Teatern i Hjorthagens Kulturhus",
+      "class": "music"
+    },
+    {
+      "name": "The Kings Fox",
+      "class": "music"
+    },
+    {
+      "name": "The Node",
+      "class": "music"
+    },
+    {
+      "name": "The Node - Under The Fountain - Sergels Torg, Stockholm",
+      "class": "music"
+    },
+    {
+      "name": "Thielska Galleriet",
+      "class": "other"
+    },
+    {
+      "name": "Torsgatan 19",
+      "class": "other"
+    },
+    {
+      "name": "Trädgår´n",
+      "class": "music"
+    },
+    {
+      "name": "Trädgården",
+      "class": "music"
+    },
+    {
+      "name": "TRÄDGÅR'N",
+      "class": "music"
+    },
+    {
+      "name": "Trädgårn Gbg",
+      "class": "music"
+    },
+    {
+      "name": "Trädgår’n Göteborg",
+      "class": "music"
+    },
+    {
+      "name": "Trädgår'n Nattklubb",
+      "class": "music"
+    },
+    {
+      "name": "Trädgårn Restaurang",
+      "class": "other"
+    },
+    {
+      "name": "Twang",
+      "class": "music"
+    },
+    {
+      "name": "Tyrgatan 8",
+      "class": "other"
+    },
+    {
+      "name": "Tyska kyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Ullevi",
+      "class": "music"
+    },
+    {
+      "name": "Under bron",
+      "class": "music"
+    },
+    {
+      "name": "Unga Klara, Kulturhuset Stadsteatern",
+      "class": "other"
+    },
+    {
+      "name": "Valand",
+      "class": "music"
+    },
+    {
+      "name": "Världskulturmuseet",
+      "class": "other"
+    },
+    {
+      "name": "Värtahamnen",
+      "class": "other"
+    },
+    {
+      "name": "Vasateatern",
+      "class": "other"
+    },
+    {
+      "name": "Vinterträdgården",
+      "class": "other"
+    },
+    {
+      "name": "Viva Sounds",
+      "class": "music"
+    },
+    {
+      "name": "WE ARE ONE Church",
+      "class": "music"
+    },
+    {
+      "name": "Wine Mechanics",
+      "class": "music"
+    },
+    {
+      "name": "Winterviken Scen",
+      "class": "music"
+    },
+    {
+      "name": "World of Volvo Eventhallen",
+      "class": "music"
+    },
+    {
+      "name": "Zita",
+      "class": "other"
+    }
   ]
 }
