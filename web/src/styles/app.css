@@ -6,8 +6,8 @@
   top: 0;
   z-index: 30;
   height: var(--bar);
-  background: color-mix(in oklch, var(--background) 88%, transparent);
-  backdrop-filter: blur(12px);
+  /* Opaque: at 88 % the row behind the bar ghosted through the blur, which read as a rendering fault. */
+  background: var(--background);
   border-bottom: 1px solid var(--border);
 }
 .bar__row {
@@ -19,32 +19,37 @@
   margin: 0 auto;
   padding: 0 12px 0 16px;
 }
-/* The mark is a lit tile: a dark key with a white glyph, in both themes. It is the one element that keeps the
-   neon in daylight — a green glow around a black chip reads on paper and in a dark room alike. */
+/* The mark is the glyph itself, in the foreground, lit — the glow lives on the icon, not on a tile. The tile
+   belongs to the favicon, where a glowing glyph needs something opaque behind it. */
+.bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: var(--foreground);
+}
 .bar__mark {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 2px;
-  background: #0b0b0d;
-  color: #ffffff;
-  box-shadow: 0 0 1px var(--primary), 0 0 9px -1px color-mix(in oklch, var(--primary) 55%, transparent),
-    0 0 22px -6px color-mix(in oklch, var(--primary) 45%, transparent);
-  transition: box-shadow 0.15s linear;
+  width: 32px;
+  height: 32px;
+  color: var(--foreground);
 }
-.bar__mark:hover {
-  box-shadow: 0 0 1px var(--primary), 0 0 12px -1px var(--primary),
-    0 0 30px -6px color-mix(in oklch, var(--primary) 65%, transparent);
+.bar__mark svg {
+  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 75%, transparent))
+    drop-shadow(0 0 10px color-mix(in oklch, var(--primary) 40%, transparent));
+  transition: filter 0.15s linear;
+}
+.bar__brand:hover .bar__mark svg {
+  filter: drop-shadow(0 0 4px var(--primary)) drop-shadow(0 0 16px color-mix(in oklch, var(--primary) 55%, transparent));
 }
 .bar__name {
-  display: none;
-  margin-left: 10px;
-  font: 600 14px/1 var(--font);
-  letter-spacing: -0.01em;
+  display: block;
+  font: 600 12px/1 var(--font);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .bar__actions {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -83,7 +88,7 @@
   gap: 10px;
   min-width: 0;
   max-width: 100%;
-  border-radius: 2px;
+  border-radius: 0;
 }
 .townbtn .sign {
   overflow: hidden;
@@ -117,7 +122,7 @@
   height: 32px;
   margin-top: 12px;
   border: 1px solid var(--border-strong);
-  border-radius: 2px;
+  border-radius: 0;
   overflow: hidden;
 }
 .seg button {
@@ -159,8 +164,14 @@
 .board {
   margin-top: 0;
 }
+/* A day is a section, so its boundary is a stronger rule than the hairline between two shows, with air on
+   both sides of it. The last row of a day carries no border, so a boundary is always exactly one line. */
 .day {
   position: relative;
+  border-top: 1px solid var(--border-strong);
+}
+.day:first-child {
+  border-top: 0;
 }
 .day__head {
   position: sticky;
@@ -169,20 +180,20 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 12px 0 8px;
-  background: color-mix(in oklch, var(--background) 94%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
-  font: 600 10.5px/1 var(--font);
+  padding: 18px 0 6px;
+  /* Opaque: a pinned header that lets the row underneath show through reads as an overlap, not a header. The
+     group carries no padding above the header — a transparent strip there ghosts the previous row under the bar. */
+  background: var(--background);
+  font: 600 11px/1 var(--font);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 .day__label {
+  position: relative;
   display: inline-flex;
   align-items: baseline;
-  gap: 16px;
-  padding: 0 2px 7px;
+  gap: 24px;
 }
 .day__head .day__dd {
   font-size: 11px;
@@ -195,23 +206,27 @@
   letter-spacing: 0.04em;
   color: var(--text-3);
 }
+.day__nword {
+  display: inline;
+  font-family: var(--font);
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
 .day--today .day__head .day__dd {
-  color: var(--foreground);
+  color: var(--primary);
 }
-/* The rule is the label's own width — a fixed 28 px underline under a wider word was a line that stopped
-   mid-word. The glow rides on the label, so it can be any length. */
-.day--today .day__label {
-  position: relative;
-}
-.day--today .day__label::after {
+/* Today is a lamp in the gutter, beside the date — not an underline, and not a shift: the bar is absolutely
+   positioned, so the text keeps the exact position it had on every other day. */
+.day--today .day__label::before {
   content: "";
   position: absolute;
-  left: 2px;
-  right: 2px;
-  bottom: 0;
-  height: 2px;
+  left: -13px;
+  top: -7px;
+  bottom: -7px;
+  width: 2px;
   background: var(--primary-line);
-  box-shadow: 0 0 4px var(--primary), 0 0 10px var(--primary), 0 0 22px color-mix(in oklch, var(--primary) 55%, transparent);
+  box-shadow: 0 0 4px var(--primary), 0 0 10px var(--primary),
+    0 0 22px color-mix(in oklch, var(--primary) 55%, transparent);
 }
 
 .show {
@@ -219,8 +234,8 @@
   grid-template-columns: 40px minmax(0, 1fr) 20px;
   align-items: center;
   gap: 12px;
-  min-height: 68px;
-  padding: 10px 4px 10px 0;
+  min-height: 64px;
+  padding: 8px 4px 8px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.12s linear;
@@ -377,60 +392,6 @@ a.show__artist:hover {
   margin-top: 6px;
 }
 
-/* The skeleton is the board's own geometry: every box that arrives late has a placeholder of the
-   same width and height, so the page settles once. */
-.sk {
-  animation: fade 0.2s linear both;
-}
-.sk__sign {
-  height: 34px;
-  width: min(260px, 60%);
-  margin: 6px 0 14px;
-  background: var(--surface-2);
-  border-radius: 2px;
-}
-.sk__count {
-  height: 12px;
-  width: 120px;
-  margin-bottom: 22px;
-  background: var(--surface-2);
-  border-radius: 2px;
-}
-.sk__day {
-  height: 10px;
-  width: 84px;
-  margin: 22px 0 12px;
-  background: var(--surface-2);
-  border-radius: 2px;
-}
-.sk__row {
-  display: grid;
-  grid-template-columns: 40px 1fr 20px;
-  align-items: center;
-  gap: 12px;
-  min-height: 68px;
-  border-bottom: 1px solid var(--border);
-}
-.sk__circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--surface-2);
-}
-.sk__line {
-  height: 11px;
-  border-radius: 2px;
-  background: var(--surface-2);
-}
-.sk__line--a {
-  width: 62%;
-  margin-bottom: 7px;
-}
-.sk__line--b {
-  width: 38%;
-  height: 9px;
-}
-
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */
 
 /* §20, exactly as Messer Paste draws it: 32px, `--surface`, one square hairline, one bold arrow at 16px,
@@ -494,9 +455,6 @@ a.show__artist:hover {
 }
 
 @media (min-width: 721px) {
-  .bar__name {
-    display: block;
-  }
   .head {
     padding-top: 40px;
   }
@@ -546,20 +504,29 @@ a.show__artist:hover {
     font-size: 10.5px;
   }
   .day__head .day__dd {
-    display: block;
-    margin: 12px 0 2px;
+    display: inline;
+    margin: 12px 8px 2px 0;
     font-size: 34px;
     line-height: 0.9;
     letter-spacing: -0.03em;
     color: var(--text-2);
   }
+  .day__head .day__mo {
+    font-size: 10.5px;
+  }
   .day__head .day__n {
     display: block;
-    width: 46px;
-    margin: 16px 0 0;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
+    margin: 10px 0 0;
+    padding: 0;
+    border: 0;
     font-size: 10px;
+    color: var(--text-3);
+  }
+  .day__nword {
+    display: inline;
+    font-family: var(--font);
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
   }
   .day--today .day__head .day__dd {
     color: var(--primary);

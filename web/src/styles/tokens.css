@@ -214,7 +214,7 @@ img {
   height: 44px;
   padding: 0 20px;
   border: 1px solid var(--border-strong);
-  border-radius: 2px;
+  border-radius: 0;
   font: 600 14px/1 var(--font);
   color: var(--foreground);
   background: transparent;
@@ -252,7 +252,7 @@ img {
   width: 32px;
   height: 32px;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: 0;
   color: var(--text-2);
   transition: color 0.12s linear, background 0.12s linear, border-color 0.12s linear, box-shadow 0.12s linear;
 }
@@ -281,7 +281,7 @@ img {
   height: 44px;
   padding: 0 12px;
   border: 1px solid var(--border-strong);
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--surface);
   transition: border-color 0.12s linear, box-shadow 0.12s linear;
 }
@@ -313,7 +313,7 @@ img {
   height: 32px;
   padding: 0 8px 0 12px;
   border: 1px solid var(--border-strong);
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--surface);
   font: 400 13px/1 var(--font);
   color: var(--foreground);
@@ -400,7 +400,7 @@ img {
 .loader i {
   width: 100%;
   height: 100%;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--primary);
   opacity: 0.16;
   animation: loader-dot 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;

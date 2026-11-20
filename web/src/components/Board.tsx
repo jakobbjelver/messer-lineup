@@ -87,7 +87,10 @@ export default function Board({
                 <span className="num day__dd">{dayNumber(group.day)}</span>
                 <span className="day__mo">{monthShort(group.day)}</span>
               </span>
-              <span className="num day__n">{group.rows.length}</span>
+              <span className="day__n">
+                <span className="num">{group.rows.length}</span>
+                <span className="day__nword"> shows</span>
+              </span>
             </h2>
             {group.rows.map((row) => (
               <ShowRow
