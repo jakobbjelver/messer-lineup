@@ -233,9 +233,11 @@
 .day--today .day__label::before {
   content: "";
   position: absolute;
-  left: -13px;
-  top: 0px;
-  bottom: 0px;
+  /* -12px is the day header's own left padding, so the lamp sits exactly on the header's leading edge —
+     at -13 it straddled it by a pixel. */
+  left: -12px;
+  top: 0;
+  bottom: 0;
   width: 2px;
   background: var(--primary-line);
   box-shadow: 0 0 4px var(--primary), 0 0 10px var(--primary),
