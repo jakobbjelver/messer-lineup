@@ -117,6 +117,7 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 	indexDir := fs.String("index", ".lineup-index", "the index to serve")
 	addr := fs.String("addr", "127.0.0.1:8016", "listen address")
 	webDir := fs.String("web", "", "the built board (web/dist); empty serves the index only")
+	lastfmKey := fs.String("lastfm-key", os.Getenv("LASTFM_KEY"), "Last.fm API key for the taste import (default $LASTFM_KEY)")
 	nowFlag := fs.String("now", "", "pin the clock (also accepted as --frozen-clock for fixtures)")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
@@ -133,10 +134,11 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stderr, "lineup serve: index %s, board %s\n", *indexDir, orDefault(*webDir, "none yet"))
 	if err := server.Run(context.Background(), server.Options{
-		IndexDir: *indexDir,
-		WebDir:   *webDir,
-		Now:      clk.Now,
-		Log:      stdout,
+		IndexDir:  *indexDir,
+		WebDir:    *webDir,
+		Now:       clk.Now,
+		LastFMKey: *lastfmKey,
+		Log:       stdout,
 	}, *addr); err != nil {
 		fmt.Fprintf(stderr, "lineup serve: %v\n", err)
 		return exitRefused

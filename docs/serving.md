@@ -5,7 +5,7 @@ Two hosts, two jobs. They never overlap, and that separation is the whole cost m
 | Host | What it is | What it answers | Cost |
 |---|---|---|---|
 | `lineup-data.messer.wtf` | R2 bucket `messer-lineup-index` | `manifest.json`, `towns.json`, `towns/<sha>.jsonl.gz`, `artists/portraits.json` | R2 reads + egress; no compute |
-| `lineup.messer.wtf` | one Worker: static assets + a small script | the built board, `/healthz`, `/readyz`, `/api/v1/artists/*`, `/calendar/*.ics` | asset requests free and unmetered; only the script is metered |
+| `lineup.messer.wtf` | one Worker: static assets + a small script | the built board, `/healthz`, `/readyz`, `/api/v1/artists/*`, `/api/v1/taste/lastfm`, `/calendar/*.ics` | asset requests free and unmetered; only the script is metered |
 
 **The index is not proxied.** The board fetches the manifest and one shard straight from the bucket, so a
 shard never travels through a Worker and never costs CPU. The Worker's only read of the bucket is `/readyz`'s
@@ -29,6 +29,7 @@ answers the contract's 501 envelope, which is an honest "not mine".
 | `GET /readyz` | 200 when the bucket's `manifest.json` is reachable, 503 with a `detail` when it is not | uptime |
 | `GET /api/v1/artists/search?q=` | MusicBrainz search, serialised and cached at the edge; `unavailable` instead of an empty lie | the artist picker's combobox |
 | `GET /api/v1/artists/portraits?n=…` | up to 8 names → Deezer faces, keyed by the name that was sent | the picker's avatars |
+| `GET /api/v1/taste/lastfm?user=` | that handle's top artists for the last 12 months (names, ≤200), cached six hours at the edge; `404 unknown_user` for a handle Last.fm does not know, `503` when it did not answer | the picker's Last.fm import |
 | `GET /calendar/<token>.ics` | the feed for a board (town or `anywhere`, optional taste snapshot or live ListenBrainz source) | a calendar client's subscription |
 | everything else | the assets, or the SPA document | the board |
 

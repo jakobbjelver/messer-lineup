@@ -77,6 +77,16 @@ const REQUESTS = [
     path: "/api/v1/artists/portraits",
     compare: { kind: "body" },
   },
+  // The taste import: one handle, one provider, one answer. Both runtimes ask Last.fm the same question, so the body
+  // can be compared byte for byte — and a handle that does not exist must be the same 404 envelope on both. These two
+  // are live reads with a key behind them: a machine without LASTFM_KEY reports them SKIPPED, never as agreement.
+  { method: "GET", path: "/api/v1/taste/lastfm?user=messeratgalten", compare: { kind: "body" }, needsLastFM: true },
+  {
+    method: "GET",
+    path: "/api/v1/taste/lastfm?user=zzzz-not-a-lastfm-handle",
+    compare: { kind: "error", code: "unknown_user", status: 404 },
+    needsLastFM: true,
+  },
   // The one document route: both runtimes must answer an artist link with the SPA's document, not a 404. On the
   // Worker this goes script → ASSETS → `single-page-application`; on the Go server it is the history fallback.
   { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },
@@ -207,6 +217,9 @@ function diff(req, go, worker) {
 
 const rows = [];
 let failures = 0;
+let skipped = 0;
+
+const notConfigured = (res) => res.status === 503 && res.json?.error?.code === "not_configured";
 
 for (const req of REQUESTS) {
   const [go, worker] = await Promise.all([call(GO, req), call(WORKER, req)]);
@@ -214,6 +227,14 @@ for (const req of REQUESTS) {
   if (go.status === 0 || worker.status === 0) {
     rows.push(`${req.method} ${req.path}  UNREACHABLE  go=${go.status} worker=${worker.status}`);
     failures += 1;
+    continue;
+  }
+
+  // A route that needs a key neither runtime has is not a contract failure — but it is never counted as agreement
+  // either: the line says SKIPPED, so a release check cannot mistake a keyless machine for a verified route.
+  if (req.needsLastFM && notConfigured(go) && notConfigured(worker)) {
+    skipped += 1;
+    rows.push(`${req.method} ${req.path}  SKIPPED  LASTFM_KEY is not set on either runtime`);
     continue;
   }
 
@@ -229,5 +250,8 @@ for (const req of REQUESTS) {
 }
 
 console.log(rows.join("\n"));
-console.log(`\nG1: ${REQUESTS.length - failures}/${REQUESTS.length} agree between ${GO} and ${WORKER}`);
+console.log(
+  `\nG1: ${REQUESTS.length - failures - skipped}/${REQUESTS.length - skipped} agree between ${GO} and ${WORKER}` +
+    (skipped ? ` (${skipped} skipped: a key neither runtime has)` : ""),
+);
 process.exit(failures ? 1 : 0);

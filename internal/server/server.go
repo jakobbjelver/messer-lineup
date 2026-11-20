@@ -2,9 +2,9 @@
 // the same bytes a visitor will fetch.
 //
 // What it serves is deliberately narrow: the index files with the headers the bucket sets (a year and `immutable`
-// for a shard, five minutes for the manifest), health from the index itself, the two artist routes the board calls,
-// and the calendar feed. Every route here has a consumer; a path that does not exist gets the contract's 501
-// envelope, which is an honest "not mine" rather than a 404 that reads like a broken index.
+// for a shard, five minutes for the manifest), health from the index itself, the artist routes and the Last.fm
+// taste import the board calls, and the calendar feed. Every route here has a consumer; a path that does not exist
+// gets the contract's 501 envelope, which is an honest "not mine" rather than a 404 that reads like a broken index.
 package server
 
 import (
@@ -38,6 +38,11 @@ type Options struct {
 	DeezerURL string
 	// ListenBrainzURL overrides the statistics endpoint behind a calendar's live artist source. A test seam.
 	ListenBrainzURL string
+	// LastFMKey is the Last.fm API key behind the taste import. Empty is answered honestly: the route says it is
+	// not configured rather than calling the provider with no identity and reporting the refusal as an outage.
+	LastFMKey string
+	// LastFMURL overrides the Last.fm endpoint. A test seam; production never sets it.
+	LastFMURL string
 }
 
 // Handler builds the routes. It returns an error only when the index cannot be read at all — a server that can
@@ -59,6 +64,7 @@ func Handler(opts Options) (http.Handler, error) {
 		search:   newArtistSearcher(opts.ArtistSearchURL),
 		faces:    newFaceIndex(opts.DeezerURL, opts.Now),
 		taste:    newTasteResolver(opts.ListenBrainzURL, opts.Now),
+		lastfm:   newLastFMResolver(opts.LastFMURL, opts.LastFMKey, opts.Now),
 	}
 
 	mux := http.NewServeMux()
@@ -72,6 +78,7 @@ func Handler(opts Options) (http.Handler, error) {
 	// Registered above the wildcard like every specific route: Go's mux would route it correctly anyway, but the
 	// order is the habit that keeps the Hono side honest.
 	mux.HandleFunc("GET /api/v1/artists/portraits", s.artistPortraits)
+	mux.HandleFunc("GET /api/v1/taste/lastfm", s.lastfmImport)
 	mux.HandleFunc("/api/v1/", s.apiNotYet)
 	mux.HandleFunc("GET /calendar/{file}", s.calendar)
 	mux.HandleFunc("/", s.web)
@@ -84,6 +91,7 @@ type server struct {
 	search   *artistSearcher
 	faces    *faceIndex
 	taste    *tasteResolver
+	lastfm   *lastfmResolver
 }
 
 // health is liveness only: the process answers. It says nothing about the index, which is /readyz's job.
@@ -153,7 +161,44 @@ func (s *server) shard(w http.ResponseWriter, r *http.Request) {
 // even when the status is 501: a client written against it will not need changing when the route is real.
 func (s *server) apiNotYet(w http.ResponseWriter, r *http.Request) {
 	writeError(w, http.StatusNotImplemented, "not_implemented",
-		fmt.Sprintf("%s is not a route this build serves; the API is the two artist routes and the calendar feed", r.URL.Path))
+		fmt.Sprintf("%s is not a route this build serves; the API is the artist routes, the taste import and the calendar feed", r.URL.Path))
+}
+
+// lastfmImport answers one handle's top artists, for the picker's import control.
+//
+// The key never leaves the server: a browser-side Last.fm call would put the app's identity in every visitor's tab,
+// and this route is also where the cache lives. The body is **names**, not keys — the client already owns the
+// identity function (`web/src/lib/key.ts`), and a third copy of that rule is a third place for it to drift.
+//
+// A missing key is a build fact, not an outage: it answers `not_configured` naming the setting instead of calling
+// the provider with no identity and reporting its refusal as "Last.fm did not answer".
+func (s *server) lastfmImport(w http.ResponseWriter, r *http.Request) {
+	if s.opts.LastFMKey == "" {
+		w.Header().Set("Cache-Control", "no-store")
+		writeError(w, http.StatusServiceUnavailable, "not_configured", "this server has no Last.fm key: set LASTFM_KEY")
+		return
+	}
+	user := strings.TrimSpace(r.URL.Query().Get("user"))
+	if user == "" || len([]rune(user)) > 64 {
+		writeError(w, http.StatusBadRequest, "invalid_user", "user is required, and names a Last.fm handle")
+		return
+	}
+	names, answer := s.lastfm.topArtists(user)
+	switch answer {
+	case lastfmUnknownUser:
+		writeError(w, http.StatusNotFound, "unknown_user", "Last.fm has no user by that name")
+		return
+	case lastfmNotAnswered:
+		// A moment, not a fact: nothing is cached and nothing is claimed, so the next try asks again.
+		w.Header().Set("Cache-Control", "no-store")
+		writeError(w, http.StatusServiceUnavailable, "provider_unavailable", "Last.fm did not answer; try again")
+		return
+	}
+	if names == nil {
+		names = []string{}
+	}
+	w.Header().Set("Cache-Control", "public, max-age=21600")
+	writeJSON(w, http.StatusOK, map[string]any{"artists": names})
 }
 
 // web serves the board when there is one. Without assets every other path is a 404 that says why, rather than a

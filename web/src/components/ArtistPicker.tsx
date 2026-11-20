@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import Loader from "./Loader";
 import Avatar from "./Avatar";
-import { importFrom, LASTFM_NOT_READY, searchArtists, type ArtistHit } from "../lib/artistSearch";
+import { importFrom, searchArtists, type ArtistHit } from "../lib/artistSearch";
 import { TASTE_CAP } from "../lib/calendar";
 import { Key } from "../lib/key";
 import { writeImport } from "../lib/storage";
@@ -96,8 +96,6 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [imported, setImported] = useState<number | null>(null);
-  /** Last.fm's route is the P5 stub: once it has said so, the control stops being offered. */
-  const [lastfmOff, setLastfmOff] = useState(false);
   /** What the cap did to an import, in words, while it is on screen. */
   const [capNote, setCapNote] = useState<string | null>(null);
 
@@ -274,13 +272,7 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
         setHandle("");
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "The import did not answer.";
-      if (message === LASTFM_NOT_READY) {
-        setLastfmOff(true);
-        setMode(null);
-        setHandle("");
-      }
-      setImportError(message);
+      setImportError(err instanceof Error ? err.message : "The import did not answer.");
     } finally {
       setImporting(false);
     }
@@ -443,11 +435,9 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
           <button type="button" onClick={() => { setMode("listenbrainz"); setImportError(null); }}>
             ListenBrainz
           </button>
-          {lastfmOff ? null : (
-            <button type="button" onClick={() => { setMode("lastfm"); setImportError(null); }}>
-              Last.fm
-            </button>
-          )}
+          <button type="button" onClick={() => { setMode("lastfm"); setImportError(null); }}>
+            Last.fm
+          </button>
           {importError ? <span className="import__error">{importError}</span> : null}
         </div>
       ) : (
