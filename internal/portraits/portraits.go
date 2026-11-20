@@ -338,6 +338,17 @@ func resolve(ctx context.Context, opts Options, name string, logf func(string, .
 	return fromDeezer(ctx, opts, name)
 }
 
+// PortraitFor is the identity rule in one place, so the miner and the live proxy cannot drift apart: a provider's
+// answer becomes a portrait only when the artist it returned *is* the artist we asked about (the same `model.Key`)
+// and it has a picture. A wrong face is worse than initials (ADR-002), and Deezer's search happily answers a
+// namesake — "Fatherland" is a band and a concept.
+func PortraitFor(id int64, providerName, pictureURL, askedName string) (Portrait, bool) {
+	if pictureURL == "" || model.Key(providerName) != model.Key(askedName) {
+		return Portrait{}, false
+	}
+	return Portrait{URL: pictureURL, Credit: fmt.Sprintf("https://www.deezer.com/artist/%d", id)}, true
+}
+
 // fromDeezer is the coverage source: one call, `picture_xl` is 1000×1000, and the identity rule is the same one
 // every source passes — the returned artist's name must be the name we asked about.
 func fromDeezer(ctx context.Context, opts Options, name string) (Portrait, outcome) {
@@ -359,13 +370,11 @@ func fromDeezer(ctx context.Context, opts Options, name string) (Portrait, outco
 		return Portrait{}, none
 	}
 	artist := answer.Data[0]
-	if artist.PictureX == "" || model.Key(artist.Name) != model.Key(name) {
+	portrait, ok := PortraitFor(artist.ID, artist.Name, artist.PictureX, name)
+	if !ok {
 		return Portrait{}, none
 	}
-	return Portrait{
-		URL:    artist.PictureX,
-		Credit: fmt.Sprintf("https://www.deezer.com/artist/%d", artist.ID),
-	}, found
+	return portrait, found
 }
 
 type relation struct {

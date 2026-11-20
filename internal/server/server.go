@@ -33,6 +33,8 @@ type Options struct {
 	Log      io.Writer
 	// ArtistSearchURL overrides the MusicBrainz search endpoint. A test seam: production never sets it.
 	ArtistSearchURL string
+	// DeezerURL overrides the Deezer artist search behind the on-demand portraits. A test seam.
+	DeezerURL string
 }
 
 // Handler builds the routes. It returns an error only when the index cannot be read at all — a server that can
@@ -48,7 +50,12 @@ func Handler(opts Options) (http.Handler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("server: %w", err)
 	}
-	s := &server{opts: opts, manifest: manifest, search: newArtistSearcher(opts.ArtistSearchURL)}
+	s := &server{
+		opts:     opts,
+		manifest: manifest,
+		search:   newArtistSearcher(opts.ArtistSearchURL),
+		faces:    newFaceIndex(opts.DeezerURL, opts.Now),
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
@@ -61,6 +68,9 @@ func Handler(opts Options) (http.Handler, error) {
 	mux.HandleFunc("GET /where", s.where)
 	mux.HandleFunc("GET /event/", s.event)
 	mux.HandleFunc("GET /api/v1/artists/search", s.artistSearch)
+	// Registered above the wildcard like every specific route: Go's mux would route it correctly anyway, but the
+	// order is the habit that keeps the Hono side honest.
+	mux.HandleFunc("GET /api/v1/artists/portraits", s.artistPortraits)
 	mux.HandleFunc("/api/v1/", s.apiNotYet)
 	mux.HandleFunc("GET /calendar/{file}", s.calendar)
 	mux.HandleFunc("/", s.web)
@@ -71,6 +81,7 @@ type server struct {
 	opts     Options
 	manifest model.Manifest
 	search   *artistSearcher
+	faces    *faceIndex
 }
 
 // health is liveness only: the process answers. It says nothing about the index, which is /readyz's job.

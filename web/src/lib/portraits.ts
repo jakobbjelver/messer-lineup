@@ -69,6 +69,59 @@ export function sourceNames(map: PortraitMap): string[] {
   return [...names].sort();
 }
 
+/* ── on-demand faces ─────────────────────────────────────────────────────────────────────────────
+   The published file answers for the artists the index has rows for. A combobox row is a search hit for an
+   artist it may never have heard of, so the picker asks the edge for the names it is actually showing: one
+   request per search, at most eight names, answered keyed by the name that was sent.
+
+   Two facts are kept for the session: a picture, and a confirmed miss (`null`). A *failed* request is neither —
+   nothing is remembered, because a provider that blinked is not a property of the artist. */
+
+const faces = new Map<string, Portrait | null>();
+
+/** Whether this name has already been answered one way or the other, so a row can stop shimmering. */
+export function faceSettled(name: string): boolean {
+  return faces.has(Key(name));
+}
+
+/** Resolve the faces for a batch of names; names already answered in this session are not asked again. */
+export async function resolvePortraits(names: string[]): Promise<Map<string, Portrait>> {
+  const wanted: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of names) {
+    const name = raw.trim();
+    const key = Key(name);
+    if (name.length < 2 || !key || seen.has(key)) continue;
+    seen.add(key);
+    wanted.push(name);
+    if (wanted.length === 8) break;
+  }
+
+  const fresh = wanted.filter((name) => !faces.has(Key(name)));
+  if (fresh.length > 0) {
+    const query = fresh.map((name) => `n=${encodeURIComponent(name)}`).join("&");
+    try {
+      const res = await fetch(`/api/v1/artists/portraits?${query}`, { cache: "no-store" });
+      if (res.ok) {
+        const body = (await res.json()) as { portraits?: Record<string, Portrait> };
+        for (const name of fresh) {
+          const found = body.portraits?.[name];
+          faces.set(Key(name), found && typeof found.u === "string" && found.u ? found : null);
+        }
+      }
+    } catch {
+      /* not remembered: the next search asks again */
+    }
+  }
+
+  const out = new Map<string, Portrait>();
+  for (const name of wanted) {
+    const portrait = faces.get(Key(name));
+    if (portrait) out.set(Key(name), portrait);
+  }
+  return out;
+}
+
 /** A portrait for a display name, when the published file has one. */
 export function portraitFor(map: PortraitMap, name: string): Portrait | undefined {
   return map.get(Key(name));

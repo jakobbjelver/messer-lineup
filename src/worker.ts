@@ -211,6 +211,116 @@ app.get("/api/v1/artists/search", async (c) => {
 });
 
 
+/**
+ * `/api/v1/artists/portraits?n=…` — a face for a search hit the published file has never heard of.
+ *
+ * The board's faces are published (`artists/portraits.json`) and cost nothing. A combobox row is a MusicBrainz hit
+ * for an artist the index may have no rows for, which is why most of them wore initials. This asks Deezer — keyless,
+ * one call, `picture_xl` — for at most eight names, and answers keyed by **the name the caller sent** so the two
+ * runtimes never have to agree on the identity function to read one picture.
+ *
+ * The identity rule still applies: a returned artist whose folded name is not the name we asked about is refused,
+ * because a namesake's face is worse than initials. A miss is cached for a day at the edge (the client keeps its own
+ * for the session); a failure is neither cached nor claimed.
+ */
+const FACE_MAX = 8;
+const FACE_GAP = 250;
+const DEEZER_SEARCH = "https://api.deezer.com/search/artist?q=";
+
+type Portrait = { u: string; c?: string };
+type FaceBody = { portraits: Record<string, Portrait>; unavailable?: boolean };
+
+/** A guard, not the published identity: NFKD, no marks, no quotes, `&` → and, credit cut, punctuation folded. */
+function faceKey(name: string): string {
+  let s = name.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "");
+  s = s
+    .replace(/ø/g, "o")
+    .replace(/æ/g, "ae")
+    .replace(/œ/g, "oe")
+    .replace(/ß/g, "ss")
+    .replace(/þ/g, "th")
+    .replace(/ð/g, "d")
+    .replace(/ł/g, "l")
+    .replace(/đ/g, "d")
+    .replace(/ı/g, "i")
+    .replace(/&/g, " and ")
+    .replace(/['’‘`´"“”„‚]/g, "");
+  for (const marker of [" feat.", " ft.", " featuring "]) {
+    const at = s.indexOf(marker);
+    if (at >= 0) s = s.slice(0, at);
+  }
+  return s.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+let dzChain: Promise<unknown> = Promise.resolve();
+let dzLast = 0;
+
+/** One Deezer search, serialised across requests so a burst of comboboxes cannot stack on the provider. */
+async function deezerFace(name: string): Promise<{ portrait?: Portrait; failed?: boolean }> {
+  const run = async () => {
+    const wait = FACE_GAP - (Date.now() - dzLast);
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    dzLast = Date.now();
+    const res = await fetch(`${DEEZER_SEARCH}${encodeURIComponent(name)}&limit=1`, {
+      headers: { "user-agent": "MesserLineup/0.2 (https://lineup.messer.wtf)", accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 404) return {};
+    if (!res.ok) return { failed: true };
+    const body = (await res.json()) as {
+      data?: { id?: number; name?: string; picture_xl?: string }[];
+    };
+    const artist = body.data?.[0];
+    if (!artist?.picture_xl || !artist.name || !artist.id) return {};
+    if (faceKey(artist.name) !== faceKey(name)) return {};
+    return {
+      portrait: { u: artist.picture_xl, c: `https://www.deezer.com/artist/${artist.id}` },
+    };
+  };
+  const next = dzChain.then(run, run);
+  dzChain = next.catch(() => undefined);
+  return next as Promise<{ portrait?: Portrait; failed?: boolean }>;
+}
+
+async function deezerFaces(names: string[]): Promise<FaceBody> {
+  const body: FaceBody = { portraits: {} };
+  for (const name of names) {
+    const answer = await deezerFace(name);
+    if (answer.failed) body.unavailable = true;
+    else if (answer.portrait) body.portraits[name] = answer.portrait;
+  }
+  return body;
+}
+
+app.get("/api/v1/artists/portraits", async (c) => {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const raw of c.req.queries("n") ?? []) {
+    const name = raw.trim().replace(/\s+/g, " ");
+    const key = faceKey(name);
+    if ([...name].length < 2 || [...name].length > 120 || !key || seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+    if (names.length === FACE_MAX) break;
+  }
+  if (names.length === 0) return c.json({ portraits: {} }, 200, { "cache-control": "public, max-age=86400" });
+
+  const cache = caches.default;
+  const query = names.map((name) => `n=${encodeURIComponent(name)}`).join("&");
+  const key = new Request(`https://lineup.messer.wtf/api/v1/artists/portraits?v=1&${query}`);
+  const hit = await cache.match(key);
+  const headers = { "content-type": "application/json" };
+  if (hit) return new Response(hit.body, { headers: { ...headers, "cache-control": "public, max-age=86400" } });
+
+  const body = await deezerFaces(names);
+  const answer = new Response(JSON.stringify(body), {
+    headers: { ...headers, "cache-control": body.unavailable ? "no-store" : "public, max-age=86400" },
+  });
+  // Same rule as the search: a provider that blinked is not a fact about an artist, so it is not cached.
+  if (!body.unavailable) c.executionCtx.waitUntil(cache.put(key, answer.clone()));
+  return answer;
+});
+
 app.all("/api/v1/*", (c) =>
   c.json(
     errorBody(
