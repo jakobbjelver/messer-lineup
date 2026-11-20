@@ -30,7 +30,7 @@ instead of one document.
 | `internal/publish/` | copies a verified index into R2 with SigV4, skipping content-addressed objects that already exist |
 | `web/src/lib/{key,taste}.ts` | the client's identity function (the twin of `model.Key`) and the pasted-list parser; `make keycheck` diffs the twin against the shared vectors |
 | `web/src/lib/{geo,location}.ts` | distance (the edge's own radius), the position rules, and the GPS hook whose fix never leaves memory; `make geocheck` asserts the numbers |
-| `web/` | the board: Vite + React 19, the frozen `lineup.css` from the design mockup, the WebGL lamps, and a loader that reads `manifest.json` + one shard |
+| `web/` | the board: Vite + React 19, the token sheet (`styles/tokens.css`) and the board's own CSS, a two-step first-run gate, the day-grouped list, the month calendar, and a loader that reads `manifest.json` + one shard |
 | `src/worker.ts` | the Worker (Hono): `/healthz`, `/readyz`, the five `/api/v1` routes and the calendar feed; assets are served by the platform first, so only these paths invoke the script |
 | `scripts/contract.mjs` | G1 — the same requests against `lineup serve` and `wrangler dev`, diffed by status and body/error code |
 | `cmd/lineup/` | the entry point: `mine`, `verify`, `doctor`, `serve`, `publish`; `findings` still names its phase |
@@ -43,8 +43,8 @@ instead of one document.
 | `internal/sources/<platform>/` | one adapter per platform: `Tickster` is microdata, `dice` is JSON-LD; both expose `TownCandidates` + `Detail` |
 | `internal/fetch/` | the HTTP client: browser header profile, explicit gzip, per-host limiter, robots cache |
 | `internal/sources/` | one adapter per platform, plus the registry loader (P0.7+) |
-| `internal/board/` | the board selector: one pure function, the clock injected (P5) |
-| `sources/` | the registry, data only — `countries/*.toml`, `aliases/*.toml` |
+| `internal/venues/` | the music policy: a room's class (music/other) and the event forms that are never a gig |
+| `sources/` | the registry, data only — `countries/*.toml`, `aliases/*.toml`, and `venues/<market>.json` (the classified rooms) |
 | `web/` | the board; built to `web/dist` and served as static assets |
 | `wrangler.jsonc` | the one deployment: assets first, script only for `/api/v1/*` and `/calendar/*` |
 
@@ -77,9 +77,9 @@ machine is a bug.
 - **A `Show` cannot become a `Row` with a price in it.** The projection is structural: `Row` has nine
   keys and no content fields, and a test marshals a full show through it and asserts `p`, `cur`,
   `desc`, `img`, `lineUp` and `seats` are absent.
-- **No selection path reads the clock.** `internal/board` and `web/src/lib/board.ts` take the time as
-  a parameter, because every user-input scenario asserts a date window. `make clock-check` fails the
-  build if the wall clock is read anywhere outside `internal/clock`.
+- **No selection path reads the clock.** The miner takes `Now` in its options and the board's selection
+  functions take the time as a parameter, because every user-input scenario asserts a date window.
+  `make clock-check` fails the build if the wall clock is read anywhere in Go outside `internal/clock`.
 - **The identity vector file is canonical.** `internal/model/testdata/keys.json` is never edited to
   make an implementation pass, and Go and TypeScript agree on every vector.
 - **Assets are served before the Worker.** `run_worker_first` is never set in `wrangler.jsonc`; a
@@ -92,6 +92,10 @@ machine is a bug.
 
 - The published index is a projection, never a mirror: no prices, no descriptions, no images, no
   archive. `lineup verify` refuses an index that breaks the rules.
+- **The index is music only.** A room that does not programme music is dropped, and so is an event
+  form that is never a gig; the decision is `internal/venues` and its data is `sources/venues`. A room
+  nobody has classified is published and counted in the coverage record — the count is the next
+  curation pass, not a silent hole.
 - A source that answers 0 is investigated with the full browser header profile before it is recorded
   as blocked — a TLS reset on a UA-only request is not evidence of anything.
 - Delete the old layer in the same change that ships the new one. No compatibility shims.

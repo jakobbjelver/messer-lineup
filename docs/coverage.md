@@ -56,6 +56,29 @@ platform. One request per town for the candidate list, then one detail fetch eac
 **G0-global is met**: one keyless adapter, Berlin / London / Austin each ≥ 20, from this egress. A city page
 is a page of the list rather than the whole city, so 30 is a floor and never a total.
 
+## The board is a music board
+
+Tickster is a town's **whole** ticketing inventory, not a concert list: theatre runs, julbord cruises, wine
+tastings, museum workshops, stand-up and football screenings are sold on the same pages as the gigs. Measured on
+the live index before the fix: 718 of Stockholm's rows, of which 430 were at rooms that never programme a music
+event, and 12 more were non-gig forms at rooms that do.
+
+The rule is two things, and neither is a keyword search for "konsert":
+
+- **A room's class.** `sources/venues/<market>.json` lists every room the index has published and whether its
+  programme is music or not (130 rooms: 65/65 at the first pass). A theatre's row is dropped by the room, not by
+  the title, because a play at Orionteatern is not a gig whatever it is called.
+- **An event form.** At a room that does programme music, a short list of forms is never a gig: `julbord`,
+  `provning`, `workshop`, `standup`, `frukost`, `quiz`, `wrestling`, `vendors`. Ten rows went this way.
+  A **positive** rule ("the title must contain a music word") was measured and discarded: it drops real gigs
+  called *Elton John meets Freddie Mercury* and still admits *JULKONSERT* — the negative list is the honest
+  shape. `teater` is deliberately **not** a token: Tickster appends the room to the title (*Billy Opel - Södra
+  Teatern*) and a band is called *Nationalteaterns Rockorkester*; a `teater` token dropped nine real gigs.
+
+A room nobody has classified is **published and counted**, not dropped: a new market must be measurable before
+its rooms are curated, and the count in the block above is the curation work list. The miner's report carries the
+per-room breakdown (`dropped_venues`, `unclassified_venues`), so the next pass is one JSON edit.
+
 ## The last measured run
 
 Rewritten by `lineup mine --coverage docs/coverage.md` — or re-rendered from a saved report with
@@ -64,26 +87,27 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_tickster · measured · 2026-11-17T22:53:42Z_
+_tickster · measured · 2026-11-20T15:49:23Z_
 
-| Town | Source | Candidates | Rows | Filtered | Failures | Seconds |
-|---|---|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 51 | 37 | 0 | 0 | 108 |
-| stockholm | tickster | 200 | 200 | 0 | 0 | 521 |
-| **total** | | **251** | **237** | **0** | **0** | |
+| Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
+|---|---|---:|---:|---:|---:|---:|---:|
+| copenhagen | tickster | 49 | 24 | 12 | 0 | 0 | 29 |
+| stockholm | tickster | 979 | 331 | 441 | 0 | 0 | 546 |
+| **total** | | **1028** | **355** | **453** | **0** | **0** | |
 
-Merged: **237** rows → **226** shows, duplicate rate **4.6 %**. Towns discovered: **2**.
-Index: **2** shard(s), 226 rows published, 0 outside the window, 0 refused, 13 423 bytes.
+Music policy: **453** rows dropped (form:fotboll 2, form:frukost 1, form:humor 1, form:julbord 1, form:kidz 1, form:marknad 1, form:stand-up 1, form:vendors 1, form:wrestling 1, venue 443).
+
+Merged: **355** rows → **335** shows, duplicate rate **5.6 %**. Towns discovered: **2**.
+Index: **2** shard(s), 335 rows published, 0 outside the window, 0 refused, 20 582 bytes.
 <!-- mine:end -->
 
 ## Two towns, one platform, and what the merge actually found
 
-The run above is `--town copenhagen,stockholm --max-per-town 200` at a 2 s interval (robots asks for
-`Crawl-delay: 2`): 251 candidates, 237 rows, 226 published, two shards, 13 423 bytes. Stockholm lists **928
-events** on its city page (58 pages of 16); the 200 fetched here are a sample, and the town's full sweep is a
-nightly job rather than a test.
+The run above is the nightly shape: `--town copenhagen,stockholm` at a 2 s interval (robots asks for
+`Crawl-delay: 2`): **1 028 candidates → 355 rows → 335 published**, two shards, 20 582 bytes, duplicate rate
+**5.6 %**. Stockholm lists **979 events** on its city page; the full walk is ~10 minutes and is the nightly's job.
 
-**The merge found 11 duplicates (4.6 %) with only one source.** They are not cross-platform matches — every row
+**The merge found 20 duplicates (5.6 %) with only one source.** They are not cross-platform matches — every row
 came from Tickster — they are the same artist, venue and date listed twice on the platform itself (a series with
 separate ticket types, or a duplicated listing). That is a different and smaller claim than the plan's gate
 made: a single source can prove the merge *runs* and that duplicates exist under the 8 % cap, but only a second
