@@ -3,7 +3,6 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import ArtistPicker from "./ArtistPicker";
 import Mark from "./Mark";
 import TownPicker from "./TownPicker";
-import { useNearestTown } from "../lib/useNearestTown";
 import type { Town, TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 import type { TasteEntry } from "../lib/taste";
@@ -20,6 +19,8 @@ type Props = {
   position: Position;
   canLocate: boolean;
   onLocate: () => void;
+  located: boolean;
+  onRelease: () => void;
   /** Commit what is on screen and show the board. */
   onDone: () => void;
   /** Leave the gate as a guest: the auto town, no artists. */
@@ -45,13 +46,12 @@ export default function Wizard({
   position,
   canLocate,
   onLocate,
+  located,
+  onRelease,
   onDone,
   onSkip,
 }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
-
-  // A fix answers the town question; the picker selects the nearest published town as soon as it lands.
-  useNearestTown(position, posts, names, onTown);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -87,6 +87,8 @@ export default function Wizard({
             position={position}
             canLocate={canLocate}
             onLocate={onLocate}
+            located={located}
+            onRelease={onRelease}
           />
         )}
       </div>

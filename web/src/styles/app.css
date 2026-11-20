@@ -76,6 +76,18 @@
 .head {
   padding: 18px 0 6px;
 }
+/* One row, two ends: what the list is made of (`yours · all`) and how it is drawn (`list · calendar`). Both
+   switch the same list, so they sit on the same line — the bar keeps only what is not about the list. */
+.head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+.head__row .seg {
+  margin-top: 0;
+}
 .head__h1 {
   display: flex;
   align-items: baseline;
@@ -155,11 +167,11 @@
   color: var(--primary);
 }
 .seg--icons {
-  height: 28px;
+  height: 32px;
   margin-top: 0;
 }
 .seg--icons button {
-  width: 30px;
+  width: 34px;
   padding: 0;
   justify-content: center;
   color: var(--text-3);
