@@ -319,6 +319,13 @@ a.show__artist:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* On a board that spans towns the town is the one part that must never be cut: it is one word, and a truncated
+   "Stock…" beside an already-truncated venue is two ellipses around a dot. The venue yields; the town and the
+   distance do not. */
+.show__meta .town {
+  flex: none;
+  overflow: visible;
+}
 .show__meta .km {
   flex: none;
   font: 400 11.5px/1 var(--mono);
