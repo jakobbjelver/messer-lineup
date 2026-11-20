@@ -29,6 +29,8 @@ import (
 	lineupindex "github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/portraits"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // Cache lifetimes. A shard is immutable for a year; the two files a client polls are minutes old at worst.
@@ -86,7 +88,7 @@ func Run(ctx context.Context, opts Options) (Result, error) {
 		return result, fmt.Errorf("publish: endpoint, bucket and credentials are all required (LINEUP_R2_*)")
 	}
 	if opts.Now.IsZero() {
-		opts.Now = time.Now()
+		opts.Now = clock.Now()
 	}
 	if opts.Client == nil {
 		opts.Client = &http.Client{Timeout: 60 * time.Second}

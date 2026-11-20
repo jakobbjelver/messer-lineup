@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 type eventSpec struct {
@@ -46,7 +48,7 @@ func (s *server) event(w http.ResponseWriter, r *http.Request) {
 		U:  spec.U,
 		St: model.Status("o"),
 	}
-	ics := buildEvent(row, spec.N, time.Now())
+	ics := buildEvent(row, spec.N, clock.Now())
 
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=3600")

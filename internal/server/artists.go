@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // defaultMusicBrainz is the search endpoint. A field on Options overrides it in tests.
@@ -89,7 +91,7 @@ func (a *artistSearcher) lookup(q string) artistAnswer {
 	if wait := a.gap - time.Since(a.lastCall); wait > 0 {
 		time.Sleep(wait)
 	}
-	a.lastCall = time.Now()
+	a.lastCall = clock.Now()
 
 	answer := a.fetch(q)
 	// An unavailable answer is a fact about a minute, not about a name: caching it turns one upstream hiccup into
@@ -98,7 +100,7 @@ func (a *artistSearcher) lookup(q string) artistAnswer {
 		if len(a.cache) >= searchCacheMax {
 			a.cache = map[string]cacheEntry{}
 		}
-		a.cache[q] = cacheEntry{answer: answer, at: time.Now()}
+		a.cache[q] = cacheEntry{answer: answer, at: clock.Now()}
 	}
 	return answer
 }

@@ -50,7 +50,7 @@ worker-dev:
 	@mkdir -p web/dist
 	@test -f web/dist/index.html || printf '%s\n' \
 		'<!doctype html><title>Messer Lineup</title>' \
-		'<body style="font:14px system-ui;padding:2rem">The board is not built yet. Run <code>make worker-dev</code> after P4, or <code>make serve</code> for the index.</body>' \
+		'<body style="font:14px system-ui;padding:2rem">The board is not built yet. Run <code>make web</code> first, or <code>make serve</code> for the index alone.</body>' \
 		> web/dist/index.html
 	@npx wrangler dev --port 8788
 
@@ -111,11 +111,16 @@ public-scan:
 	hits=$$(git grep -nIiE "$$pat" || true); \
 	if [ -n "$$hits" ]; then echo "PUBLIC_SCAN: the tree names the estate or a host path:"; echo "$$hits"; exit 1; fi
 
-# The clock boundary: time.Now() may appear in internal/clock and nowhere else, because every selection
-# path takes the time as a parameter and a function that reads the clock cannot be asserted on.
+# The wall clock lives in internal/clock and nowhere else, because every selection path takes the time as a
+# parameter and a function that reads the clock cannot be asserted on. The pattern is bare on purpose: an earlier
+# version used `time\.Now\b`, and on this host's BSD regex `\b` is a backspace character — so the gate matched
+# nothing, passed locally, and failed only on Linux CI. The self-test below proves the pattern still catches a
+# known-bad sample, which is the only way a grep gate can be trusted.
 clock-check:
-	@hits=$$(git grep -nE "time\.Now\b" -- '*.go' ':!internal/clock/' || true); \
-	if [ -n "$$hits" ]; then echo "clock: time.Now() outside internal/clock:"; echo "$$hits"; exit 1; fi
+	@pat='time\.Now'; \
+	printf '%s\n' 'started := time.Now()' | grep -qE "$$pat" || { echo "clock: the pattern no longer matches a known-bad sample"; exit 1; }; \
+	hits=$$(git grep -nE "$$pat" -- '*.go' | grep -v '^internal/clock/' || true); \
+	if [ -n "$$hits" ]; then echo "clock: wall-clock read outside internal/clock:"; echo "$$hits"; exit 1; fi
 
 check: fmt-check vet test race public-scan clock-check
 

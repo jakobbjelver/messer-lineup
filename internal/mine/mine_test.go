@@ -15,6 +15,8 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/venues"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // fakeAdapter is a platform in a map: a town lists candidates, a candidate URL is a show or an error.
@@ -247,10 +249,10 @@ func TestRunCountryFilter(t *testing.T) {
 }
 
 func TestRunRefusesARunWithNoTownsOrNoSource(t *testing.T) {
-	if _, err := Run(context.Background(), Options{Adapters: []Adapter{baseAdapter()}, Now: time.Now()}); err == nil {
+	if _, err := Run(context.Background(), Options{Adapters: []Adapter{baseAdapter()}, Now: clock.Now()}); err == nil {
 		t.Fatal("a run with no towns must say so, because no platform has a country index")
 	}
-	if _, err := Run(context.Background(), Options{Towns: []string{"berlin"}, Now: time.Now()}); err == nil {
+	if _, err := Run(context.Background(), Options{Towns: []string{"berlin"}, Now: clock.Now()}); err == nil {
 		t.Fatal("a run with no source must say so")
 	}
 }

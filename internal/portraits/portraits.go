@@ -27,6 +27,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // File is the published artifact's path inside the index directory.
@@ -119,7 +121,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		opts.Gap = 1500 * time.Millisecond
 	}
 	if opts.Now.IsZero() {
-		opts.Now = time.Now()
+		opts.Now = clock.Now()
 	}
 	if opts.Client == nil {
 		opts.Client = &http.Client{Timeout: 20 * time.Second}

@@ -30,6 +30,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/portraits"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 const (
@@ -71,7 +73,7 @@ func newFaceIndex(endpoint string, now func() time.Time) *faceIndex {
 		endpoint = defaultDeezerSearch
 	}
 	if now == nil {
-		now = time.Now
+		now = clock.Now
 	}
 	return &faceIndex{
 		endpoint: endpoint,

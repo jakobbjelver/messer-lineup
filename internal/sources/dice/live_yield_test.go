@@ -10,6 +10,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // TestLiveDiceTownYield answers the only question the re-cut source mix rests on: from this egress, does
@@ -54,7 +56,7 @@ func TestLiveDiceTownYield(t *testing.T) {
 	towns := map[string]int{}
 	failures := 0
 	rows := 0
-	start := time.Now()
+	start := clock.Now()
 	for i, c := range candidates {
 		show, err := src.Detail(ctx, c)
 		if err != nil {

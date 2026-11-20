@@ -12,6 +12,8 @@ import (
 
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // TestLiveDiceWideSample measures the whole index instead of one shard: a fixed number of candidates from
@@ -63,7 +65,7 @@ func TestLiveDiceWideSample(t *testing.T) {
 	towns := map[string]int{}
 	failures := 0
 	rows := 0
-	start := time.Now()
+	start := clock.Now()
 	for i, c := range sampled {
 		show, err := src.Detail(ctx, c)
 		if err != nil {

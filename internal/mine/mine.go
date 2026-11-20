@@ -21,6 +21,8 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/venues"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // Adapter is the whole contract a platform has to meet. The miner does not care which platform it is talking
@@ -105,7 +107,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		}
 		town := TownReport{Slug: slug}
 		for _, adapter := range opts.Adapters {
-			started := time.Now()
+			started := clock.Now()
 			src := SourceReport{ID: adapter.ID(), Failures: map[string]int{}}
 
 			// The yield guard reads the history *before* the sweep: a run compared against a baseline that
@@ -307,7 +309,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	} else {
 		report.Note = "dry run: nothing written. Drop --dry-run (and name --index) to publish the index."
 	}
-	report.FinishedAt = time.Now().UTC()
+	report.FinishedAt = clock.Now().UTC()
 	if report.FinishedAt.Before(report.StartedAt) {
 		report.FinishedAt = report.StartedAt
 	}
@@ -467,7 +469,7 @@ func sourceHealth(towns []TownReport, merged []model.Show) []model.Source {
 	}
 	out := make([]model.Source, 0, len(byID))
 	for id, entry := range byID {
-		entry.LastOK = time.Now().UTC()
+		entry.LastOK = clock.Now().UTC()
 		if n := rows[id]; n > 0 {
 			entry.Rows = n
 		}
