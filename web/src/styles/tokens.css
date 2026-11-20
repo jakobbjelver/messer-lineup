@@ -285,12 +285,29 @@ img {
   background: var(--surface);
   transition: border-color 0.12s linear, box-shadow 0.12s linear;
 }
-/* The ring sits outside the box with a gap: a tinted border *inside* an input reads as a colour cast on the
-   field, and mixing the accent with a neutral grey is what turned it teal. Pure accent, outside, one ring. */
+/* A focused field steps its **border** to the muted ink, and that is all it does.
+   The accent ring that used to sit outside the box read as a neon halo around a search box — a control that is
+   already the obvious one on screen does not need to glow to say so, and the caret plus the open list are the
+   feedback. No outline, no glow, no colour. */
 .field:focus-within {
-  border-color: var(--border-strong);
-  outline: 1px solid var(--primary-line);
-  outline-offset: 3px;
+  border-color: var(--text-3);
+  outline: none;
+}
+.field__icon {
+  flex: none;
+  color: var(--text-3);
+}
+.field__clear {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--text-3);
+  transition: color 0.12s linear;
+}
+.field__clear:hover {
+  color: var(--foreground);
 }
 .field input {
   flex: 1;

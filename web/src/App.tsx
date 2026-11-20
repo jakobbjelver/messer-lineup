@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CaretDown } from "@phosphor-icons/react";
+import { CalendarBlank, CaretDown, ListBullets } from "@phosphor-icons/react";
 import Board from "./components/Board";
 import Calendar, { DaySheet } from "./components/Calendar";
 import Chrome from "./components/Chrome";
@@ -8,7 +8,7 @@ import Wizard from "./components/Wizard";
 import Loader from "./components/Loader";
 import { Empty, Failed } from "./components/states";
 import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf } from "./lib/board";
-import { distanceKm, pointOf, type Point } from "./lib/geo";
+import { distanceKm, nearestTown, pointOf, type Point } from "./lib/geo";
 import {
   dayOf,
   loadIndex,
@@ -61,6 +61,10 @@ export default function App() {
   const [daySheet, setDaySheet] = useState<string | null>(null);
   const [month, setMonth] = useState<string | null>(null);
   const [portraits, setPortraits] = useState<PortraitMap | undefined>(undefined);
+  /** The town a device fix chose. Not the town: a pick releases it, and a released pin is not re-applied. */
+  const [fixTown, setFixTown] = useState<string | null>(null);
+  /** The fix already applied, so one position can only ever move the reader once. */
+  const appliedFix = useRef<string | null>(null);
   /** Which town's shard is on screen or in flight — the effect's own guard, so it never depends on its output. */
   const loadedTown = useRef<string | null>(null);
   /** Whether a setting changed while a panel was open: closing must then keep the URL, not pop back to a stale one. */
@@ -147,6 +151,50 @@ export default function App() {
     if (history.state && typeof history.state === "object" && "panel" in history.state) panelDirty.current = true;
     history.replaceState(history.state, "", url);
   }, []);
+
+  /**
+   * A fix chooses a town once, here, and nowhere else.
+   *
+   * This used to live in the panels (`useNearestTown`), which meant the effect ran again every time the settings
+   * sheet mounted — so a reader who pinned their location, then picked another town, found the pin had silently
+   * taken the town back the next time they opened the sheet. One fix, applied once: the point itself is the guard.
+   */
+  useEffect(() => {
+    if (position.state !== "granted" || !loaded) return;
+    const point = `${position.point.lat},${position.point.lon}`;
+    if (appliedFix.current === point) return;
+    appliedFix.current = point;
+    const published = loaded.towns.filter((entry) => loaded.manifest.towns.some((post) => post.town === entry.id));
+    const near = nearestTown(published, position.point as Point);
+    if (!near) return;
+    setFixTown(near.town.id);
+    applyTown(near.town.id);
+  }, [position, loaded, applyTown]);
+
+  /** The reader's own pick: it outranks the fix, so it releases the pin rather than fighting it on the next open. */
+  const pickTown = useCallback(
+    (id: string) => {
+      setFixTown(null);
+      applyTown(id);
+    },
+    [applyTown],
+  );
+
+  /** Put the fix back to work without asking the browser again, or give it up and keep the town as it is. */
+  const useMyLocation = useCallback(() => {
+    if (position.state !== "granted") {
+      locate();
+      return;
+    }
+    if (!loaded) return;
+    const published = loaded.towns.filter((entry) => loaded.manifest.towns.some((post) => post.town === entry.id));
+    const near = nearestTown(published, position.point as Point);
+    if (!near) return;
+    setFixTown(near.town.id);
+    applyTown(near.town.id);
+  }, [position, loaded, applyTown, locate]);
+
+  const releaseFix = useCallback(() => setFixTown(null), []);
 
   const applyView = useCallback((next: View) => {
     setView(next);
@@ -252,13 +300,23 @@ export default function App() {
         </button>
       </h1>
       {rows ? (
-        <div className="seg" role="group" aria-label="Whose shows">
-          <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
-            yours <span className="num">{mine.size}</span>
-          </button>
-          <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-            all <span className="num">{rows.length}</span>
-          </button>
+        <div className="head__row">
+          <div className="seg" role="group" aria-label="Whose shows">
+            <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
+              yours <span className="num">{mine.size}</span>
+            </button>
+            <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+              all <span className="num">{rows.length}</span>
+            </button>
+          </div>
+          <div className="seg seg--icons" role="group" aria-label="View">
+            <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
+              <ListBullets size={15} />
+            </button>
+            <button aria-pressed={view === "calendar"} aria-label="Calendar view" onClick={() => applyView("calendar")}>
+              <CalendarBlank size={15} />
+            </button>
+          </div>
         </div>
       ) : null}
     </section>
@@ -363,7 +421,7 @@ export default function App() {
   return (
     <>
       <div className="stage" aria-hidden="true" />
-      <Chrome view={view} onView={applyView} onPanel={() => openPanel("taste")} />
+      <Chrome onPanel={() => openPanel("taste")} />
       <main className="page" data-view={view} data-switching={switching || undefined}>
         {rows ? head : null}
         <div id="board">{body}</div>
@@ -380,10 +438,12 @@ export default function App() {
               onTaste={setTaste}
               portraits={portraits}
               town={town.town}
-              onTown={applyTown}
+              onTown={pickTown}
               position={position}
               canLocate={canLocate}
-              onLocate={locate}
+              onLocate={useMyLocation}
+              located={fixTown !== null && town.town === fixTown}
+              onRelease={releaseFix}
               onDone={() => finishSetup(taste)}
               onSkip={() => finishSetup(taste)}
             />
@@ -401,13 +461,15 @@ export default function App() {
             taste={taste}
             onTaste={setTasteAndStore}
             town={town.town}
-            onTown={applyTown}
+            onTown={pickTown}
             posts={loaded.manifest.towns}
             names={loaded.towns}
             portraits={portraits}
             position={position}
             canLocate={canLocate}
-            onLocate={locate}
+            onLocate={useMyLocation}
+            located={fixTown !== null && town.town === fixTown}
+            onRelease={releaseFix}
             theme={theme}
             onTheme={toggleTheme}
           />

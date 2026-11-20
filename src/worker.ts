@@ -199,7 +199,9 @@ app.get("/api/v1/artists/search", async (c) => {
   const answer = new Response(JSON.stringify(body), {
     headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" },
   });
-  c.executionCtx.waitUntil(cache.put(key, answer.clone()));
+  // An unavailable answer must not be cached: one 503 would otherwise be six hours of "no results" for every
+  // visitor, served from the edge in milliseconds and indistinguishable from a search that found nothing.
+  if (!body.unavailable) c.executionCtx.waitUntil(cache.put(key, answer.clone()));
   return answer;
 });
 
@@ -411,7 +413,7 @@ async function musicBrainzSearch(q: string): Promise<{ artists: ArtistHit[]; una
         signal: AbortSignal.timeout(8000),
       },
     );
-    if (!res.ok) return { artists: [], unavailable: true };
+    if (!res.ok) return { artists: [], unavailable: true, hiccup: res.status >= 500 };
     const body = (await res.json()) as {
       artists?: { id?: string; name?: string; type?: string; country?: string; disambiguation?: string; score?: number }[];
     };
@@ -428,8 +430,22 @@ async function musicBrainzSearch(q: string): Promise<{ artists: ArtistHit[]; una
       }));
     return { artists };
   };
+  // MusicBrainz throttles flashes of requests with a `503` + `retry-after: 1` under a **global** rate-limit zone
+  // (measured 2026-11-20: five calls 1.2 s apart answered 200, 503, 503, 200, 503), so a 5xx is a hiccup and gets
+  // two more asks; a transport failure is retried the same way, and a real outage still lands as `unavailable`.
+  const attempt = async (): Promise<{ artists: ArtistHit[]; unavailable?: boolean; hiccup?: boolean }> => {
+    try {
+      return await run();
+    } catch {
+      return { artists: [], unavailable: true, hiccup: true };
+    }
+  };
   // Serialised across requests: the chain continues even after a failure, so one bad call cannot wedge it.
-  const next = mbChain.then(run, run);
+  const next = mbChain.then(attempt, attempt).then(async (first) => {
+    let answer = first;
+    for (let tries = 1; tries < 3 && answer.hiccup; tries++) answer = await attempt();
+    return { artists: answer.artists, ...(answer.unavailable ? { unavailable: true } : {}) };
+  });
   mbChain = next.catch(() => undefined);
   return next as Promise<{ artists: ArtistHit[]; unavailable?: boolean }>;
 }

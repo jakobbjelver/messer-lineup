@@ -3,7 +3,6 @@ import { Moon, Sun } from "@phosphor-icons/react";
 import ArtistPicker from "./ArtistPicker";
 import ResponsiveDialog from "./ui/ResponsiveDialog";
 import TownPicker from "./TownPicker";
-import { useNearestTown } from "../lib/useNearestTown";
 import type { Town, TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 import type { Theme } from "../lib/theme";
@@ -27,6 +26,8 @@ type Props = {
   position: Position;
   canLocate: boolean;
   onLocate: () => void;
+  located: boolean;
+  onRelease: () => void;
   theme: Theme;
   onTheme: () => void;
 };
@@ -40,8 +41,7 @@ type Props = {
  * a setting.
  */
 export default function Preferences(props: Props) {
-  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, portraits, position, canLocate, onLocate, theme, onTheme } = props;
-  useNearestTown(position, posts, names, onTown);
+  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, portraits, position, canLocate, onLocate, located, onRelease, theme, onTheme } = props;
 
   return (
     <ResponsiveDialog
@@ -72,6 +72,8 @@ export default function Preferences(props: Props) {
             position={position}
             canLocate={canLocate}
             onLocate={onLocate}
+            located={located}
+            onRelease={onRelease}
           />
         </Tabs.Content>
 

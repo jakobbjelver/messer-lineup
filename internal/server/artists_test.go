@@ -67,6 +67,56 @@ func TestArtistSearchUnavailableIsAnAnswer(t *testing.T) {
 	}
 }
 
+// A 503 from MusicBrainz is a hiccup, and its own headers still report quota left: the second ask is what the
+// combobox must show, not an empty list.
+func TestArtistSearchRetriesA503(t *testing.T) {
+	var calls int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			http.Error(w, "busy", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprint(w, `{"artists":[{"id":"87c5dedd","name":"Björk","score":100}]}`)
+	}))
+	defer upstream.Close()
+
+	searcher := newArtistSearcher(upstream.URL)
+	searcher.gap = 0
+	answer := searcher.lookup("björk")
+	if answer.Unavailable {
+		t.Fatal("a 503 that clears on the retry must not be reported as unavailable")
+	}
+	if len(answer.Artists) != 1 || answer.Artists[0].Name != "Björk" {
+		t.Fatalf("answer = %+v, want the retried hit", answer)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Fatalf("upstream calls = %d, want 2 (one 503, one retry)", got)
+	}
+}
+
+// An unavailable answer is a fact about a minute, not about a name. Caching it made one upstream hiccup into six
+// hours of "no results" for every reader of that deployment — the dev server's exact symptom.
+func TestArtistSearchDoesNotCacheUnavailable(t *testing.T) {
+	var calls int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		http.Error(w, "busy", http.StatusServiceUnavailable)
+	}))
+	defer upstream.Close()
+
+	searcher := newArtistSearcher(upstream.URL)
+	searcher.gap = 0
+	for i := 0; i < 2; i++ {
+		if answer := searcher.lookup("björk"); !answer.Unavailable {
+			t.Fatalf("lookup %d = %+v, want unavailable", i, answer)
+		}
+	}
+	if got := atomic.LoadInt32(&calls); got != 6 {
+		t.Fatalf("upstream calls = %d, want 6 (three attempts per lookup, nothing cached)", got)
+	}
+}
+
 func TestArtistSearchShortQueryDoesNotCallUpstream(t *testing.T) {
 	var calls int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -92,18 +92,39 @@ func (a *artistSearcher) lookup(q string) artistAnswer {
 	a.lastCall = time.Now()
 
 	answer := a.fetch(q)
-	if len(a.cache) >= searchCacheMax {
-		a.cache = map[string]cacheEntry{}
+	// An unavailable answer is a fact about a minute, not about a name: caching it turns one upstream hiccup into
+	// six hours of "no results" for everybody. Same rule the portrait pipeline uses for a transport failure.
+	if !answer.Unavailable {
+		if len(a.cache) >= searchCacheMax {
+			a.cache = map[string]cacheEntry{}
+		}
+		a.cache[q] = cacheEntry{answer: answer, at: time.Now()}
 	}
-	a.cache[q] = cacheEntry{answer: answer, at: time.Now()}
 	return answer
 }
 
+// fetch asks upstream, and asks again while the answer is a hiccup rather than a result.
+//
+// MusicBrainz throttles flashes of requests with a `503` carrying `retry-after: 1` under `x-ratelimit-zone: global`
+// (measured 2026-11-20: five calls 1.2 s apart answered 200, 503, 503, 200, 503), so a strict client reads a live
+// service as down and — worse — a combobox says "no results" for it. Three attempts spaced by the same gap the
+// serialiser already enforces turn a flapping upstream into an answer, and a genuine outage still reports itself.
 func (a *artistSearcher) fetch(q string) artistAnswer {
+	const attempts = 3
+	for attempt := 1; ; attempt++ {
+		answer, again := a.request(q)
+		if !again || attempt == attempts {
+			return answer
+		}
+		time.Sleep(a.gap)
+	}
+}
+
+func (a *artistSearcher) request(q string) (artistAnswer, bool) {
 	endpoint := fmt.Sprintf("%s?query=%s&fmt=json&limit=6", a.upstream, url.QueryEscape(q))
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return artistAnswer{Artists: []artistHit{}, Unavailable: true}
+		return artistAnswer{Artists: []artistHit{}, Unavailable: true}, false
 	}
 	// MusicBrainz asks every client to identify itself; a bare Go UA is one of the ways to earn a block.
 	req.Header.Set("User-Agent", "MesserLineup/0.2 (https://lineup.messer.wtf)")
@@ -111,13 +132,15 @@ func (a *artistSearcher) fetch(q string) artistAnswer {
 
 	res, err := a.client.Do(req)
 	if err != nil {
-		return artistAnswer{Artists: []artistHit{}, Unavailable: true}
+		// A transport failure is worth one more ask; a timeout at the client's own limit is not, but the retry
+		// costs the reader nothing it can perceive and the log says which one it was.
+		return artistAnswer{Artists: []artistHit{}, Unavailable: true}, true
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		// A 503 here is the rate limiter, and it is a state the picker knows how to show.
 		_, _ = io.Copy(io.Discard, res.Body)
-		return artistAnswer{Artists: []artistHit{}, Unavailable: true}
+		return artistAnswer{Artists: []artistHit{}, Unavailable: true}, res.StatusCode >= 500
 	}
 
 	var body struct {
@@ -131,7 +154,7 @@ func (a *artistSearcher) fetch(q string) artistAnswer {
 		} `json:"artists"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
-		return artistAnswer{Artists: []artistHit{}, Unavailable: true}
+		return artistAnswer{Artists: []artistHit{}, Unavailable: true}, false
 	}
 
 	hits := make([]artistHit, 0, len(body.Artists))
@@ -151,7 +174,7 @@ func (a *artistSearcher) fetch(q string) artistAnswer {
 			break
 		}
 	}
-	return artistAnswer{Artists: hits}
+	return artistAnswer{Artists: hits}, false
 }
 
 // artistSearch is the route. A query under two characters is an empty answer, not an error: the picker calls it

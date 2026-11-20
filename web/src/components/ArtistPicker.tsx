@@ -16,7 +16,7 @@ type Props = {
   portraits?: PortraitMap;
 };
 
-const DEBOUNCE_MS = 380;
+const DEBOUNCE_MS = 320;
 const CAP = 100;
 
 function merge(current: TasteEntry[], names: string[]): TasteEntry[] {
@@ -34,16 +34,42 @@ function merge(current: TasteEntry[], names: string[]): TasteEntry[] {
   return next;
 }
 
+/** The query inside a name, so a result shows *why* it matched. Case-insensitive, first hit only. */
+function Highlight({ text, query }: { text: string; query: string }) {
+  const q = query.trim().toLowerCase();
+  if (!q) return <>{text}</>;
+  const at = text.toLowerCase().indexOf(q);
+  if (at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <b className="result__hit">{text.slice(at, at + q.length)}</b>
+      {text.slice(at + q.length)}
+    </>
+  );
+}
+
 /**
  * The artist picker — the one control the product is built on.
  *
  * A combobox over MusicBrainz, plus an `Add "…"` row that is always there: the index's spellings and
  * MusicBrainz's will never fully agree, and a picker that cannot add what you typed is a wall. The
  * list is the feedback — every choice is a badge you can see and remove.
+ *
+ * The rules a search box owes a reader, in the order they matter:
+ *
+ *   - **Never a blank answer.** Zero hits says "no match" in words, a failed search says *that* it failed,
+ *     and the `Add` row sits under both — the reader always has one thing to press.
+ *   - **Always a way out.** A clear button in the field, Escape that closes the list before it closes the
+ *     sheet, and a list that closes when you press anywhere else.
+ *   - **Keyboard and pointer are one path.** Arrows move the highlight and it scrolls into view; hover and
+ *     focus draw the same rule; every row is a pointer target.
  */
 export default function ArtistPicker({ value, onChange, compact, portraits }: Props) {
   const baseId = useId();
   const input = useRef<HTMLInputElement | null>(null);
+  const box = useRef<HTMLDivElement | null>(null);
+  const list = useRef<HTMLUListElement | null>(null);
   const listId = `${baseId}-list`;
 
   const [query, setQuery] = useState("");
@@ -52,6 +78,7 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
   const [active, setActive] = useState(0);
   const [busy, setBusy] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [settled, setSettled] = useState("");
   const [announce, setAnnounce] = useState("");
 
   const [mode, setMode] = useState<null | "listenbrainz" | "lastfm">(null);
@@ -66,6 +93,7 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
       setHits([]);
       setBusy(false);
       setUnavailable(false);
+      setSettled("");
       return;
     }
     const controller = new AbortController();
@@ -77,6 +105,7 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
           setUnavailable(result.unavailable);
           setActive(0);
           setOpen(true);
+          setSettled(q);
           setAnnounce(result.hits.length === 1 ? "1 artist" : `${result.hits.length} artists`);
         })
         .catch(() => {
@@ -90,17 +119,54 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
     };
   }, [query]);
 
+  /**
+   * Escape closes the list before it closes the sheet.
+   *
+   * It has to be a **capture** listener on `window`. Radix's overlay listens for Escape with
+   * `{capture: true}` on the document (measured in `@radix-ui/react-dismissable-layer`), so capture at the window
+   * runs before it and a `stopPropagation` here is the only thing that can decide "the list, not the sheet".
+   * A React `onKeyDown` bubble handler arrives last and cannot stop it — that is why the sheet used to close
+   * with the first Escape and leave the reader with a query and no list.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      event.preventDefault();
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onEscape, true);
+    return () => window.removeEventListener("keydown", onEscape, true);
+  }, [open]);
+
+  /** A press anywhere outside the picker closes the list — the 120 ms blur timer this replaces lost clicks. */
+  useEffect(() => {
+    const onDown = (event: PointerEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, []);
+
+  /** Keep the highlighted row in view when the arrows walk past the list's own height. */
+  useEffect(() => {
+    if (!open) return;
+    const node = list.current?.querySelector<HTMLElement>(`#${CSS.escape(`${baseId}-opt-${active}`)}`);
+    node?.scrollIntoView({ block: "nearest" });
+  }, [active, open, baseId]);
+
   const options = useMemo(() => {
     const typed = query.trim();
-    const list: { name: string; kind: "hit" | "add"; meta?: string }[] = hits.map((hit) => ({
+    const rows: { name: string; kind: "hit" | "add"; meta?: string }[] = hits.map((hit) => ({
       name: hit.name,
       kind: "hit",
       meta: [hit.type, hit.country].filter(Boolean).join(" · "),
     }));
     if (typed.length >= 2 && !hits.some((hit) => Key(hit.name) === Key(typed))) {
-      list.push({ name: typed, kind: "add" });
+      rows.push({ name: typed, kind: "add" });
     }
-    return list;
+    return rows;
   }, [hits, query]);
 
   const add = (name: string) => {
@@ -109,7 +175,16 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
     setQuery("");
     setHits([]);
     setOpen(false);
+    setSettled("");
     setImported(null);
+    input.current?.focus();
+  };
+
+  const clear = () => {
+    setQuery("");
+    setHits([]);
+    setOpen(false);
+    setSettled("");
     input.current?.focus();
   };
 
@@ -154,18 +229,24 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
       }
       return;
     }
-    if (event.key === "Escape" && open) {
-      event.preventDefault();
-      setOpen(false);
-    }
+
   };
 
   const showList = open && options.length > 0;
+  const typed = query.trim();
+  const note =
+    typed.length >= 2 && settled === typed && !busy
+      ? unavailable
+        ? "Search is unavailable — the name you typed can still be added."
+        : hits.length === 0
+          ? "No match in MusicBrainz — the name you typed can still be added."
+          : ""
+      : "";
 
   return (
-    <div className={compact ? "picker picker--compact" : "picker"}>
+    <div className={compact ? "picker picker--compact" : "picker"} ref={box}>
       <div className="field">
-        <MagnifyingGlass size={16} style={{ color: "var(--text-3)", flex: "none" }} />
+        <MagnifyingGlass size={16} className="field__icon" />
         <input
           ref={input}
           type="text"
@@ -178,6 +259,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
           aria-controls={listId}
           aria-activedescendant={showList ? `${baseId}-opt-${active}` : undefined}
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
           spellCheck={false}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -185,8 +268,18 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
             setActive(0);
           }}
           onKeyDown={onKeyDown}
-          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          onFocus={() => {
+            if (options.length > 0) setOpen(true);
+          }}
+          onBlur={(event) => {
+            if (!box.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+          }}
         />
+        {query ? (
+          <button type="button" className="field__clear" aria-label="Clear search" onClick={clear}>
+            <X size={13} />
+          </button>
+        ) : null}
         {busy ? <Loader size={16} label="Searching" /> : null}
       </div>
 
@@ -194,8 +287,10 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
         {announce}
       </p>
 
+      {note ? <p className="results__note">{note}</p> : null}
+
       {showList ? (
-        <ul className="results" id={listId} role="listbox" aria-label="Artists">
+        <ul className="results" id={listId} role="listbox" aria-label="Artists" ref={list}>
           {options.map((option, index) => (
             <li
               key={`${option.kind}-${option.name}`}
@@ -203,7 +298,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
               role="option"
               aria-selected={index === active}
               className={option.kind === "add" ? "result result--add" : "result"}
-              onMouseDown={(event) => {
+              onPointerDown={(event) => {
+                // Pressing the row must not blur the field before the click lands.
                 event.preventDefault();
                 add(option.name);
               }}
@@ -216,13 +312,13 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
               ) : (
                 <Avatar name={option.name} portraits={portraits} size={28} />
               )}
-              <span className="result__name">{option.kind === "add" ? `Add “${option.name}”` : option.name}</span>
+              <span className="result__name">
+                {option.kind === "add" ? `Add “${option.name}”` : <Highlight text={option.name} query={typed} />}
+              </span>
               {option.meta ? <span className="result__meta">{option.meta}</span> : null}
             </li>
           ))}
         </ul>
-      ) : unavailable ? (
-        <p className="hint">Search is busy — keep typing, or add the name as it is.</p>
       ) : null}
 
       {value.length ? (

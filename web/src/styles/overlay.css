@@ -74,6 +74,9 @@
 }
 .ui-tab {
   position: relative;
+  /* Equal widths: two words of different length made two different underlines, which read as two sizes of tab. */
+  flex: 1 1 0;
+  max-width: 136px;
   height: 46px;
   padding: 0 18px;
   font: 600 15px/1 var(--font);
@@ -159,6 +162,9 @@
 .result:last-child {
   border-bottom: 0;
 }
+.result {
+  cursor: pointer;
+}
 .result:hover,
 .result[aria-selected="true"] {
   background: var(--surface-2);
@@ -205,6 +211,21 @@
 .result__name {
   font-weight: 400;
   color: var(--text-2);
+}
+/* The part of the name you typed, at full ink: the row shows *why* it matched. */
+.result__hit {
+  font-weight: 600;
+  color: var(--foreground);
+}
+/* Why the list is short: zero matches, or a search that could not answer. Never a silent empty box. */
+.results__note {
+  margin: -4px 0 0;
+  font: 400 12.5px/1.45 var(--font);
+  color: var(--text-2);
+}
+.results__note + .results {
+  margin-top: -4px;
+  border-top: 1px solid var(--border);
 }
 .badges {
   display: flex;
@@ -258,6 +279,14 @@
 
 /* ── the town picker: a list, not a gazetteer ──────────────────────────────────────────────────── */
 
+.towns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.towns .locate {
+  margin-bottom: 6px;
+}
 .picks {
   display: flex;
   flex-direction: column;
@@ -268,7 +297,8 @@
   align-items: center;
   gap: 12px;
   min-height: 56px;
-  padding: 8px 4px;
+  /* 12px, the field's own inset: a row's content starts on the same vertical as the search icon above it. */
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   transition: background 0.12s linear;
 }
@@ -575,10 +605,10 @@
   background: var(--surface-2);
 }
 .locate--on {
+  /* Not `cursor: default`: pressing a located button releases the pin, so it stays a control. */
   box-shadow: none;
   border-color: var(--primary-line);
   color: var(--primary);
-  cursor: default;
 }
 .locate__tag {
   margin-left: auto;

@@ -5,6 +5,14 @@
  * second call within a second earns a `503 busy` (measured), and a combobox is exactly the client that
  * provokes that. The proxy on the Worker caches by query and serialises upstream calls, so this file
  * only has to be a well-behaved caller: debounce, abort, and never treat a failure as an error state.
+ *
+ * Two upstream failures reach a combobox and they are not the same thing:
+ *
+ *   - a **503** while MusicBrainz still reports quota left, which is a hiccup and is worth one retry
+ *     (the proxy retries too, on its own side — both ends are cheap and the second is the one the reader
+ *     never sees);
+ *   - a **200 that is not JSON**, which is what an older runtime or a mis-proxied path answers. That used
+ *     to land as `unavailable: true` with no explanation on screen, and looked exactly like "no results".
  */
 
 export type ArtistHit = {
@@ -19,15 +27,41 @@ type Answer = { artists?: ArtistHit[]; unavailable?: boolean };
 
 export type SearchResult = { hits: ArtistHit[]; unavailable: boolean };
 
+/** A pause that gives up as soon as the next keystroke aborts the search. */
+function settle(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timer);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+}
+
+async function once(q: string, signal: AbortSignal): Promise<SearchResult> {
+  const res = await fetch(`/api/v1/artists/search?q=${encodeURIComponent(q)}`, { signal });
+  if (!res.ok) return { hits: [], unavailable: res.status >= 500 };
+  // A JSON route that answers HTML is a missing route behind an SPA fallback, not an empty result list.
+  if (!(res.headers.get("content-type") ?? "").includes("json")) return { hits: [], unavailable: true };
+  const body = (await res.json()) as Answer;
+  const hits = Array.isArray(body.artists) ? body.artists : [];
+  return { hits, unavailable: body.unavailable === true };
+}
+
 export async function searchArtists(query: string, signal: AbortSignal): Promise<SearchResult> {
   const q = query.trim();
   if (q.length < 2) return { hits: [], unavailable: false };
   try {
-    const res = await fetch(`/api/v1/artists/search?q=${encodeURIComponent(q)}`, { signal });
-    if (!res.ok) return { hits: [], unavailable: res.status >= 500 };
-    const body = (await res.json()) as Answer;
-    const hits = Array.isArray(body.artists) ? body.artists : [];
-    return { hits, unavailable: body.unavailable === true };
+    let result = await once(q, signal);
+    if (result.unavailable) {
+      await settle(900, signal);
+      result = await once(q, signal);
+    }
+    return result;
   } catch (err) {
     // An abort is the user typing, not a failure.
     if (err instanceof DOMException && err.name === "AbortError") throw err;
