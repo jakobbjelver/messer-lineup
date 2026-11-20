@@ -7,7 +7,7 @@ import Loader from "./Loader";
 import { Empty, Failed } from "./states";
 import { groupByDay, localDay } from "../lib/board";
 import { loadArtistRows, loadIndex, stampLabel, townLabel, type ArtistShow, type Manifest, type Town } from "../lib/indexData";
-import { loadPortraits, portraitFor, sourceName, type PortraitMap } from "../lib/portraits";
+import { loadPortraits, portraitFor, sourceName, sourceNames, type PortraitMap } from "../lib/portraits";
 import { labelFor } from "../lib/taste";
 
 type Phase =
@@ -126,7 +126,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
             </span>
           </span>
           {portraits && portraits.size > 0 ? (
-            <span className="foot__credit">Portraits · Wikimedia Commons</span>
+            <span className="foot__credit">Portraits · {sourceNames(portraits).join(" · ")}</span>
           ) : null}
         </div>
       </main>

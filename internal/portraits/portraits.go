@@ -160,8 +160,15 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	rep.Indexed = len(artists)
 
 	state := loadState(opts.StatePath)
+	// A takedown path: a key listed in `blocklist.json` beside the state is never resolved and never published,
+	// which makes "one key edit and a re-publish" true rather than a promise in a document.
+	blocked := loadBlocklist(opts.StatePath)
 	result := map[string]Portrait{}
 	for key, entry := range state {
+		if _, skip := blocked[key]; skip {
+			delete(state, key)
+			continue
+		}
 		if entry.Portrait != nil {
 			result[key] = *entry.Portrait
 		}
@@ -182,6 +189,9 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 
 	fresh := 0
 	for _, key := range keys {
+		if _, skip := blocked[key]; skip {
+			continue
+		}
 		if _, done := state[key]; done {
 			rep.Cached++
 			continue
@@ -498,6 +508,28 @@ func commonsFile(resource string) (string, bool) {
 		return "", false
 	}
 	return name, true
+}
+
+// loadBlocklist reads `blocklist.json` beside the state file: `{"keys": ["artist-key", ...]}`.
+func loadBlocklist(statePath string) map[string]struct{} {
+	path := filepath.Join(filepath.Dir(statePath), "blocklist.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return map[string]struct{}{}
+	}
+	var file struct {
+		Keys []string `json:"keys"`
+	}
+	if err := json.Unmarshal(raw, &file); err != nil {
+		return map[string]struct{}{}
+	}
+	out := make(map[string]struct{}, len(file.Keys))
+	for _, key := range file.Keys {
+		if key = strings.TrimSpace(key); key != "" {
+			out[key] = struct{}{}
+		}
+	}
+	return out
 }
 
 func loadState(path string) map[string]stateEntry {
