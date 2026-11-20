@@ -8,6 +8,7 @@ import type { Town, TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 import type { Theme } from "../lib/theme";
 import type { TasteEntry } from "../lib/taste";
+import type { PortraitMap } from "../lib/portraits";
 
 export type Panel = "taste" | "town";
 
@@ -22,6 +23,7 @@ type Props = {
   onTown: (id: string) => void;
   posts: TownEntry[];
   names: Town[];
+  portraits?: PortraitMap;
   position: Position;
   canLocate: boolean;
   onLocate: () => void;
@@ -38,7 +40,7 @@ type Props = {
  * a setting.
  */
 export default function Preferences(props: Props) {
-  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, position, canLocate, onLocate, theme, onTheme } = props;
+  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, portraits, position, canLocate, onLocate, theme, onTheme } = props;
   useNearestTown(position, posts, names, onTown);
 
   return (
@@ -54,7 +56,7 @@ export default function Preferences(props: Props) {
         </Tabs.List>
 
         <Tabs.Content value="taste" className="panel__body">
-          <ArtistPicker value={taste} onChange={onTaste} compact />
+          <ArtistPicker value={taste} onChange={onTaste} compact portraits={portraits} />
         </Tabs.Content>
         <Tabs.Content value="town" className="panel__body">
           <TownPicker

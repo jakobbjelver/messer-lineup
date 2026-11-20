@@ -59,7 +59,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
       <Chrome />
       <main className="page" data-view="list">
         <a className="backlink" href="/">
-          <ArrowLeft size={14} />
+          <ArrowLeft size={16} weight="bold" aria-hidden="true" />
           All shows
         </a>
 

@@ -71,7 +71,7 @@ export default function Calendar({ days, month, onMonth, portraits, today, from,
     return map;
   }, [days]);
 
-  const cells = useMemo(() => monthCells(month), [month]);
+  const cells = useMemo(() => monthCells(month, today), [month, today]);
   const title = useMemo(() => monthLong(`${month}-01`), [month]);
   const year = month.slice(0, 4);
 
@@ -99,7 +99,8 @@ export default function Calendar({ days, month, onMonth, portraits, today, from,
       </div>
 
       <div className="cal__grid">
-        {cells.map(({ day, inMonth }) => {
+        {cells.map(({ day, inMonth, blank }) => {
+          if (blank) return <div className="cal__cell cal__cell--blank" key={day} />;
           const rows = byDay.get(day) ?? [];
           const faces = rows.slice(0, maxFaces);
           const extra = rows.length - faces.length;
@@ -118,7 +119,9 @@ export default function Calendar({ days, month, onMonth, portraits, today, from,
               {faces.length ? (
                 <span className="cal__faces">
                   {faces.map((row) => (
-                    <Avatar key={row.k} name={row.a} portraits={portraits} size={22} />
+                    <span className="cal__face" key={row.k} data-name={row.a}>
+                      <Avatar name={row.a} portraits={portraits} size={22} />
+                    </span>
                   ))}
                 </span>
               ) : null}

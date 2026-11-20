@@ -111,8 +111,11 @@ func TestResolveRefusesABill(t *testing.T) {
 	}
 }
 
-func TestDeezerIsTheFirstSource(t *testing.T) {
+func TestDeezerByNameIsTheFallback(t *testing.T) {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/artist/mbid-1", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"relations":[]}`)
+	})
 	mux.HandleFunc("/deezer", func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "Noah Gundersen" {
 			t.Errorf("deezer query = %q", got)
@@ -122,16 +125,20 @@ func TestDeezerIsTheFirstSource(t *testing.T) {
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"artists":[{"id":"mbid-1","name":"Noah Gundersen","score":100}]}`)
 	})
+	mux.HandleFunc("/wiki/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"type":"standard","title":"Noah Gundersen","description":"American singer-songwriter","thumbnail":{}}`)
+	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	opts := Options{
-		DeezerURL:  server.URL + "/deezer?q=",
-		BaseURL:    server.URL + "/search?query=",
-		LookupURL:  server.URL + "/artist/",
-		CommonsURL: server.URL + "/file/",
-		Client:     server.Client(),
-		Gap:        time.Millisecond,
+		DeezerURL:    server.URL + "/deezer?q=",
+		BaseURL:      server.URL + "/search?query=",
+		LookupURL:    server.URL + "/artist/",
+		CommonsURL:   server.URL + "/file/",
+		WikipediaURL: server.URL + "/wiki/",
+		Client:       server.Client(),
+		Gap:          time.Millisecond,
 	}
 	portrait, kind := resolve(context.Background(), opts, "Noah Gundersen", t.Logf)
 	if kind != found {
@@ -140,7 +147,47 @@ func TestDeezerIsTheFirstSource(t *testing.T) {
 	if !strings.Contains(portrait.URL, "dzcdn.net") {
 		t.Fatalf("url = %q, want the Deezer picture", portrait.URL)
 	}
-	if portrait.Credit != "https://www.deezer.com/artist/42" {
+}
+
+// The linked id is what keeps a namesake off the row: MusicBrainz says which Deezer artist this is, and the name
+// search is never asked.
+func TestLinkedDeezerIdBeatsTheNameSearch(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/artist/mbid-1", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"relations":[
+			{"type":"free streaming","url":{"resource":"https://www.deezer.com/artist/999"}}
+		]}`)
+	})
+	mux.HandleFunc("/deezer-artist/999", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"id":999,"name":"Wicker","picture_xl":"https://cdn-images.dzcdn.net/images/artist/linked/1000x1000.jpg"}`)
+	})
+	mux.HandleFunc("/deezer", func(w http.ResponseWriter, r *http.Request) {
+		t.Error("the name search must not run when MusicBrainz links a Deezer id")
+		fmt.Fprint(w, `{"data":[]}`)
+	})
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"artists":[{"id":"mbid-1","name":"Wicker","score":100}]}`)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	opts := Options{
+		DeezerURL:    server.URL + "/deezer?q=",
+		DeezerArtist: server.URL + "/deezer-artist/",
+		BaseURL:      server.URL + "/search?query=",
+		LookupURL:    server.URL + "/artist/",
+		CommonsURL:   server.URL + "/file/",
+		Client:       server.Client(),
+		Gap:          time.Millisecond,
+	}
+	portrait, kind := resolve(context.Background(), opts, "Wicker", t.Logf)
+	if kind != found {
+		t.Fatalf("kind = %v, want found", kind)
+	}
+	if !strings.Contains(portrait.URL, "linked") {
+		t.Fatalf("url = %q, want the linked artist's picture", portrait.URL)
+	}
+	if portrait.Credit != "https://www.deezer.com/artist/999" {
 		t.Fatalf("credit = %q", portrait.Credit)
 	}
 }

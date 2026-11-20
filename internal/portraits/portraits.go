@@ -62,6 +62,7 @@ type Options struct {
 	CommonsURL   string // Special:FilePath base; a test seam
 	WikipediaURL string // Wikipedia summary; a test seam
 	DeezerURL    string // Deezer artist search; a test seam
+	DeezerArtist string // Deezer artist by id; a test seam
 }
 
 // Report is what a run did.
@@ -92,13 +93,14 @@ const (
 var musicDescription = regexp.MustCompile(`(?i)\b(band|musician|singer|songwriter|composer|rapper|dj|duo|trio|quartet|group|orchestra|ensemble|producer|vocalist|guitarist|drummer|bassist|pianist|conductor|singer-songwriter)\b`)
 
 const (
-	defaultBase      = "https://musicbrainz.org/ws/2/artist?query="
-	defaultLookup    = "https://musicbrainz.org/ws/2/artist/"
-	defaultCommons   = "https://commons.wikimedia.org/wiki/Special:FilePath/"
-	defaultWikipedia = "https://en.wikipedia.org/api/rest_v1/page/summary/"
-	defaultDeezer    = "https://api.deezer.com/search/artist?q="
-	missTTL          = 30 * 24 * time.Hour
-	userAgent        = "MesserLineup/0.2 (https://lineup.messer.wtf)"
+	defaultBase       = "https://musicbrainz.org/ws/2/artist?query="
+	defaultLookup     = "https://musicbrainz.org/ws/2/artist/"
+	defaultCommons    = "https://commons.wikimedia.org/wiki/Special:FilePath/"
+	defaultWikipedia  = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+	defaultDeezer     = "https://api.deezer.com/search/artist?q="
+	defaultDeezerByID = "https://api.deezer.com/artist/"
+	missTTL           = 30 * 24 * time.Hour
+	userAgent         = "MesserLineup/0.2 (https://lineup.messer.wtf)"
 )
 
 // Run resolves every artist the published shards name.
@@ -136,6 +138,9 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	}
 	if opts.DeezerURL == "" {
 		opts.DeezerURL = defaultDeezer
+	}
+	if opts.DeezerArtist == "" {
+		opts.DeezerArtist = defaultDeezerByID
 	}
 	logf := func(format string, args ...any) {
 		if opts.Log != nil {
@@ -311,17 +316,26 @@ func resolve(ctx context.Context, opts Options, name string, logf func(string, .
 		return Portrait{}, none
 	}
 
-	// Three sources, best coverage first. MusicBrainz hosts no images at all — its `image` relations are links to
-	// Commons, and most artists have none (measured: two exact-name hits, zero relations), so it cannot be the
-	// primary. Deezer's public artist search carries a press photo for almost everyone and answers without a key;
-	// Wikipedia's lead image is the credited fallback. A miss is a miss, and the avatar keeps its initials.
-	if portrait, kind := fromDeezer(ctx, opts, name); kind != none {
+	// How the other kids do it (Aurral, measured from its source): MusicBrainz supplies **identity**, and the
+	// picture comes from a provider — Deezer first, by the id MusicBrainz already links. So the order is:
+	// the linked Deezer artist → a Commons image relation → the Wikipedia lead image → Deezer by name. The linked
+	// id is what keeps "Wicker" the band off a museum row called Wicker; the name search is the last resort.
+	relations, kind := lookupRelations(ctx, opts, hit.ID, logf, name)
+	if kind == retry {
+		return Portrait{}, retry
+	}
+	if id := deezerIDFrom(relations); id != "" {
+		if portrait, kind := fromDeezerID(ctx, opts, id, name); kind != none {
+			return portrait, kind
+		}
+	}
+	if portrait, kind := fromRelations(ctx, relations, opts, logf, name); kind != none {
 		return portrait, kind
 	}
-	if portrait, kind := fromRelations(ctx, opts, hit.ID, logf, name); kind != none {
+	if portrait, kind := fromWikipedia(ctx, opts, name, logf); kind != none {
 		return portrait, kind
 	}
-	return fromWikipedia(ctx, opts, name, logf)
+	return fromDeezer(ctx, opts, name)
 }
 
 // fromDeezer is the coverage source: one call, `picture_xl` is 1000×1000, and the identity rule is the same one
@@ -354,21 +368,62 @@ func fromDeezer(ctx context.Context, opts Options, name string) (Portrait, outco
 	}, found
 }
 
-// fromRelations is the MusicBrainz path: the first `image` relation that points at a Commons file.
-func fromRelations(ctx context.Context, opts Options, mbid string, logf func(string, ...any), name string) (Portrait, outcome) {
+type relation struct {
+	Type string `json:"type"`
+	URL  struct {
+		Resource string `json:"resource"`
+	} `json:"url"`
+}
+
+// lookupRelations is one call that every source below can read: the Deezer id, the Commons image, the Wikipedia
+// link. It is fetched once per artist because each of those is a field of the same answer.
+func lookupRelations(ctx context.Context, opts Options, mbid string, logf func(string, ...any), name string) ([]relation, outcome) {
 	var artist struct {
-		Relations []struct {
-			Type string `json:"type"`
-			URL  struct {
-				Resource string `json:"resource"`
-			} `json:"url"`
-		} `json:"relations"`
+		Relations []relation `json:"relations"`
 	}
 	if err := getJSON(ctx, opts, opts.LookupURL+mbid+"?inc=url-rels&fmt=json", &artist); err != nil {
 		logf("  ? %s: lookup: %v", name, err)
+		return nil, retry
+	}
+	return artist.Relations, none
+}
+
+// deezerIDFrom is the linked-id path: MusicBrainz already knows which Deezer artist this is.
+func deezerIDFrom(relations []relation) string {
+	for _, rel := range relations {
+		if !strings.Contains(rel.URL.Resource, "deezer.com/artist/") {
+			continue
+		}
+		id := rel.URL.Resource[strings.LastIndex(rel.URL.Resource, "/")+1:]
+		if id != "" && strings.Trim(id, "0123456789") == "" {
+			return id
+		}
+	}
+	return ""
+}
+
+// fromDeezerID asks Deezer for the artist the index linked to, and keeps the identity check anyway.
+func fromDeezerID(ctx context.Context, opts Options, id, name string) (Portrait, outcome) {
+	var artist struct {
+		ID       int64  `json:"id"`
+		Name     string `json:"name"`
+		PictureX string `json:"picture_xl"`
+	}
+	if err := getJSON(ctx, opts, opts.DeezerArtist+id, &artist); err != nil {
+		if strings.Contains(err.Error(), "status 4") {
+			return Portrait{}, none
+		}
 		return Portrait{}, retry
 	}
-	for _, relation := range artist.Relations {
+	if artist.PictureX == "" || model.Key(artist.Name) != model.Key(name) {
+		return Portrait{}, none
+	}
+	return Portrait{URL: artist.PictureX, Credit: fmt.Sprintf("https://www.deezer.com/artist/%d", artist.ID)}, found
+}
+
+// fromRelations is the MusicBrainz path: the first `image` relation that points at a Commons file.
+func fromRelations(ctx context.Context, relations []relation, opts Options, logf func(string, ...any), name string) (Portrait, outcome) {
+	for _, relation := range relations {
 		if relation.Type != "image" {
 			continue
 		}

@@ -46,6 +46,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  min-height: min(46dvh, 380px);
   max-height: 88dvh;
   border-left: 0;
   border-right: 0;
@@ -155,6 +156,17 @@
 .result[aria-selected="true"] {
   box-shadow: inset 2px 0 0 var(--primary);
 }
+.result__add {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-3);
+  font: 400 15px/1 var(--font);
+}
 .result__name {
   font: 600 14px/1.2 var(--font);
   overflow: hidden;
@@ -169,7 +181,18 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.result--add .result__name {
+.result--add .result__add {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-3);
+  font: 400 15px/1 var(--font);
+}
+.result__name {
   font-weight: 400;
   color: var(--text-2);
 }
@@ -178,10 +201,6 @@
   flex-wrap: wrap;
   gap: 6px;
   min-height: 32px;
-}
-.badges__empty {
-  font: 400 12.5px/1.6 var(--font);
-  color: var(--text-3);
 }
 .import {
   display: flex;
@@ -204,8 +223,14 @@
 }
 .import__field {
   display: flex;
+  align-items: center;
   gap: 8px;
   width: 100%;
+}
+.import__field .iconbtn {
+  width: 40px;
+  height: 40px;
+  border-color: var(--border-strong);
 }
 .import__field .field {
   flex: 1;
@@ -440,6 +465,29 @@
   flex-wrap: wrap;
   gap: 3px;
 }
+.cal__face {
+  position: relative;
+  display: inline-flex;
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 721px) {
+  .cal__face:hover::after {
+    content: attr(data-name);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    translate: -50% 0;
+    z-index: 6;
+    padding: 5px 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+    background: var(--surface);
+    color: var(--foreground);
+    font: 500 11px/1 var(--font);
+    white-space: nowrap;
+    box-shadow: 0 8px 20px -12px rgb(0 0 0 / 0.55);
+    animation: fade 0.12s linear;
+  }
+}
 .cal__more {
   align-self: flex-end;
   margin-top: auto;
@@ -492,7 +540,7 @@
 }
 .daysheet__body {
   overflow-y: auto;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 2px 16px calc(14px + env(safe-area-inset-bottom));
 }
 
 /* ── two small pieces the pickers needed ───────────────────────────────────────────────────────── */
