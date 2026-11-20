@@ -30,13 +30,22 @@ export default function Chrome({ view, onView, onPanel }: Props) {
         </a>
         <div className="bar__actions">
           {view && onView ? (
-            <button
-              className="iconbtn"
-              aria-label={view === "list" ? "Show the calendar" : "Show the list"}
-              onClick={() => onView(view === "list" ? "calendar" : "list")}
-            >
-              {view === "list" ? <CalendarBlank size={16} /> : <ListBullets size={16} />}
-            </button>
+            <div className="seg seg--icons" role="group" aria-label="View">
+              <button
+                aria-pressed={view === "list"}
+                aria-label="List view"
+                onClick={() => onView("list")}
+              >
+                <ListBullets size={15} />
+              </button>
+              <button
+                aria-pressed={view === "calendar"}
+                aria-label="Calendar view"
+                onClick={() => onView("calendar")}
+              >
+                <CalendarBlank size={15} />
+              </button>
+            </div>
           ) : null}
           {onPanel ? (
             <button className="iconbtn" aria-label="Artists and town" onClick={onPanel}>

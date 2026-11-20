@@ -26,6 +26,7 @@ export function DaySheet({ day, rows, portraits, onClose }: SheetProps) {
       open={day !== null}
       onOpenChange={(next) => (next ? undefined : onClose())}
       label={day ? `Shows on ${day}` : "Shows"}
+      className="ui-dialog--day"
     >
       <div className="daysheet">
         <h2 className="daysheet__title">
