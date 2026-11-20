@@ -6,7 +6,7 @@
  * already has. Nothing about it is stored server-side — it lives in the URL (`?a=`), which also means a
  * personalised board is a shareable link.
  *
- * A provider link (Spotify, Last.fm) resolves to the same shape — a set of keys — which is why this file does not
+ * A provider link (Last.fm, ListenBrainz) resolves to the same shape — a set of keys — which is why this file does not
  * care where a list came from.
  */
 

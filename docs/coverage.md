@@ -170,6 +170,28 @@ a mined show belongs to one, its position is the mean of the venues seen in it, 
 because no event page carries a trustworthy zone name. That is §5.7's "towns are derived from each platform's
 city list" applied to the data, and it means a country can be added without a hand-written town file.
 
+## Festivals: the festival is the artist (decided 2026-11-20)
+
+A festival ticket is **one row whose artist is the festival's own name** (`Viva Sounds`, `Hiphop Revolution
+Festival`), not its line-up: the bill is a claim the platform publishes, and a multi-day pass is not a
+performance at a time. The row sorts by the festival's first day, links to the festival page, and a reader who
+cares about one name in the bill still finds it the night a promoter publishes that name as its own row. There is
+no separate "festivals" browse — one board, one calendar, one subscription. The music policy already keeps a
+festival: a room's class and an event's form decide, never the word "festival".
+
+## The second source: a dated answer per candidate (2026-11-20)
+
+| Candidate | What it does from this host | Verdict |
+|---|---|---|
+| Ticketmaster Discovery | the register form is a moderation queue, the key is shown in the portal and never emailed, and Denmark is not a Discovery market | **no, for now** — nothing is gated on it; revisit only if the account clears |
+| Eventim SE | sitemaps 200, every event page 403 behind the same edge as `.de`; an off-mini test needs an egress we do not own | **no** |
+| Billetto | `202` challenge page, including `/api/v3/*` | **no** |
+| Billetlugen | listings yield links, event pages 403, cards carry no date and no venue | **links only** |
+| DICE | 404 for every Nordic town (DE/GB/US only) | **no, for the Nordics** |
+
+So v1 ships **one source per town**, written down rather than implied. The next coverage lever is more towns on
+the source we can already read (Malmö, Oslo, Aarhus), not a second platform.
+
 ## What this means for the gates
 
 - **G0-global** (Berlin, London, Austin ≥ 20 each from one keyless adapter) is **met by DICE**, measured town by
@@ -182,8 +204,9 @@ city list" applied to the data, and it means a country can be added without a ha
   Tickster: DK/NO/SE), so `internal/match` proves the merge — same gig from two sources merges, two gigs in one
   room on one night do not, a venue spelling difference merges only on position — and `lineup mine --source a,b`
   will report a live rate the day two sources share a town.
-- **Stockholm is next and cheap**: Tickster `/se/sv` is 10 313 URLs and the adapter already reads `/se/` pages
-  (town, zone and locale come from the URL). Eventim SE stays index-only, sharing its `.de` sibling's verdict.
+- **Gothenburg cost one town-wide classification, not a new adapter**: `--town gothenburg` reuses the `se` market
+  file and the same microdata parser; the work was 69 rooms (45 music / 24 other). Malmö and Oslo are the same job
+  again — Oslo needs a `no.json` first.
 
 ## Sources that are not a gate
 

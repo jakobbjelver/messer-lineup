@@ -32,10 +32,11 @@ parameter. No cookie, no session, no server-side list.
   (`503`, never cached). Last.fm reports the first in the **body** on a 404, which is why the route reads the body
   before it believes the status.
 
-A music account (Spotify, YouTube, Apple) needs OAuth, a session and a server-side token — the shape ADR-004
-decided against: Spotify's development mode is five allowlisted users with a Premium owner at any scale, and a
-control most visitors cannot connect is a control that cannot do its job. The Spotify **export file** is the
-exception that needs no account at all, and it is the next taste step.
+**A music account is out of scope by decision (2026-11-20).** Not just Spotify — no OAuth provider, no account, no
+session, and nothing in this product names Spotify: the two imports are **Last.fm** and **ListenBrainz**, each a
+handle and nothing else. A provider connection needs a server-side token, an account to hold it and a consent
+screen, and the list that arrives is the same list either way. The export-file route is dropped with it: a 30-day
+data export is not a feature, it is a chore handed to the reader.
 
 ## The identity contract is shared, not duplicated
 
