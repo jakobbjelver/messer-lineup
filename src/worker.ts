@@ -183,7 +183,9 @@ app.get("/api/v1/artists/search", async (c) => {
     return c.json({ artists: [] }, 200, { "cache-control": "public, max-age=21600" });
   }
   const cache = caches.default;
-  const key = new Request(`https://lineup.messer.wtf/api/v1/artists/search?q=${encodeURIComponent(q)}`);
+  // The key carries a version: a poisoned answer (an empty list from an upstream 503) cannot be purged from
+  // `caches.default`, so a change to what may be cached has to move the key instead of waiting out the TTL.
+  const key = new Request(`https://lineup.messer.wtf/api/v1/artists/search?v=2&q=${encodeURIComponent(q)}`);
   const hit = await cache.match(key);
   if (hit) {
     return new Response(hit.body, {
@@ -197,7 +199,10 @@ app.get("/api/v1/artists/search", async (c) => {
     body = { artists: [], unavailable: true };
   }
   const answer = new Response(JSON.stringify(body), {
-    headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": body.unavailable ? "no-store" : "public, max-age=21600",
+    },
   });
   // An unavailable answer must not be cached: one 503 would otherwise be six hours of "no results" for every
   // visitor, served from the edge in milliseconds and indistinguishable from a search that found nothing.
