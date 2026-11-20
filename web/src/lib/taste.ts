@@ -48,6 +48,10 @@ export function parseTasteList(text: string): TasteEntry[] {
  * A key is a slug, so `a=bjork` reads back as "Bjork". Names that differ from their own key are written alongside as
  * `n=`, and only those: a list whose names are plain ("bad-bunny") costs nothing extra, and a shared link spells
  * "Björk" correctly on a device that has never seen it.
+ *
+ * The decode is guarded per pair, because this runs while the module is being evaluated: a link cut mid-escape — which
+ * is exactly what a chat app's URL truncation produces — used to throw `URIError` out of the module and leave the page
+ * blank. A pair that cannot be read is dropped; the key in `a` still identifies the artist.
  */
 export function readNamesParam(search: string): TasteEntry[] {
   const raw = new URLSearchParams(search).get("n");
@@ -56,7 +60,14 @@ export function readNamesParam(search: string): TasteEntry[] {
   for (const pair of raw.split(",")) {
     const [key, name] = pair.split(":");
     if (!key || !name) continue;
-    out.push({ key: key.trim(), name: decodeURIComponent(name).trim() });
+    let spelled: string;
+    try {
+      spelled = decodeURIComponent(name).trim();
+    } catch {
+      continue;
+    }
+    if (!spelled) continue;
+    out.push({ key: key.trim(), name: spelled });
   }
   return out;
 }

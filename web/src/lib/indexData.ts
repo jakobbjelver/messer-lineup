@@ -1,4 +1,7 @@
 import { Key } from "./key";
+import { ANYWHERE } from "./calendar";
+
+export { ANYWHERE };
 
 /**
  * The index, as the browser sees it.
@@ -110,12 +113,51 @@ export function loadShard(shard: string): Promise<Row[]> {
         /* skip a malformed line rather than failing the town */
       }
     }
-    rows.sort((a, b) => (a.d === b.d ? a.a.localeCompare(b.a, "da") : a.d < b.d ? -1 : 1));
+    rows.sort(byStart);
     return rows;
   })();
   shards.set(key, pending);
   pending.catch(() => shards.delete(key));
   return pending;
+}
+
+/** A start as an instant. The stamp carries the venue's offset, so comparing the strings is wrong across zones. */
+function startOf(row: Row): number {
+  const ms = Date.parse(row.d);
+  return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+}
+
+/** Earliest first; then the artist, so a day reads consistently; then the key, so the order is total. */
+function byStart(a: Row, b: Row): number {
+  const left = startOf(a);
+  const right = startOf(b);
+  if (left !== right) return left < right ? -1 : 1;
+  if (a.a !== b.a) return a.a.localeCompare(b.a, "da");
+  return a.k < b.k ? -1 : a.k > b.k ? 1 : 0;
+}
+
+/**
+ * The rows for a scope: one town's shard, or every shard at once for `anywhere`.
+ *
+ * `anywhere` is the artist route's own data path — read every shard, dedupe by row key, sort — which is why the scope
+ * needs no published "world" shard. Two towns 40 km apart can publish the same show under the same key; the first
+ * entry in the manifest keeps it, so the label on the row is a decision rather than a race.
+ */
+export function loadBoard(manifest: Manifest, scope: string): Promise<Row[]> {
+  if (scope !== ANYWHERE) {
+    const entry = manifest.towns.find((candidate) => candidate.town === scope) ?? manifest.towns[0];
+    return entry ? loadShard(entry.shard) : Promise.resolve([]);
+  }
+  return Promise.all(manifest.towns.map((entry) => loadShard(entry.shard))).then((groups) => {
+    const seen = new Set<string>();
+    const rows: Row[] = [];
+    for (const row of groups.flat()) {
+      if (seen.has(row.k)) continue;
+      seen.add(row.k);
+      rows.push(row);
+    }
+    return rows.sort(byStart);
+  });
 }
 
 const index = { pending: null as Promise<{ manifest: Manifest; towns: Town[] }> | null };

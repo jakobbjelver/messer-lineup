@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarBlank, CaretDown, ListBullets } from "@phosphor-icons/react";
+import { CalendarBlank, CaretDown, GlobeHemisphereWest, ListBullets } from "@phosphor-icons/react";
 import Board from "./components/Board";
 import Calendar, { DaySheet } from "./components/Calendar";
 import Chrome from "./components/Chrome";
 import Preferences, { type Panel } from "./components/Preferences";
+import Subscribe from "./components/Subscribe";
 import Wizard from "./components/Wizard";
 import Loader from "./components/Loader";
 import { Empty, Failed } from "./components/states";
 import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf } from "./lib/board";
 import { distanceKm, nearestTown, pointOf, type Point } from "./lib/geo";
 import {
+  ANYWHERE,
   dayOf,
+  loadBoard,
   loadIndex,
-  loadShard,
   stampLabel,
   townLabel,
   type Manifest,
@@ -22,7 +24,19 @@ import {
 } from "./lib/indexData";
 import { locationSupported, useDevicePosition } from "./lib/location";
 import { loadPortraits, sourceNames, type PortraitMap } from "./lib/portraits";
-import { readOnboarded, readTaste, readTown, readView, writeOnboarded, writeTaste, writeTown, writeView, type View } from "./lib/storage";
+import {
+  followingSource,
+  readOnboarded,
+  readTaste,
+  readTown,
+  readView,
+  writeImport,
+  writeOnboarded,
+  writeTaste,
+  writeTown,
+  writeView,
+  type View,
+} from "./lib/storage";
 import { readNamesParam, readTasteParam, toEntries, writeTasteParam, type TasteEntry } from "./lib/taste";
 import { useTheme } from "./lib/theme";
 import { useWide } from "./lib/useMediaQuery";
@@ -33,6 +47,25 @@ const urlTaste = readTasteParam(location.search);
 const startTaste = urlTaste.length
   ? toEntries(urlTaste, readNamesParam(location.search))
   : readTaste();
+
+/**
+ * The manifest entry for a scope. `anywhere` has no shard of its own — it is every shard — so the entry is the sum of
+ * what is published, and the board loads it by union. Keeping the shape means every consumer of a town (the head, the
+ * foot, the picker's count) needs no second code path.
+ */
+function scopeEntry(manifest: Manifest, scope: string): TownEntry {
+  const first = manifest.towns[0]!;
+  if (scope !== ANYWHERE) return manifest.towns.find((entry) => entry.town === scope) ?? first;
+  const published = manifest.towns.filter((entry) => entry.count > 0);
+  return {
+    town: ANYWHERE,
+    shard: "",
+    sha256: "",
+    count: published.reduce((sum, entry) => sum + entry.count, 0),
+    sources: [...new Set(published.flatMap((entry) => entry.sources))],
+    built_at: manifest.built_at,
+  };
+}
 
 /**
  * The board.
@@ -76,7 +109,7 @@ export default function App() {
   const canLocate = locationSupported();
   const today = localDay();
 
-  const townName = town && loaded ? townLabel(town, loaded.towns) : "";
+  const townName = town && loaded ? (town.town === ANYWHERE ? "Anywhere" : townLabel(town, loaded.towns)) : "";
 
   /* ── data ────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -99,14 +132,13 @@ export default function App() {
 
   useEffect(() => {
     if (!loaded) return;
-    const id = wantedTown ?? loaded.manifest.towns[0]!.town;
-    const entry = loaded.manifest.towns.find((candidate) => candidate.town === id) ?? loaded.manifest.towns[0]!;
+    const entry = scopeEntry(loaded.manifest, wantedTown ?? loaded.manifest.towns[0]!.town);
     if (loadedTown.current === entry.town) return;
     loadedTown.current = entry.town;
     let live = true;
     setSwitching(true);
     setTown(entry);
-    loadShard(entry.shard)
+    loadBoard(loaded.manifest, entry.town)
       .then((next) => {
         if (!live) return;
         setRows(next);
@@ -132,6 +164,9 @@ export default function App() {
   const setTasteAndStore = useCallback((entries: TasteEntry[]) => {
     setTaste(entries);
     writeTaste(entries);
+    // One edit and the list is the reader's, not a provider's: the provenance goes with it, so a feed that was
+    // following a handle stops following one the reader has overruled. A list that still equals the import keeps it.
+    if (!followingSource(entries)) writeImport(null);
     const next = writeTasteParam(entries, location.href);
     if (history.state && typeof history.state === "object" && "panel" in history.state) panelDirty.current = true;
     history.replaceState(history.state, "", next);
@@ -161,6 +196,9 @@ export default function App() {
    */
   useEffect(() => {
     if (position.state !== "granted" || !loaded) return;
+    // Anywhere is not a place a fix can promote you out of: the scope means everywhere, so a position only adds
+    // distances to the rows. Promoting a town here would silently answer a question the reader did not ask.
+    if ((wantedTown ?? "") === ANYWHERE) return;
     const point = `${position.point.lat},${position.point.lon}`;
     if (appliedFix.current === point) return;
     appliedFix.current = point;
@@ -169,7 +207,7 @@ export default function App() {
     if (!near) return;
     setFixTown(near.town.id);
     applyTown(near.town.id);
-  }, [position, loaded, applyTown]);
+  }, [position, loaded, applyTown, wantedTown]);
 
   /** The reader's own pick: it outranks the fix, so it releases the pin rather than fighting it on the next open. */
   const pickTown = useCallback(
@@ -187,12 +225,15 @@ export default function App() {
       return;
     }
     if (!loaded) return;
+    // On anywhere the fix is for distances only — there is no town to move to, and moving would answer a different
+    // question than the one "Anywhere" asked.
+    if ((wantedTown ?? "") === ANYWHERE) return;
     const published = loaded.towns.filter((entry) => loaded.manifest.towns.some((post) => post.town === entry.id));
     const near = nearestTown(published, position.point as Point);
     if (!near) return;
     setFixTown(near.town.id);
     applyTown(near.town.id);
-  }, [position, loaded, applyTown, locate]);
+  }, [position, loaded, applyTown, locate, wantedTown]);
 
   const releaseFix = useCallback(() => setFixTown(null), []);
 
@@ -268,6 +309,13 @@ export default function App() {
 
   const hasTaste = taste.length > 0;
   const mineMode = filter === "mine";
+  /** The scope is `anywhere`: every published town at once. Never a default — only the URL or an explicit pick. */
+  const anywhere = town?.town === ANYWHERE;
+  /**
+   * A live list to follow, only while the list is still exactly what the import produced. One edit and the reader has
+   * said "this is my list", so the snapshot in the token is the truth again.
+   */
+  const source = useMemo(() => (taste.length > 0 ? followingSource(taste) : null), [taste]);
 
   const finishSetup = useCallback(
     (entries: TasteEntry[]) => {
@@ -293,10 +341,13 @@ export default function App() {
           aria-label={townName ? `Change town, now ${townName}` : "Choose a town"}
           disabled={!town}
         >
+          {/* The scope is not a town, so it wears the glyph that says so — ink, not accent: the accent is for state,
+              and "anywhere" is an identity. */}
+          {anywhere ? <GlobeHemisphereWest size={17} className="globe" aria-hidden="true" /> : null}
           <span className="sign" data-t={townName}>
             {townName}
           </span>
-          <CaretDown size={16} />
+          <CaretDown size={16} className="caret" />
         </button>
       </h1>
       {rows ? (
@@ -353,15 +404,23 @@ export default function App() {
     if (visible.length === 0) {
       return hasTaste ? (
         <Empty
-          title="None of your artists play here."
-          detail={`${rows.length} shows are on the board.`}
+          title={anywhere ? "None of your artists play anywhere." : "None of your artists play here."}
+          detail={
+            anywhere
+              ? `${rows.length} shows across ${loaded.manifest.towns.length} towns.`
+              : `${rows.length} shows are on the board.`
+          }
           action={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
           secondary={{ label: "Add artists", onClick: () => openPanel("taste") }}
-        />
+        >
+          {/* The point of a feed is that it does not need this page again: an empty board is a standing watch, and it
+              fills itself the next time one of these artists announces a date. */}
+          <Subscribe scope={town.town} artists={taste} matched={0} source={source} variant="quiet" />
+        </Empty>
       ) : (
         <Empty
           title="No artists yet."
-          detail="Pick the ones you go see, and this becomes your list."
+          detail="Pick the ones you go see — this address is your board."
           action={{ label: "Add artists", onClick: () => openPanel("taste") }}
           secondary={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
         />
@@ -380,7 +439,9 @@ export default function App() {
             to={loaded.manifest.window.to}
             maxFaces={wide ? 3 : 2}
             onDay={setDaySheet}
-          />
+          >
+            {hasTaste ? <Subscribe scope={town.town} artists={taste} matched={mine.size} source={source} /> : null}
+          </Calendar>
           <DaySheet
             day={daySheet}
             rows={sheetRows}
@@ -398,6 +459,7 @@ export default function App() {
         markMine={!mineMode && hasTaste}
         distanceFor={distanceFor}
         today={today}
+        townOf={anywhere ? (row) => townLabel({ town: row.c }, loaded.towns) : undefined}
       />
     );
   })();
@@ -407,7 +469,9 @@ export default function App() {
       <span>
         Lineup{" "}
         <span className="num">
-          {town ? `${town.sha256.slice(0, 7)} · ${loaded ? stampLabel(loaded.manifest.built_at) : "—"}` : "—"}
+          {town
+            ? `${town.sha256 ? `${town.sha256.slice(0, 7)} · ` : ""}${loaded ? stampLabel(loaded.manifest.built_at) : "—"}`
+            : "—"}
         </span>
       </span>
       {portraits && portraits.size > 0 ? (
@@ -472,6 +536,12 @@ export default function App() {
             onRelease={releaseFix}
             theme={theme}
             onTheme={toggleTheme}
+            subscribe={hasTaste ? <Subscribe scope={town.town} artists={taste} matched={mine.size} source={source} /> : undefined}
+            townSubscribe={
+              anywhere ? undefined : (
+                <Subscribe scope={town.town} artists={[]} matched={town.count} variant="quiet" />
+              )
+            }
           />
         </>
       ) : null}

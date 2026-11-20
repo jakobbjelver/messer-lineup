@@ -31,6 +31,30 @@ const calendarToken = Buffer.from(
   "utf8",
 ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
+/**
+ * A token with **no window**: the shape a subscription is issued in now. Absent `f`/`o` the feed follows the published
+ * window, which is what stops a subscription from ageing out after its last day.
+ */
+const windowlessToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk" }), "utf8")
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
+/** The reserved scope: every published town, each event labelled with its own. */
+const anywhereToken = Buffer.from(JSON.stringify({ v: 1, t: "anywhere" }), "utf8")
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
+/** Half a window, which is a link that lies about what it shows. */
+const halfWindowToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk", f: "2026-11-01" }), "utf8")
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
 /** base64url of one row, written by hand so this file depends on neither implementation. */
 const eventToken = Buffer.from(
   JSON.stringify({
@@ -88,7 +112,13 @@ const REQUESTS = [
   { method: "GET", path: "/a/four-tet", compare: { kind: "document" } },
   // The calendar feed is the only rendered route; its shape is the contract even when the rows behind it differ.
   { method: "GET", path: `/calendar/${calendarToken}.ics`, compare: { kind: "ics" } },
+  // A subscription is issued without a window: both runtimes must follow the published one, and an anywhere feed must
+  // label each event with its own town (`LOCATION:` is checked per event by the comparator).
+  { method: "GET", path: `/calendar/${windowlessToken}.ics`, compare: { kind: "ics" } },
+  { method: "GET", path: `/calendar/${anywhereToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
+  // Half a window is refused, not completed: that rule is the one a client-side encoder must not violate either.
+  { method: "GET", path: `/calendar/${halfWindowToken}.ics`, compare: { kind: "error", code: "invalid_calendar", status: 400 } },
   // One show, from a token that carries the whole event: same VEVENT lines on both runtimes.
   { method: "GET", path: `/event/${eventToken}.ics`, compare: { kind: "ics", contains: ["BEGIN:VEVENT", "UID:opeth|pumpehuset|2027-02-13@lineup.messer.wtf", "DTSTART:20270213T190000Z"] } },
   { method: "GET", path: "/event/not-a-token.ics", compare: { kind: "error", code: "invalid_event", status: 400 } },
@@ -149,10 +179,17 @@ function diff(req, go, worker) {
         const body = res.text ?? "";
         if (!body.endsWith("END:VCALENDAR\r\n")) problems.push(`${label}: feed does not end with END:VCALENDAR + CRLF`);
         if (!body.startsWith("BEGIN:VCALENDAR\r\n")) problems.push(`${label}: feed does not start with BEGIN:VCALENDAR`);
-        const events = body.split("BEGIN:VEVENT").length - 1;
-        if (events !== body.split("END:VEVENT").length - 1) problems.push(`${label}: unbalanced VEVENTs (${events})`);
+        // Every physical line obeys §3.1 — checked on the folded body, because folding is what the limit is about.
+        for (const line of body.split("\r\n")) {
+          if (new TextEncoder().encode(line).length > 75) problems.push(`${label}: a line exceeds 75 octets`);
+        }
+        // Everything below is read **unfolded**: a UID longer than 74 octets is folded, and comparing raw first lines
+        // reports two different events as duplicates as soon as they share an artist and a venue.
+        const unfold = body.replace(/\r\n /g, "");
+        const events = unfold.split("BEGIN:VEVENT").length - 1;
+        if (events !== unfold.split("END:VEVENT").length - 1) problems.push(`${label}: unbalanced VEVENTs (${events})`);
         const uids = new Set();
-        for (const event of body.split("BEGIN:VEVENT").slice(1)) {
+        for (const event of unfold.split("BEGIN:VEVENT").slice(1)) {
           const block = event.split("END:VEVENT")[0];
           for (const field of ["UID:", "DTSTAMP:", "DTSTART:", "DTEND:", "SUMMARY:", "LOCATION:"]) {
             if (!block.includes(field)) problems.push(`${label}: a VEVENT is missing ${field}`);
@@ -164,13 +201,10 @@ function diff(req, go, worker) {
           }
         }
         if (uids.size !== events) problems.push(`${label}: ${events} events but ${uids.size} unique UIDs`);
-        for (const line of body.split("\r\n")) {
-          if (new TextEncoder().encode(line).length > 75) problems.push(`${label}: a line exceeds 75 octets`);
-        }
         // A case may name lines the body must carry — the token's own event, spelled out, so a single-event route is
         // held to more than "some VEVENT parsed".
         for (const wanted of contains ?? []) {
-          if (!body.includes(wanted)) problems.push(`${label}: the body is missing ${wanted}`);
+          if (!unfold.includes(wanted)) problems.push(`${label}: the body is missing ${wanted}`);
         }
       }
       break;

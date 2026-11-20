@@ -3,7 +3,9 @@ import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import Loader from "./Loader";
 import Avatar from "./Avatar";
 import { importFrom, LASTFM_NOT_READY, searchArtists, type ArtistHit } from "../lib/artistSearch";
+import { TASTE_CAP } from "../lib/calendar";
 import { Key } from "../lib/key";
+import { writeImport } from "../lib/storage";
 import { labelFor, type TasteEntry } from "../lib/taste";
 import { faceSettled, resolvePortraits, type PortraitMap } from "../lib/portraits";
 
@@ -17,7 +19,12 @@ type Props = {
 };
 
 const DEBOUNCE_MS = 320;
-const CAP = 100;
+/**
+ * The cap, and there is only one: the feed's token carries at most this many keys, so a list the picker would accept
+ * beyond it could not be subscribed to. It is announced when it bites — a control that silently drops what you asked
+ * for is the same defect as a search box that answers "no results" when the upstream blinked.
+ */
+const CAP = TASTE_CAP;
 
 function merge(current: TasteEntry[], names: string[]): TasteEntry[] {
   const seen = new Set(current.map((entry) => entry.key));
@@ -91,6 +98,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
   const [imported, setImported] = useState<number | null>(null);
   /** Last.fm's route is the P5 stub: once it has said so, the control stops being offered. */
   const [lastfmOff, setLastfmOff] = useState(false);
+  /** What the cap did to an import, in words, while it is on screen. */
+  const [capNote, setCapNote] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query.trim();
@@ -206,7 +215,13 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
 
   const add = (name: string) => {
     const next = merge(value, [name]);
-    if (next.length !== value.length) onChange(next);
+    if (next.length !== value.length) {
+      onChange(next);
+      setCapNote(null);
+    } else if (value.length >= CAP) {
+      // The field accepted a name the list cannot hold: say so instead of doing nothing.
+      setCapNote(`Full at ${CAP} artists. Remove one to add another.`);
+    }
     setQuery("");
     setHits([]);
     setOpen(false);
@@ -225,17 +240,36 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
 
   const runImport = async () => {
     if (!mode || !handle.trim()) return;
+    const service = mode;
+    const user = handle.trim();
     setImporting(true);
     setImportError(null);
+    setCapNote(null);
     try {
-      const names = await importFrom(mode, handle);
+      const names = await importFrom(service, user);
       if (names.length === 0) {
         setImportError("That account has no listening history yet.");
       } else {
         const before = value.length;
+        // What the provider offered that the list did not already hold — the number the cap, if it bites, is measured
+        // against. Without it the control would report "added 40" for a 200-name import and never say why.
+        const known = new Set(value.map((entry) => entry.key));
+        let wanted = 0;
+        for (const name of names) {
+          const key = Key(name);
+          if (known.has(key)) continue;
+          known.add(key);
+          wanted += 1;
+        }
         const next = merge(value, names);
+        const added = next.length - before;
         onChange(next);
-        setImported(next.length - before);
+        setImported(added);
+        if (added < wanted) setCapNote(`Added ${added} of ${wanted} · ${CAP} is the limit.`);
+        // The provenance: a feed may follow this handle only while the list is still exactly what the import produced.
+        if (service === "listenbrainz") {
+          writeImport({ k: "listenbrainz", u: user, keys: next.map((entry) => entry.key) });
+        }
         setMode(null);
         setHandle("");
       }
@@ -400,6 +434,8 @@ export default function ArtistPicker({ value, onChange, compact, portraits }: Pr
           ) : null}
         </>
       ) : null}
+
+      {capNote ? <p className="hint hint--cap">{capNote}</p> : null}
 
       {mode === null ? (
         <div className="import">
