@@ -7,9 +7,10 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
-    // The dev server is one of the project's own ports (:3016), never :3000 — the site owns 3000 and only one
-    // dev server can hold a port, so a shared port makes two projects fight for the tunnel.
-    port: 3016,
+    // :3000 is the convention for a single-port dev app, and `dev-server.messer.wtf` proxies to it — a dev
+    // server on any other port is unreachable at the URL everyone opens. Strict, so a second project's dev
+    // server fails loudly instead of auto-bumping to 3001 while the tunnel still points at 3000.
+    port: 3000,
     strictPort: true,
     host: true,
     // Vite answers an unknown Host with 403 "Blocked request", which looks exactly like a broken app behind
