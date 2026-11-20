@@ -35,6 +35,11 @@ self-host. Mining never happens in the board's runtime.
 | **Ticket link** | every row links out to the seller; the board never pretends to sell |
 | **No account** | the board is public; the taste is local |
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/screenshot-dark.jpg">
+  <img src="docs/brand/screenshot-light.jpg" alt="The board: Stockholm, one day at a time, with the artist, the room and the ticket link" width="1400">
+</picture>
+
 ## How it works
 
 One private miner walks event platforms country by country and writes a published **index** — a
@@ -93,6 +98,30 @@ honesty, shipping — is kept outside this public tree with the rest of the buil
 
 MIT — including the miners and the index format. Not accepting contributions; see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Self-host
+
+The published instance is one Worker on an edge network. The same board runs from one binary and one directory,
+with no account and no database:
+
+```bash
+make build web                 # bin/lineup + web/dist (the same-origin build)
+./bin/lineup mine --source tickster --town copenhagen,stockholm --index .lineup-index
+./bin/lineup serve --index .lineup-index --web web/dist --addr 127.0.0.1:8016
+```
+
+Or as a container, which builds both halves and serves them on `:8080`:
+
+```bash
+docker build -t messer-lineup .
+docker run -p 8080:8080 -v /srv/lineup/index:/data/index messer-lineup
+```
+
+The index is a **volume, not a baked asset** — it is a publish artifact that changes nightly. `lineup serve`
+reads `LINEUP_INDEX`, `LINEUP_WEB` and `LINEUP_ADDR` from the environment so a container can be configured with
+`ENV` alone (a flag still wins). `LASTFM_KEY` is optional and enables only the Last.fm taste import; without it
+that route answers `not_configured`, which is a fact about the build rather than a provider outage. The music
+policy travels with the binary: `sources/venues/<market>.json`.
 
 ## How it is served
 

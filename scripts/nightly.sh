@@ -24,9 +24,26 @@ INDEX="${LINEUP_INDEX:-.lineup-index}"
 LEDGER="${LINEUP_LEDGER:-$HOME/Artifacts/messer-lineup/ledger.md}"
 LOG_DIR="${LINEUP_LOG_DIR:-$HOME/Artifacts/messer-lineup/logs}"
 ENV_FILE="${LINEUP_ENV_FILE:-$HOME/.config/messer-lineup/env}"
+COVERAGE="docs/coverage.md"
+# The one machine-readable thing a watcher reads. A log is for a human reading history; this is for asking
+# "did last night work?" without parsing prose.
+STATUS_FILE="$HOME/Artifacts/messer-lineup/last-run.json"
 
 stamp() { date "+%Y-%m-%d %H:%M"; }
 day() { date "+%Y-%m-%d"; }
+
+# write_status <state> <detail> [rows] — the last line of every path through this script.
+write_status() {
+  local state="$1" detail="$2" rows="${3:-0}"
+  python3 - "$STATUS_FILE" "$state" "$detail" "$rows" "$TOWNS" "$LOG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" <<'PY'
+import json, sys
+path, state, detail, rows, towns, log, at = sys.argv[1:8]
+json.dump(
+    {"state": state, "detail": detail, "rows": int(rows or 0), "towns": towns, "log": log, "at": at},
+    open(path, "w"),
+)
+PY
+}
 
 mkdir -p "$LOG_DIR" "$(dirname "$LEDGER")"
 LOG="$LOG_DIR/nightly-$(day).log"
@@ -46,13 +63,27 @@ make --silent build
 
 REPORT="$INDEX/sweep-$(day).json"
 START=$(date +%s)
-if ! ./bin/lineup mine --source tickster --town "$TOWNS" --index "$INDEX" --state "$STATE/state.json" --report "$REPORT"; then
+# `--coverage` is what keeps the public honesty record equal to the run that published: the block is generated, so
+# the only way it can drift is if the producer is not asked for it (it was hand-refreshed on 2026-11-20 for exactly
+# that reason).
+if ! ./bin/lineup mine --source tickster --town "$TOWNS" --index "$INDEX" --state "$STATE/state.json" \
+    --report "$REPORT" --coverage "$COVERAGE"; then
   echo "nightly: mine failed; nothing was published"
   printf '| %s | %s | mine failed | — | — |\n' "$(stamp)" "$TOWNS" >>"$LEDGER"
+  write_status "mine-failed" "the sweep failed; nothing was published"
   printf 'lineup nightly %s · mine failed · log %s\n' "$(stamp)" "$LOG" >&3
   exit 1
 fi
 TOOK=$(( $(date +%s) - START ))
+
+# One file, one commit. A generated block that is never committed is a record that drifts, and a nightly that
+# leaves the worktree dirty breaks the next pull — so the run that measured it commits it, and nothing else.
+if ! git diff --quiet -- "$COVERAGE"; then
+  git add "$COVERAGE" &&
+    git -c user.name="Messer nightly" -c user.email="nightly@messer.wtf" \
+      commit -q -m "docs: the coverage record follows the nightly ($(day))" &&
+    echo "nightly: committed $COVERAGE"
+fi
 
 # Portraits are their own artifact and their own budget: a slow MusicBrainz lookup must never hold the rows back,
 # and a failure here is not a reason to skip the publish — initials are a supported state. The cap keeps a nightly
@@ -87,6 +118,9 @@ if [ ! -f "$LEDGER" ]; then
 fi
 printf '| %s | %s | %s towns · %s rows · %s bytes · %s | %ss | %s |\n' \
   "$(stamp)" "$TOWNS" "$TOWN_COUNT" "$ROWS" "$BYTES" "$SHA" "$TOOK" "$RESULT" >>"$LEDGER"
+
+write_status "$([ "$RESULT" = "published" ] && echo published || echo refused)" \
+  "$RESULT · $TOWN_COUNT towns, $ROWS rows, ${BYTES} bytes, ${TOOK}s" "$ROWS"
 
 printf 'lineup nightly %s · %s · %s rows · %s bytes · %ss · log %s\n' \
   "$(stamp)" "$RESULT" "$ROWS" "$BYTES" "$TOOK" "$LOG" >&3

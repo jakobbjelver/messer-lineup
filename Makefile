@@ -71,6 +71,13 @@ geocheck:
 contract:
 	@node scripts/contract.mjs
 
+# Ship it: the edge build, then the Worker. `web-edge` is not optional — the same-origin bundle (what `make web`
+# builds, for `lineup serve`) asks the Worker for /manifest.json, which is neither a file nor a route, so the board
+# renders its error state on a perfectly healthy origin. Deploying is a `main` action: the tree that ships is the
+# tree that was committed.
+deploy: web-edge
+	@npx wrangler deploy
+
 # The header-profile canary. It touches the network, so it is not in check; run it before believing any
 # report that a source has started blocking us (UA-only evidence is a known false "blocked").
 smoke:

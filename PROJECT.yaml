@@ -44,15 +44,12 @@ health: "/healthz"
 # Every exception is dated and has a reason. An expired exception is an error.
 # Self-hosting the same index is a second artifact, not a second product (ADR-001 §3).
 exceptions:
-  - id: no-screenshot
-    reason: The board is a P0 skeleton; a capture of real towns and real bills is the milestone that lifts this exception.
-    expires: 2027-02-28
   - id: second-serving-runtime
-    reason: "Cloudflare serves the published index and the API; the same Go binary serves the same index on the mini for self-host. One product, two runtimes, one cross-runtime contract (G1)."
+    reason: "Cloudflare serves the published index and the API; the same Go binary serves the same index on the mini for self-host, and the Dockerfile packages that same binary with web/dist beside it — one product, two runtimes, one cross-runtime contract (G1)."
     expires: 2027-06-30
   - id: edge-primitive
     reason: "A global board read by people who are not on this network needs an anycast origin with a free page view. The mini cannot meet that, and the index is static files so the edge holds no state."
     expires: 2027-06-30
   - id: no-settings-page
-    reason: "The miner is configured by files in this repo (sources/, config.toml) and the board has no account; there is nothing a settings page would write to."
+    reason: "There is no account and nothing a settings page would write to: the miner is configured by files in this repo (sources/venues), the taste list lives in the URL and in localStorage, and the one server credential (LASTFM_KEY) is an operator setting, not a visitor one."
     expires: 2027-06-30
