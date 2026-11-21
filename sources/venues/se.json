@@ -23,6 +23,10 @@
       "class": "other"
     },
     {
+      "name": "Alcazar",
+      "class": "other"
+    },
+    {
       "name": "Allhelgonakyrkan",
       "class": "music"
     },
@@ -47,7 +51,19 @@
       "class": "other"
     },
     {
+      "name": "Atrium",
+      "class": "music"
+    },
+    {
       "name": "B-K",
+      "class": "music"
+    },
+    {
+      "name": "Babel",
+      "class": "music"
+    },
+    {
+      "name": "BABEL, MALMÖ",
       "class": "music"
     },
     {
@@ -64,6 +80,10 @@
     },
     {
       "name": "Barabicu",
+      "class": "other"
+    },
+    {
+      "name": "Barnens Scen",
       "class": "other"
     },
     {
@@ -89,6 +109,10 @@
     {
       "name": "Börsen",
       "class": "music"
+    },
+    {
+      "name": "Brödernas Hansa",
+      "class": "other"
     },
     {
       "name": "Brödernas Nordstan",
@@ -124,6 +148,14 @@
     },
     {
       "name": "Clarion Hotel Draken",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel Malmö",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel Malmö Live",
       "class": "other"
     },
     {
@@ -203,6 +235,10 @@
       "class": "music"
     },
     {
+      "name": "Folkets Park - Moriska Paviljongen",
+      "class": "music"
+    },
+    {
       "name": "Frälsningsarmén, Vasakåren",
       "class": "music"
     },
@@ -252,6 +288,10 @@
     },
     {
       "name": "Gothenburg Film Studios",
+      "class": "music"
+    },
+    {
+      "name": "Grand Malmö",
       "class": "music"
     },
     {
@@ -319,6 +359,10 @@
       "class": "music"
     },
     {
+      "name": "Inkonst",
+      "class": "music"
+    },
+    {
       "name": "J. mat & mer på Stora Holms Säteri",
       "class": "other"
     },
@@ -359,6 +403,10 @@
       "class": "music"
     },
     {
+      "name": "Kollektivkrogen",
+      "class": "music"
+    },
+    {
       "name": "Konstakademien",
       "class": "other"
     },
@@ -376,6 +424,10 @@
     },
     {
       "name": "Le Bistrot de Wasahof",
+      "class": "other"
+    },
+    {
+      "name": "Lilith Performance Studio",
       "class": "other"
     },
     {
@@ -411,11 +463,19 @@
       "class": "other"
     },
     {
+      "name": "medley – musik, mat & mer",
+      "class": "music"
+    },
+    {
       "name": "Monument",
       "class": "music"
     },
     {
       "name": "Monument 031",
+      "class": "music"
+    },
+    {
+      "name": "Moriska Paviljongen",
       "class": "music"
     },
     {
@@ -515,11 +575,23 @@
       "class": "other"
     },
     {
+      "name": "Quality Hotel View",
+      "class": "other"
+    },
+    {
+      "name": "Radisson Blu Hotel Malmö",
+      "class": "other"
+    },
+    {
       "name": "Radisson Blu Scandinavia",
       "class": "other"
     },
     {
       "name": "Reimersholme Hotel",
+      "class": "music"
+    },
+    {
+      "name": "Restaurang Wega",
       "class": "music"
     },
     {
@@ -575,11 +647,27 @@
       "class": "music"
     },
     {
+      "name": "Shotluckan",
+      "class": "music"
+    },
+    {
       "name": "Sibeliussalen",
       "class": "music"
     },
     {
       "name": "Skeppet GBG",
+      "class": "music"
+    },
+    {
+      "name": "Slagthuset",
+      "class": "other"
+    },
+    {
+      "name": "Slagthuset - Saluhallen",
+      "class": "music"
+    },
+    {
+      "name": "Slagthusets Teater",
       "class": "music"
     },
     {
@@ -605,6 +693,10 @@
     {
       "name": "Solvalla",
       "class": "other"
+    },
+    {
+      "name": "Sounds On Vinyl Record Store ALIVE!",
+      "class": "music"
     },
     {
       "name": "Stallet - Världens Musik",
@@ -663,6 +755,10 @@
       "class": "music"
     },
     {
+      "name": "The Torso",
+      "class": "other"
+    },
+    {
       "name": "Thielska Galleriet",
       "class": "other"
     },
@@ -699,6 +795,10 @@
       "class": "other"
     },
     {
+      "name": "Turning Torso",
+      "class": "other"
+    },
+    {
       "name": "Twang",
       "class": "music"
     },
@@ -721,6 +821,10 @@
     {
       "name": "Unga Klara, Kulturhuset Stadsteatern",
       "class": "other"
+    },
+    {
+      "name": "Ungdomens Hus",
+      "class": "music"
     },
     {
       "name": "Valand",
@@ -749,6 +853,10 @@
     {
       "name": "WE ARE ONE Church",
       "class": "music"
+    },
+    {
+      "name": "Whisky Meet på Bishops Gustav!",
+      "class": "other"
     },
     {
       "name": "Wine Mechanics",

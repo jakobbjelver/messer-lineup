@@ -18,7 +18,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-TOWNS="${LINEUP_TOWNS:-copenhagen,stockholm,gothenburg}"
+TOWNS="${LINEUP_TOWNS:-copenhagen,stockholm,gothenburg,malmo}"
 STATE="${LINEUP_STATE:-.lineup-state}"
 INDEX="${LINEUP_INDEX:-.lineup-index}"
 LEDGER="${LINEUP_LEDGER:-$HOME/Artifacts/messer-lineup/ledger.md}"
