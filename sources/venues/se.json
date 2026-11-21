@@ -3,6 +3,10 @@
   "market": "se",
   "venues": [
     {
+      "name": "2Lång - Teater & Bar",
+      "class": "other"
+    },
+    {
       "name": "3:e Våningen",
       "class": "music"
     },
@@ -11,16 +15,16 @@
       "class": "other"
     },
     {
-      "name": "ABF-huset, Sveavägen 41",
-      "class": "other"
-    },
-    {
       "name": "ABF Stockholm",
       "class": "other"
     },
     {
-      "name": "Åkeshovs Arena",
+      "name": "ABF-huset, Sveavägen 41",
       "class": "other"
+    },
+    {
+      "name": "Adolf Fredriks kyrka",
+      "class": "music"
     },
     {
       "name": "Alcazar",
@@ -31,12 +35,12 @@
       "class": "music"
     },
     {
-      "name": "Ångfartyget Blidösund",
-      "class": "other"
-    },
-    {
       "name": "Annedalskyrkan",
       "class": "music"
+    },
+    {
+      "name": "Annelundsgården",
+      "class": "other"
     },
     {
       "name": "Arenatältet",
@@ -47,12 +51,20 @@
       "class": "other"
     },
     {
+      "name": "Assyriska forenning",
+      "class": "other"
+    },
+    {
       "name": "Atalante",
       "class": "other"
     },
     {
       "name": "Atrium",
       "class": "music"
+    },
+    {
+      "name": "Aulan",
+      "class": "other"
     },
     {
       "name": "B-K",
@@ -91,6 +103,10 @@
       "class": "music"
     },
     {
+      "name": "Betlehemskyrkan",
+      "class": "music"
+    },
+    {
       "name": "Biblioteket Live",
       "class": "music"
     },
@@ -103,12 +119,12 @@
       "class": "other"
     },
     {
-      "name": "BOQUERIA",
-      "class": "other"
+      "name": "Blå Hallen",
+      "class": "music"
     },
     {
-      "name": "Börsen",
-      "class": "music"
+      "name": "BOQUERIA",
+      "class": "other"
     },
     {
       "name": "Brödernas Hansa",
@@ -120,6 +136,10 @@
     },
     {
       "name": "Bubblan",
+      "class": "music"
+    },
+    {
+      "name": "Börsen",
       "class": "music"
     },
     {
@@ -143,6 +163,10 @@
       "class": "other"
     },
     {
+      "name": "Cirkus",
+      "class": "music"
+    },
+    {
       "name": "Clarion Hotel Amaranten",
       "class": "other"
     },
@@ -159,11 +183,15 @@
       "class": "other"
     },
     {
-      "name": "Clarion Hotel® Sign",
+      "name": "Clarion Hotel Post",
       "class": "other"
     },
     {
       "name": "Clarion Hotel Stockholm",
+      "class": "other"
+    },
+    {
+      "name": "Clarion Hotel® Sign",
       "class": "other"
     },
     {
@@ -211,6 +239,14 @@
       "class": "music"
     },
     {
+      "name": "Eric Ericsonhallen",
+      "class": "music"
+    },
+    {
+      "name": "Erik Ericsonshallen",
+      "class": "music"
+    },
+    {
       "name": "Eriksbergshallen",
       "class": "music"
     },
@@ -223,7 +259,7 @@
       "class": "other"
     },
     {
-      "name": "FÅLLAN",
+      "name": "Fasching",
       "class": "music"
     },
     {
@@ -236,10 +272,6 @@
     },
     {
       "name": "Folkets Park - Moriska Paviljongen",
-      "class": "music"
-    },
-    {
-      "name": "Frälsningsarmén, Vasakåren",
       "class": "music"
     },
     {
@@ -263,11 +295,19 @@
       "class": "music"
     },
     {
+      "name": "Frälsningsarmén, Vasakåren",
+      "class": "music"
+    },
+    {
       "name": "Fylkingen",
       "class": "music"
     },
     {
       "name": "Fyrens Ölkafé",
+      "class": "music"
+    },
+    {
+      "name": "FÅLLAN",
       "class": "music"
     },
     {
@@ -283,12 +323,12 @@
       "class": "other"
     },
     {
-      "name": "GöteborgsOperan",
+      "name": "Gothenburg Film Studios",
       "class": "music"
     },
     {
-      "name": "Gothenburg Film Studios",
-      "class": "music"
+      "name": "Grand Hotell Spegelsalen",
+      "class": "other"
     },
     {
       "name": "Grand Malmö",
@@ -300,6 +340,10 @@
     },
     {
       "name": "Gustav Vasa Kyrka",
+      "class": "music"
+    },
+    {
+      "name": "GöteborgsOperan",
       "class": "music"
     },
     {
@@ -331,7 +375,7 @@
       "class": "other"
     },
     {
-      "name": "Historiska museet, Barocksalen",
+      "name": "Historiska Museet - Stockholm, Barocksalen",
       "class": "music"
     },
     {
@@ -339,11 +383,7 @@
       "class": "other"
     },
     {
-      "name": "Historiska Museet - Stockholm, Barocksalen",
-      "class": "music"
-    },
-    {
-      "name": "Högalidskyrkan",
+      "name": "Historiska museet, Barocksalen",
       "class": "music"
     },
     {
@@ -359,8 +399,16 @@
       "class": "music"
     },
     {
+      "name": "Högalidskyrkan",
+      "class": "music"
+    },
+    {
       "name": "Inkonst",
       "class": "music"
+    },
+    {
+      "name": "Intiman",
+      "class": "other"
     },
     {
       "name": "J. mat & mer på Stora Holms Säteri",
@@ -383,14 +431,6 @@
       "class": "music"
     },
     {
-      "name": "Kägelbanan Södra Teatern",
-      "class": "music"
-    },
-    {
-      "name": "Källarbyn",
-      "class": "other"
-    },
-    {
       "name": "Kasai",
       "class": "music"
     },
@@ -399,7 +439,19 @@
       "class": "music"
     },
     {
+      "name": "Katarina kyrka",
+      "class": "music"
+    },
+    {
       "name": "Kollektivet Livet",
+      "class": "music"
+    },
+    {
+      "name": "Kollektivet Livet (Lilla scen)",
+      "class": "music"
+    },
+    {
+      "name": "Kollektivet Livet (Stora scen)",
       "class": "music"
     },
     {
@@ -415,11 +467,35 @@
       "class": "other"
     },
     {
+      "name": "Kulturhuset Hartwig",
+      "class": "music"
+    },
+    {
+      "name": "Kulturhuset Stadsteatern",
+      "class": "other"
+    },
+    {
       "name": "Kulturskolan, Medborgarhuset, Stockholm",
       "class": "other"
     },
     {
+      "name": "Kungasalen",
+      "class": "music"
+    },
+    {
       "name": "Kungsgatan 62",
+      "class": "other"
+    },
+    {
+      "name": "Kungsholms kyrka",
+      "class": "music"
+    },
+    {
+      "name": "Kägelbanan Södra Teatern",
+      "class": "music"
+    },
+    {
+      "name": "Källarbyn",
       "class": "other"
     },
     {
@@ -447,12 +523,28 @@
       "class": "music"
     },
     {
+      "name": "Malmö Arena",
+      "class": "music"
+    },
+    {
+      "name": "Malmö Live",
+      "class": "music"
+    },
+    {
+      "name": "Malmömässan",
+      "class": "other"
+    },
+    {
       "name": "Mariatorget Pitchers-Casino",
       "class": "other"
     },
     {
       "name": "Masthuggskyrkan",
       "class": "music"
+    },
+    {
+      "name": "Matverkstaden",
+      "class": "other"
     },
     {
       "name": "Maxim",
@@ -463,7 +555,15 @@
       "class": "other"
     },
     {
+      "name": "Medley",
+      "class": "other"
+    },
+    {
       "name": "medley – musik, mat & mer",
+      "class": "music"
+    },
+    {
+      "name": "Monarch Music AB",
       "class": "music"
     },
     {
@@ -479,14 +579,6 @@
       "class": "music"
     },
     {
-      "name": "Mötesplats Mariatorget",
-      "class": "music"
-    },
-    {
-      "name": "Münchenbryggeriet Mässhallen",
-      "class": "other"
-    },
-    {
       "name": "Musikens Hus",
       "class": "music"
     },
@@ -496,6 +588,22 @@
     },
     {
       "name": "Musikens Hus Stora Scen",
+      "class": "music"
+    },
+    {
+      "name": "Mötesplats Mariatorget",
+      "class": "music"
+    },
+    {
+      "name": "Münchenbryggeriet",
+      "class": "music"
+    },
+    {
+      "name": "Münchenbryggeriet Mässhallen",
+      "class": "other"
+    },
+    {
+      "name": "Nalen",
       "class": "music"
     },
     {
@@ -527,6 +635,10 @@
       "class": "music"
     },
     {
+      "name": "Odd fellow",
+      "class": "other"
+    },
+    {
       "name": "Operaterrassen & Rotundan",
       "class": "music"
     },
@@ -547,8 +659,12 @@
       "class": "other"
     },
     {
-      "name": "Östasiastiska museet",
-      "class": "other"
+      "name": "Palladium",
+      "class": "music"
+    },
+    {
+      "name": "Plan B",
+      "class": "music"
     },
     {
       "name": "Playhouse Teater",
@@ -607,12 +723,20 @@
       "class": "music"
     },
     {
+      "name": "Rondo",
+      "class": "other"
+    },
+    {
       "name": "Röda Sten Konsthall",
       "class": "other"
     },
     {
-      "name": "Rondo",
-      "class": "other"
+      "name": "S:t Matteus Kyrka",
+      "class": "music"
+    },
+    {
+      "name": "S:ta Clara kyrka",
+      "class": "music"
     },
     {
       "name": "Sankta Birgittas kapell",
@@ -644,6 +768,14 @@
     },
     {
       "name": "Scenkonstmuseet",
+      "class": "music"
+    },
+    {
+      "name": "Selam",
+      "class": "music"
+    },
+    {
+      "name": "Selam Stockholm",
       "class": "music"
     },
     {
@@ -683,12 +815,8 @@
       "class": "music"
     },
     {
-      "name": "Södra Teaterns alla scener",
-      "class": "music"
-    },
-    {
-      "name": "Södra Teaterns Stora Scen",
-      "class": "music"
+      "name": "Sofia Common",
+      "class": "other"
     },
     {
       "name": "Solvalla",
@@ -699,11 +827,35 @@
       "class": "music"
     },
     {
+      "name": "Stadionmässan",
+      "class": "music"
+    },
+    {
       "name": "Stallet - Världens Musik",
       "class": "music"
     },
     {
+      "name": "Stefanskyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Stenhammarsalen",
+      "class": "music"
+    },
+    {
       "name": "Stockholm Waterfront",
+      "class": "other"
+    },
+    {
+      "name": "Stora Teatern",
+      "class": "music"
+    },
+    {
+      "name": "Storkyrkan",
+      "class": "music"
+    },
+    {
+      "name": "Strindbergs Intima Teater",
       "class": "other"
     },
     {
@@ -723,7 +875,19 @@
       "class": "music"
     },
     {
+      "name": "Södra Teaterns alla scener",
+      "class": "music"
+    },
+    {
+      "name": "Södra Teaterns Stora Scen",
+      "class": "music"
+    },
+    {
       "name": "Teater Brunnsgatan Fyra",
+      "class": "other"
+    },
+    {
+      "name": "Teater Giljotin",
       "class": "other"
     },
     {
@@ -763,27 +927,15 @@
       "class": "other"
     },
     {
+      "name": "Thorells på HARTWIG",
+      "class": "music"
+    },
+    {
       "name": "Torsgatan 19",
       "class": "other"
     },
     {
-      "name": "Trädgår´n",
-      "class": "music"
-    },
-    {
-      "name": "Trädgården",
-      "class": "music"
-    },
-    {
       "name": "TRÄDGÅR'N",
-      "class": "music"
-    },
-    {
-      "name": "Trädgårn Gbg",
-      "class": "music"
-    },
-    {
-      "name": "Trädgår’n Göteborg",
       "class": "music"
     },
     {
@@ -791,8 +943,24 @@
       "class": "music"
     },
     {
+      "name": "Trädgården",
+      "class": "music"
+    },
+    {
+      "name": "Trädgårn Gbg",
+      "class": "music"
+    },
+    {
       "name": "Trädgårn Restaurang",
       "class": "other"
+    },
+    {
+      "name": "Trädgår´n",
+      "class": "music"
+    },
+    {
+      "name": "Trädgår’n Göteborg",
+      "class": "music"
     },
     {
       "name": "Turning Torso",
@@ -831,11 +999,7 @@
       "class": "music"
     },
     {
-      "name": "Världskulturmuseet",
-      "class": "other"
-    },
-    {
-      "name": "Värtahamnen",
+      "name": "Vasaaulan",
       "class": "other"
     },
     {
@@ -849,6 +1013,14 @@
     {
       "name": "Viva Sounds",
       "class": "music"
+    },
+    {
+      "name": "Världskulturmuseet",
+      "class": "other"
+    },
+    {
+      "name": "Värtahamnen",
+      "class": "other"
     },
     {
       "name": "WE ARE ONE Church",
@@ -872,6 +1044,22 @@
     },
     {
       "name": "Zita",
+      "class": "other"
+    },
+    {
+      "name": "Åkeshovs Arena",
+      "class": "other"
+    },
+    {
+      "name": "Ångfartyget Blidösund",
+      "class": "other"
+    },
+    {
+      "name": "Ö2",
+      "class": "other"
+    },
+    {
+      "name": "Östasiastiska museet",
       "class": "other"
     }
   ]

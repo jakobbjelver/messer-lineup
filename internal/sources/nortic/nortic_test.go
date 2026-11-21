@@ -180,3 +180,30 @@ func TestUnknownTownIsRefused(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+// TestNotMusicIsCachedButFailuresAreNot: three town passes walk the same page. A page whose category says "not music"
+// is an answer and must cost one fetch; a transport failure is not an answer and must be retried.
+func TestNotMusicIsCachedButFailuresAreNot(t *testing.T) {
+	var hits atomic.Int32
+	body := page(t, "80238") // [Humor]
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ticket/event/80238" {
+			hits.Add(1)
+			w.Write(body)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	source := newSource().WithBase(server.URL)
+	candidate := model.Candidate{URL: server.URL + "/ticket/event/80238", Source: ID}
+	for pass := 0; pass < 3; pass++ {
+		if _, err := source.Details(context.Background(), candidate); !errors.Is(err, model.ErrNotMusic) {
+			t.Fatalf("pass %d: err = %v, want ErrNotMusic", pass, err)
+		}
+	}
+	if got := hits.Load(); got != 1 {
+		t.Fatalf("the page was fetched %d times, want 1", got)
+	}
+}

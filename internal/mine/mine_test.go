@@ -651,3 +651,23 @@ func TestNotMusicIsCountedAsAFact(t *testing.T) {
 		t.Fatalf("queued = %d, want 0 (a fact is not retried)", report.Totals.Queued)
 	}
 }
+
+// scopedAdapter covers one town; a run over another must not ask it, and must not report it as broken.
+type scopedAdapter struct{ *fakeAdapter }
+
+func (s *scopedAdapter) Towns() []string { return []string{"berlin"} }
+
+func TestScopedSourceSkipsTownsItDoesNotCover(t *testing.T) {
+	adapter := &scopedAdapter{baseAdapter()}
+	report := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"berlin", "london"}, DryRun: true})
+	if len(report.Towns) != 2 {
+		t.Fatalf("towns = %d, want 2", len(report.Towns))
+	}
+	if got := len(report.Towns[1].Sources); got != 0 {
+		t.Fatalf("london has %d source entries, want 0 (the source does not cover it)", got)
+	}
+	// London's failing page is never asked, so the run has no failures and two rows.
+	if report.Totals.Failures != 0 || report.Totals.Rows != 2 {
+		t.Fatalf("totals = %+v, want 2 rows and no failures", report.Totals)
+	}
+}

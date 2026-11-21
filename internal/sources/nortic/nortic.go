@@ -55,19 +55,27 @@ type Source struct {
 
 	mu    sync.Mutex
 	urls  []string
-	pages map[string][]model.Show
+	pages map[string]pageResult
+}
+
+// pageResult is one page's outcome for the length of a run. A *parse* outcome is cached — including "this page is not
+// music" and "this page has no Event" — because it is deterministic for the run; a transport failure is not cached, so
+// the next town's pass gets to retry it.
+type pageResult struct {
+	shows []model.Show
+	err   error
 }
 
 // New returns a reader for the public site.
 func New(client *fetch.Client) *Source {
-	return &Source{client: client, sitemapURL: base + "/sitemap.xml", pages: map[string][]model.Show{}}
+	return &Source{client: client, sitemapURL: base + "/sitemap.xml", pages: map[string]pageResult{}}
 }
 
 // WithBase points the reader at another origin (a test server, or a mirror).
 func (s *Source) WithBase(origin string) *Source {
 	copied := *s
 	copied.sitemapURL = strings.TrimRight(origin, "/") + "/sitemap.xml"
-	copied.pages = map[string][]model.Show{}
+	copied.pages = map[string]pageResult{}
 	return &copied
 }
 
@@ -77,6 +85,10 @@ func (s *Source) ID() string { return ID }
 // Towns lists the town slugs this build can mine. Nortic's inventory is Swedish; a show's town comes from its own
 // address, not from the request, so the slug only decides which rows the run keeps.
 func Towns() []string { return []string{"stockholm", "gothenburg", "malmo"} }
+
+// Towns implements mine.TownScoped, so a run over four towns skips the Copenhagen pair instead of reporting an error
+// for a source that never claimed it.
+func (s *Source) Towns() []string { return Towns() }
 
 // TownCandidates returns the sitemap for any town. It is deliberately the same list for every slug: the platform
 // publishes no per-town index, and a page costs one fetch no matter which town asked for it (the parsed page is
@@ -125,22 +137,20 @@ func (s *Source) Details(ctx context.Context, candidate model.Candidate) ([]mode
 	s.mu.Lock()
 	if cached, ok := s.pages[candidate.URL]; ok {
 		s.mu.Unlock()
-		return cached, nil
+		return cached.shows, cached.err
 	}
 	s.mu.Unlock()
 
 	resp, err := s.client.Get(ctx, candidate.URL)
 	if err != nil {
+		// A transport failure is not a fact about the page: it is not cached, so a later pass can retry it.
 		return nil, fmt.Errorf("nortic: %s: %w", candidate.URL, err)
 	}
 	shows, err := parseEvents(resp.Body, candidate.URL)
-	if err != nil {
-		return nil, err
-	}
 	s.mu.Lock()
-	s.pages[candidate.URL] = shows
+	s.pages[candidate.URL] = pageResult{shows: shows, err: err}
 	s.mu.Unlock()
-	return shows, nil
+	return shows, err
 }
 
 // eventURLs reads the sitemap index, then every child sitemap, and returns the event pages in a stable order.

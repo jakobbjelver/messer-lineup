@@ -44,6 +44,26 @@ type Expander interface {
 	Details(ctx context.Context, candidate model.Candidate) ([]model.Show, error)
 }
 
+// TownScoped is an adapter that knows which towns it covers. Without it, a source with no opinion about a town (a
+// Swedish platform asked for Copenhagen) answers an error that reads like a broken run; with it, the miner skips the
+// pair and the report simply does not claim coverage that does not exist.
+type TownScoped interface {
+	Towns() []string
+}
+
+func coversTown(adapter Adapter, slug string) bool {
+	scoped, ok := adapter.(TownScoped)
+	if !ok {
+		return true
+	}
+	for _, town := range scoped.Towns() {
+		if town == slug {
+			return true
+		}
+	}
+	return false
+}
+
 // detailsOf asks the adapter for every show on a page. A page that returns none and no error is a page with no event,
 // which is not a failure the retry queue should spend an attempt on.
 func detailsOf(ctx context.Context, adapter Adapter, candidate model.Candidate) ([]model.Show, error) {
@@ -130,6 +150,10 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		}
 		town := TownReport{Slug: slug}
 		for _, adapter := range opts.Adapters {
+			if !coversTown(adapter, slug) {
+				// Not a failure: this source does not publish that town, so there is nothing to ask it.
+				continue
+			}
 			started := clock.Now()
 			src := SourceReport{ID: adapter.ID(), Failures: map[string]int{}}
 
