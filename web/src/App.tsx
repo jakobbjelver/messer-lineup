@@ -326,7 +326,9 @@ export default function App() {
       writeOnboarded();
       writeTaste(entries);
       setTaste(entries);
-      if (!entries.length) setFilter("all");
+      // A gate that just collected a list lands on that list: `yours` is the board the visitor built, and making them
+      // press a toggle to see it reads as though the choice did not take.
+      setFilter(entries.length ? "mine" : "all");
       if (wantedTown) writeTown(wantedTown);
       setSetup(false);
     },
