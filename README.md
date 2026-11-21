@@ -96,6 +96,11 @@ state of every source — including the hit rate, which is the honest number: tw
 rows, because the rooms they play are not on the platform we read yet. `docs/state.md` is what a board is a
 function of.
 
+**v1 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and files a
+failure report rather than failing quietly. There is no account, no session and no third-party provider beyond
+Last.fm's public read. v2 — the search for a second source, which is the only thing that moves the hit rate — is
+planned separately; v1's coverage record says why one source per town is the ceiling this product currently has.
+
 ## License
 
 MIT — including the miners and the index format. Not accepting contributions; see
