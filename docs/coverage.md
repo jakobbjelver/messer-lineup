@@ -110,20 +110,20 @@ Index: **4** shard(s), 719 rows published, 0 outside the window, 0 refused, 43 9
 | Last.fm `messeratgalten`, top artists (12 months *and* lifetime) | 42 | **0** |
 | ListenBrainz `jakob1337`, top artists this year | 17 | **0** |
 
-Three towns, 598 rows, 545 distinct artists — and two real taste lists match **nothing**. That is the coverage gap
+Four towns, 719 rows, 645 distinct artists — and two real taste lists match **nothing**. That is the coverage gap
 stated as a number rather than an adjective: every room on this index arrives through Tickster, and Tickster's
 inventory is the mid-size Nordic promoter layer, not the clubs and concert halls that book the artists a listener
 actually plays. No list length, cap or UI change moves this; a second source per town does. Re-measure with
 `scripts/inventory.py --index .lineup-index` and the same diff against a provider's top-N.
 
-## Three towns, one platform, and what the merge actually found
+## Four towns, one platform, and what the merge actually found
 
-The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg` at a 2 s interval (robots
-asks for `Crawl-delay: 2`): **1 720 candidates → 619 rows → 598 published**, three shards, 36 479 bytes,
-duplicate rate **3.4 %**. Stockholm lists **975 events** on its city page and Gothenburg **696**; the full walk is
-~16 minutes and is the nightly's job.
+The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg,malmo` at a 2 s interval
+(robots asks for `Crawl-delay: 2`): **1 961 candidates → 755 rows → 719 published**, four shards, 43 993 bytes,
+duplicate rate **4.8 %**. Stockholm lists **962 events** on its city page, Gothenburg **685** and Malmö **266**;
+the full walk is ~18 minutes and is the nightly's job.
 
-**The merge found 21 duplicates (3.4 %) with only one source.** They are not cross-platform matches — every row
+**The merge found 36 duplicates (4.8 %) with only one source.** They are not cross-platform matches — every row
 came from Tickster — they are the same artist, venue and date listed twice on the platform itself (a series with
 separate ticket types, or a duplicated listing). That is a different and smaller claim than the plan's gate
 made: a single source can prove the merge *runs* and that duplicates exist under the 8 % cap, but only a second
@@ -147,11 +147,12 @@ trade worth making.
 
 | Town | Events walked | Rows | Sweep |
 |---|---|---|---|
-| Stockholm | 979 | 331 | 546 s |
-| Copenhagen | 49 | 24 | 27 s |
-| Gothenburg | 698 | 471 (before the room policy) | 392 s |
+| Stockholm | 962 | 315 | 527 s |
+| Gothenburg | 685 | 258 | 378 s |
+| Malmö | 266 | 158 | 144 s |
+| Copenhagen | 48 | 24 | 27 s |
 
-A nightly over three towns is therefore **~16 minutes**, and the cost is linear in candidates because every
+A nightly over four towns is therefore **~18 minutes**, and the cost is linear in candidates because every
 candidate is one detail fetch at the publisher's delay. The town walk is capped (`maxPages = 120`, 1 920
 events): the cap is a bound, not a target — a town that reaches it **fails the run** rather than publishing
 half of itself.
@@ -205,9 +206,11 @@ the source we can already read (Malmö, Oslo, Aarhus), not a second platform.
   Tickster: DK/NO/SE), so `internal/match` proves the merge — same gig from two sources merges, two gigs in one
   room on one night do not, a venue spelling difference merges only on position — and `lineup mine --source a,b`
   will report a live rate the day two sources share a town.
-- **Gothenburg cost one town-wide classification, not a new adapter**: `--town gothenburg` reuses the `se` market
-  file and the same microdata parser; the work was 69 rooms (45 music / 24 other). Malmö and Oslo are the same job
-  again — Oslo needs a `no.json` first.
+- **A town costs one classification pass, not a new adapter**: `--town gothenburg` and `--town malmo` reused the
+  `se` market file and the same microdata parser; the work was 69 rooms (45 music / 24 other) and 27 rooms
+  (15 / 12). Malmö is small enough to read in one page (266 candidates, 144 s) and its duplicate rate is 9.2 %
+  before the merge — Tickster lists the same gig twice more often there than in Stockholm. Oslo is the same job
+  again and needs a `no.json` first.
 
 ## Sources that are not a gate
 
