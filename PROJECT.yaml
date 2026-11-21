@@ -7,7 +7,7 @@ standard: "1.3"
 name: "messer-lineup"
 display: "Messer Lineup"
 family: "messer"                  # messer | jakob | upstream
-status: "wip"                     # active | wip | paused | archived
+status: "active"                  # active | wip | paused | archived — v1 complete 2026-11-21, running unattended
 tier: "edge"                      # service | static | edge | native | tool | design
 kind: "repo"                      # repo | embedded
 skill: "messer-lineup"            # one project skill, frontmatter repo: ~/Repos/messer-lineup
