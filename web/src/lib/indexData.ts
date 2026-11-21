@@ -285,9 +285,9 @@ export function statusLabel(status: string): string | null {
     case "c":
       return "cancelled";
     case "x":
-      return "sold out";
-    case "s":
       return "postponed";
+    case "s":
+      return "sold out";
     default:
       return null;
   }
