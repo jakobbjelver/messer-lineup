@@ -23,6 +23,7 @@
 package nortic
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -59,11 +60,16 @@ type Source struct {
 }
 
 // pageResult is one page's outcome for the length of a run. A *parse* outcome is cached — including "this page is not
-// music" and "this page has no Event" — because it is deterministic for the run; a transport failure is not cached, so
-// the next town's pass gets to retry it.
+// music", "this link is gone" and "this page has no Event" — because it is deterministic for the run; a transport
+// failure is not cached, so the next town's pass gets to retry it.
+//
+// `counted` is what keeps the report honest: an error is returned to the first town pass that asks and suppressed
+// afterwards, so a refusal is counted once per page rather than once per town. Shows are returned every time, because
+// a page's rows belong to the town whose pass is asking.
 type pageResult struct {
-	shows []model.Show
-	err   error
+	shows   []model.Show
+	err     error
+	counted bool
 }
 
 // New returns a reader for the public site.
@@ -136,6 +142,12 @@ func (s *Source) Detail(ctx context.Context, candidate model.Candidate) (model.S
 func (s *Source) Details(ctx context.Context, candidate model.Candidate) ([]model.Show, error) {
 	s.mu.Lock()
 	if cached, ok := s.pages[candidate.URL]; ok {
+		if cached.err != nil && cached.counted {
+			s.mu.Unlock()
+			return nil, nil
+		}
+		cached.counted = true
+		s.pages[candidate.URL] = cached
 		s.mu.Unlock()
 		return cached.shows, cached.err
 	}
@@ -148,7 +160,7 @@ func (s *Source) Details(ctx context.Context, candidate model.Candidate) ([]mode
 	}
 	shows, err := parseEvents(resp.Body, candidate.URL)
 	s.mu.Lock()
-	s.pages[candidate.URL] = pageResult{shows: shows, err: err}
+	s.pages[candidate.URL] = pageResult{shows: shows, err: err, counted: true}
 	s.mu.Unlock()
 	return shows, err
 }
@@ -244,6 +256,11 @@ func dedupe(values []string) []string {
 func parseEvents(body []byte, pageURL string) ([]model.Show, error) {
 	blocks, err := ldjson.Blocks(body)
 	if err != nil {
+		// A removed event leaves its sitemap URL behind, and the page then answers with the organizer's listing
+		// ("Evenemang av …") instead of a date — with no JSON-LD at all. That is a stale link, not a changed parser.
+		if bytes.Contains(body, []byte("Evenemang av")) {
+			return nil, model.ErrGone
+		}
 		return nil, fmt.Errorf("nortic: %s: %w", pageURL, err)
 	}
 	var objects []map[string]any
@@ -260,6 +277,11 @@ func parseEvents(body []byte, pageURL string) ([]model.Show, error) {
 		})
 	}
 	if len(objects) == 0 {
+		// A sitemap keeps a URL after the event is removed; the page then answers with the organizer's listing
+		// ("Evenemang av …") rather than a date. That is a stale link, not a changed parser.
+		if bytes.Contains(body, []byte("Evenemang av")) {
+			return nil, model.ErrGone
+		}
 		return nil, fmt.Errorf("nortic: %s carries no Event", pageURL)
 	}
 

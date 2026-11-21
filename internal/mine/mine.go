@@ -228,6 +228,12 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 						src.Why["category"]++
 						continue
 					}
+					if errors.Is(derr, model.ErrGone) {
+						// The sitemap still lists a link the platform no longer serves as an event. Counted, never
+						// retried: the page is not coming back.
+						src.Gone++
+						continue
+					}
 					kind := classify(derr)
 					src.Failures[kind]++
 					if opts.State != nil {
@@ -417,6 +423,8 @@ type SourceReport struct {
 	// programme is not music, "form:<token>" for an event form that is never a gig.
 	NotMusic int            `json:"not_music,omitempty"`
 	Why      map[string]int `json:"not_music_why,omitempty"`
+	// Gone is a link a platform still lists but no longer serves as an event. A fact, not a failure.
+	Gone int `json:"gone,omitempty"`
 	// DroppedVenues is the curation list: which rooms lost rows to the venue rule, and how many.
 	DroppedVenues map[string]int `json:"dropped_venues,omitempty"`
 	// Unclassified is rows kept at a room the registry has never seen. They are published, and they are the
@@ -449,6 +457,7 @@ type Totals struct {
 	Elsewhere    int `json:"other_town"`
 	NotAnArtist  int `json:"not_an_artist"`
 	NotMusic     int `json:"not_music"`
+	Gone         int `json:"gone"`
 	Unclassified int `json:"unclassified"`
 	Failures     int `json:"failures"`
 	Retried      int `json:"retried"`
@@ -485,6 +494,7 @@ func totalsOf(towns []TownReport) Totals {
 			totals.Filtered += src.Filtered
 			totals.NotAnArtist += src.NotAnArtist
 			totals.NotMusic += src.NotMusic
+			totals.Gone += src.Gone
 			totals.Unclassified += src.Unclassified
 			totals.Outside += src.Outside
 			totals.Elsewhere += src.Elsewhere

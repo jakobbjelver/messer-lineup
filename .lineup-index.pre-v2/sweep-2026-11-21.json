@@ -1,0 +1,263 @@
+{
+  "sources": [
+    "tickster"
+  ],
+  "started_at": "2026-11-21T03:10:01.92536Z",
+  "finished_at": "2026-11-21T03:27:54.504416Z",
+  "dry_run": false,
+  "window": {
+    "from": "2026-11-21",
+    "to": "2027-03-21",
+    "days": 120
+  },
+  "towns": [
+    {
+      "slug": "copenhagen",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 48,
+          "rows": 24,
+          "filtered": 0,
+          "outside_window": 13,
+          "not_an_artist": 0,
+          "other_town": 0,
+          "seconds": 27.253645,
+          "not_music": 11,
+          "not_music_why": {
+            "venue": 11
+          },
+          "dropped_venues": {
+            "H.J. Hansen Vin København": 4,
+            "Sundby Idrætspark": 2,
+            "Thoras Café": 2,
+            "Thoras spisesal": 3
+          }
+        }
+      ]
+    },
+    {
+      "slug": "stockholm",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 959,
+          "rows": 315,
+          "filtered": 0,
+          "outside_window": 160,
+          "not_an_artist": 41,
+          "other_town": 1,
+          "seconds": 520.164574,
+          "not_music": 442,
+          "not_music_why": {
+            "form:allsang": 1,
+            "form:fotboll": 2,
+            "form:frukost": 1,
+            "form:humor": 1,
+            "form:julbord": 1,
+            "form:kidz": 1,
+            "form:marknad": 1,
+            "form:musical": 2,
+            "form:stand-up": 1,
+            "form:vendors": 1,
+            "venue": 430
+          },
+          "dropped_venues": {
+            "ABBA The Museum": 1,
+            "ABF Stockholm": 8,
+            "ABF-huset, Sveavägen 41": 7,
+            "Arenatältet": 9,
+            "Armémuseum": 4,
+            "BOQUERIA": 1,
+            "Bio Skandia": 60,
+            "Ccap": 1,
+            "China teatern": 1,
+            "Clarion Hotel Amaranten": 1,
+            "Clarion Hotel Sign": 1,
+            "Clarion Hotel Stockholm": 5,
+            "Clarion Hotel® Sign": 5,
+            "Drakenbergssalen, Hornstull": 3,
+            "Eataly": 1,
+            "Ekonomiska museet – Kungliga myntkabinettet": 3,
+            "Etnografiska museet": 10,
+            "Filmhuset Bio Mauritz": 2,
+            "Golden Hits": 1,
+            "Golden Hits, Studion": 1,
+            "Hallwylska museet": 1,
+            "Hedvig Eleonora församlingshem": 1,
+            "Hilton Stockholm Slussen": 10,
+            "Historiska Museet i Stockholm": 1,
+            "Historiska museet": 1,
+            "KTH-Hallen": 2,
+            "Konstakademien": 2,
+            "Kulturskolan, Medborgarhuset, Stockholm": 4,
+            "Kungsgatan 62": 1,
+            "Källarbyn": 1,
+            "Le Bistrot de Wasahof": 7,
+            "Livrustkammaren": 7,
+            "Mariatorget Pitchers-Casino": 14,
+            "Maxim": 2,
+            "Medelhavsmuseet": 9,
+            "Münchenbryggeriet Mässhallen": 1,
+            "Nalen Restaurang": 1,
+            "Nordic Light Hotel": 1,
+            "Orionteatern": 46,
+            "Orionteatern.": 29,
+            "Oscarsteatern": 1,
+            "Playhouse Teater": 17,
+            "Prins Eugens Waldemarsudde": 4,
+            "Pygméteatern": 1,
+            "Scandic Continental": 1,
+            "Scandic Malmen": 2,
+            "Scandic Sjöfartshotellet": 3,
+            "Solvalla": 7,
+            "Stockholm Waterfront": 1,
+            "Studion i Hjorthagens Kulturhus": 3,
+            "Teater Brunnsgatan Fyra": 15,
+            "Teaterbrasseriet": 7,
+            "Thielska Galleriet": 2,
+            "Torsgatan 19": 2,
+            "Tyrgatan 8": 1,
+            "Unga Klara, Kulturhuset Stadsteatern": 33,
+            "Vasateatern": 2,
+            "Vinterträdgården": 14,
+            "Värtahamnen": 4,
+            "Zita": 2,
+            "Åkeshovs Arena": 1,
+            "Ångfartyget Blidösund": 36,
+            "Östasiastiska museet": 5
+          }
+        }
+      ]
+    },
+    {
+      "slug": "gothenburg",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 684,
+          "rows": 258,
+          "filtered": 0,
+          "outside_window": 167,
+          "not_an_artist": 0,
+          "other_town": 0,
+          "seconds": 378.069274,
+          "not_music": 259,
+          "not_music_why": {
+            "form:buffe": 1,
+            "form:dinner": 2,
+            "form:fotboll": 1,
+            "form:humor": 1,
+            "form:middag": 11,
+            "form:musikal": 2,
+            "form:provning": 32,
+            "form:quiz": 3,
+            "form:stand-up": 2,
+            "form:standup": 2,
+            "form:tasting": 4,
+            "form:wrestling": 2,
+            "venue": 196
+          },
+          "dropped_venues": {
+            "Atalante": 8,
+            "Bananpiren, Kajskjul 105": 1,
+            "Barabicu": 1,
+            "Brödernas Nordstan": 1,
+            "Cinnober teater": 1,
+            "Clarion Hotel Draken": 1,
+            "Contrast Public House": 1,
+            "Crime Walks, Drottningtorget": 2,
+            "Crime Walks, Kronhusgården": 3,
+            "Frihamnen Arena": 1,
+            "Front Lindholmen": 1,
+            "Gamlestadens medborgarhus": 1,
+            "Hotel Draken": 2,
+            "J. mat \u0026 mer på Stora Holms Säteri": 1,
+            "Jacy'z": 2,
+            "Jacy'z Hotel": 1,
+            "Lisebergsteatern": 57,
+            "Radisson BLU Scandinavia": 1,
+            "Radisson Blu Scandinavia": 6,
+            "Rondo": 66,
+            "Röda Sten Konsthall": 1,
+            "Scandic Göteborg Central": 2,
+            "Scandic Opalen": 1,
+            "Teater Scarlet - Vasagatan 24": 29,
+            "Trädgårn Restaurang": 2,
+            "Världskulturmuseet": 3
+          }
+        }
+      ]
+    },
+    {
+      "slug": "malmo",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 266,
+          "rows": 158,
+          "filtered": 0,
+          "outside_window": 53,
+          "not_an_artist": 0,
+          "other_town": 0,
+          "seconds": 147.044869,
+          "not_music": 55,
+          "not_music_why": {
+            "form:forestallning": 1,
+            "form:julbord": 8,
+            "form:loppis": 2,
+            "form:middag": 5,
+            "form:provning": 6,
+            "form:pyssel": 1,
+            "form:standup": 2,
+            "venue": 30
+          },
+          "dropped_venues": {
+            "Alcazar": 1,
+            "Barnens Scen": 1,
+            "Brödernas Hansa": 1,
+            "Clarion Hotel Malmö": 1,
+            "Clarion Hotel Malmö Live": 3,
+            "Lilith Performance Studio": 1,
+            "Quality Hotel View": 4,
+            "Radisson Blu Hotel Malmö": 4,
+            "Slagthuset": 1,
+            "The Torso": 4,
+            "Turning Torso": 6,
+            "Whisky Meet på Bishops Gustav!": 3
+          }
+        }
+      ]
+    }
+  ],
+  "towns_discovered": 4,
+  "totals": {
+    "candidates": 1957,
+    "rows": 755,
+    "filtered": 0,
+    "outside_window": 393,
+    "other_town": 1,
+    "not_an_artist": 41,
+    "not_music": 767,
+    "unclassified": 0,
+    "failures": 0,
+    "retried": 0,
+    "queued": 0,
+    "given_up": 0
+  },
+  "merge": {
+    "raw": 755,
+    "out": 719,
+    "merged": 36,
+    "duplicate_rate": 0.04768211920529802
+  },
+  "build": {
+    "dir": ".lineup-index",
+    "shards": 4,
+    "bytes": 43993,
+    "published": 719,
+    "outside_window": 0,
+    "refused": 0,
+    "towns": 4
+  }
+}

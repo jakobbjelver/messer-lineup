@@ -1,0 +1,73 @@
+{
+  "sources": [
+    "tickster"
+  ],
+  "started_at": "2026-11-18T13:16:24.969271Z",
+  "finished_at": "2026-11-18T13:25:46.645643Z",
+  "dry_run": false,
+  "window": {
+    "from": "2026-11-18",
+    "to": "2027-03-18",
+    "days": 120
+  },
+  "towns": [
+    {
+      "slug": "copenhagen",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 51,
+          "rows": 37,
+          "filtered": 0,
+          "outside_window": 14,
+          "not_an_artist": 0,
+          "other_town": 0,
+          "seconds": 28.571140166
+        }
+      ]
+    },
+    {
+      "slug": "stockholm",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 933,
+          "rows": 743,
+          "filtered": 0,
+          "outside_window": 145,
+          "not_an_artist": 44,
+          "other_town": 1,
+          "seconds": 533.075840708
+        }
+      ]
+    }
+  ],
+  "towns_discovered": 2,
+  "totals": {
+    "candidates": 984,
+    "rows": 780,
+    "filtered": 0,
+    "outside_window": 159,
+    "other_town": 1,
+    "not_an_artist": 44,
+    "failures": 0,
+    "retried": 0,
+    "queued": 0,
+    "given_up": 0
+  },
+  "merge": {
+    "raw": 780,
+    "out": 736,
+    "merged": 44,
+    "duplicate_rate": 0.05641025641025641
+  },
+  "build": {
+    "dir": ".lineup-index",
+    "shards": 2,
+    "bytes": 39714,
+    "published": 736,
+    "outside_window": 0,
+    "refused": 0,
+    "towns": 2
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "source": "dice",
+  "started_at": "2026-11-17T22:21:48.538257Z",
+  "finished_at": "2026-11-17T22:23:22.298606Z",
+  "dry_run": true,
+  "towns": [
+    {
+      "slug": "berlin",
+      "candidates": 30,
+      "rows": 30,
+      "filtered": 0,
+      "seconds": 30.5385765
+    },
+    {
+      "slug": "london",
+      "candidates": 30,
+      "rows": 30,
+      "filtered": 0,
+      "seconds": 32.044838041
+    },
+    {
+      "slug": "austin",
+      "candidates": 30,
+      "rows": 30,
+      "filtered": 0,
+      "seconds": 31.175127834
+    }
+  ],
+  "towns_discovered": 3,
+  "totals": {
+    "candidates": 90,
+    "rows": 90,
+    "filtered": 0,
+    "failures": 0
+  }
+}

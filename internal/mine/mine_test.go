@@ -671,3 +671,19 @@ func TestScopedSourceSkipsTownsItDoesNotCover(t *testing.T) {
 		t.Fatalf("totals = %+v, want 2 rows and no failures", report.Totals)
 	}
 }
+
+// A sitemap's stale link is a fact: counted, never queued, never reported as a failure.
+func TestGoneLinkIsCountedAsAFact(t *testing.T) {
+	adapter := &fakeAdapter{
+		id:      "nortic",
+		towns:   map[string][]string{"berlin": {"https://n.test/gone"}},
+		failure: map[string]error{"https://n.test/gone": model.ErrGone},
+	}
+	report := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"berlin"}, DryRun: true})
+	if report.Totals.Failures != 0 || report.Totals.Queued != 0 {
+		t.Fatalf("totals = %+v, want no failures and no queue", report.Totals)
+	}
+	if report.Totals.Gone != 1 {
+		t.Fatalf("gone = %d, want 1", report.Totals.Gone)
+	}
+}

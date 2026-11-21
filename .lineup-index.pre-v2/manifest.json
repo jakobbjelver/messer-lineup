@@ -1,0 +1,61 @@
+{
+ "format": "lineup-index/1",
+ "built_at": "2026-11-21T03:10:01.92536Z",
+ "window": {
+  "from": "2026-11-21",
+  "to": "2027-03-21",
+  "days": 120
+ },
+ "sources": [
+  {
+   "id": "tickster",
+   "index": "sitemap",
+   "ok": true,
+   "parse_yield": 0.3284671532846715,
+   "last_ok": "2026-11-21T03:27:54.487859Z",
+   "rows": 719
+  }
+ ],
+ "towns": [
+  {
+   "town": "copenhagen-dk",
+   "shard": "towns/65b59349383b3f94833bf798e321ee45ac74978cda3bdaf34f9f522b2e9154f6.jsonl.gz",
+   "sha256": "65b59349383b3f94833bf798e321ee45ac74978cda3bdaf34f9f522b2e9154f6",
+   "count": 24,
+   "sources": [
+    "tickster"
+   ],
+   "built_at": "2026-11-21T03:10:01.92536Z"
+  },
+  {
+   "town": "gothenburg-se",
+   "shard": "towns/075768c24d4542bf6e5a0b76443851993bdd5eb76f09a8a8156ed48b4c407170.jsonl.gz",
+   "sha256": "075768c24d4542bf6e5a0b76443851993bdd5eb76f09a8a8156ed48b4c407170",
+   "count": 256,
+   "sources": [
+    "tickster"
+   ],
+   "built_at": "2026-11-21T03:10:01.92536Z"
+  },
+  {
+   "town": "malmo-se",
+   "shard": "towns/c087f0bcdfa35ddcfbcf6c7c8524201f3a0f305965cc62654709c7687175f386.jsonl.gz",
+   "sha256": "c087f0bcdfa35ddcfbcf6c7c8524201f3a0f305965cc62654709c7687175f386",
+   "count": 142,
+   "sources": [
+    "tickster"
+   ],
+   "built_at": "2026-11-21T03:10:01.92536Z"
+  },
+  {
+   "town": "stockholm-se",
+   "shard": "towns/1ef01bd99041084d870d67f16c28bc06d5bcca7d42ce91c6d5de39094432f95f.jsonl.gz",
+   "sha256": "1ef01bd99041084d870d67f16c28bc06d5bcca7d42ce91c6d5de39094432f95f",
+   "count": 297,
+   "sources": [
+    "tickster"
+   ],
+   "built_at": "2026-11-21T03:10:01.92536Z"
+  }
+ ]
+}

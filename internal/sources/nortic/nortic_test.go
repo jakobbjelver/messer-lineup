@@ -181,9 +181,10 @@ func TestUnknownTownIsRefused(t *testing.T) {
 	}
 }
 
-// TestNotMusicIsCachedButFailuresAreNot: three town passes walk the same page. A page whose category says "not music"
-// is an answer and must cost one fetch; a transport failure is not an answer and must be retried.
-func TestNotMusicIsCachedButFailuresAreNot(t *testing.T) {
+// TestNotMusicIsCachedAndCountedOnce: three town passes walk the same page. A page whose category says "not music" is
+// an answer and must cost one fetch; the refusal is reported to the first pass only, so the run's `not_music` counts
+// pages rather than pages × towns.
+func TestNotMusicIsCachedAndCountedOnce(t *testing.T) {
 	var hits atomic.Int32
 	body := page(t, "80238") // [Humor]
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -198,12 +199,29 @@ func TestNotMusicIsCachedButFailuresAreNot(t *testing.T) {
 
 	source := newSource().WithBase(server.URL)
 	candidate := model.Candidate{URL: server.URL + "/ticket/event/80238", Source: ID}
-	for pass := 0; pass < 3; pass++ {
-		if _, err := source.Details(context.Background(), candidate); !errors.Is(err, model.ErrNotMusic) {
-			t.Fatalf("pass %d: err = %v, want ErrNotMusic", pass, err)
+	if _, err := source.Details(context.Background(), candidate); !errors.Is(err, model.ErrNotMusic) {
+		t.Fatalf("first pass: err = %v, want ErrNotMusic", err)
+	}
+	for pass := 1; pass < 3; pass++ {
+		shows, err := source.Details(context.Background(), candidate)
+		if err != nil || shows != nil {
+			t.Fatalf("pass %d: (%v, %v), want a silent cached refusal", pass, shows, err)
 		}
 	}
 	if got := hits.Load(); got != 1 {
 		t.Fatalf("the page was fetched %d times, want 1", got)
+	}
+}
+
+// TestGonePageIsAFact: a sitemap keeps a URL after the event is removed, and the page answers with the organizer's
+// listing. That is not a parse failure and must never be queued for retry.
+func TestGonePageIsAFact(t *testing.T) {
+	body, err := os.ReadFile(filepath.Join("testdata", "pages", "gone.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = parseEvents(body, "https://tickets.nortic.se/ticket/event/78806")
+	if !errors.Is(err, model.ErrGone) {
+		t.Fatalf("err = %v, want ErrGone", err)
 	}
 }

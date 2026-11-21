@@ -1,0 +1,38 @@
+{
+ "format": "lineup-towns/1",
+ "built_at": "2026-11-21T03:10:01.92536Z",
+ "towns": [
+  {
+   "id": "copenhagen-dk",
+   "name": "København",
+   "c": "dk",
+   "lat": 55.681590909090914,
+   "lon": 12.583463636363637,
+   "tz": ""
+  },
+  {
+   "id": "gothenburg-se",
+   "name": "Göteborg",
+   "c": "se",
+   "lat": 57.70441674641147,
+   "lon": 11.958895215311,
+   "tz": ""
+  },
+  {
+   "id": "malmo-se",
+   "name": "Malmö",
+   "c": "se",
+   "lat": 55.60504469696962,
+   "lon": 13.006070454545453,
+   "tz": ""
+  },
+  {
+   "id": "stockholm-se",
+   "name": "Stockholm",
+   "c": "se",
+   "lat": 59.32040569948192,
+   "lon": 18.060532642487104,
+   "tz": ""
+  }
+ ]
+}

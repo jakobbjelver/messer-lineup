@@ -1,0 +1,67 @@
+{
+  "sources": [
+    "tickster"
+  ],
+  "started_at": "2026-11-17T22:53:42.295198Z",
+  "finished_at": "2026-11-17T23:04:11.661544Z",
+  "dry_run": false,
+  "window": {
+    "from": "2026-11-17",
+    "to": "2027-03-17",
+    "days": 120
+  },
+  "towns": [
+    {
+      "slug": "copenhagen",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 51,
+          "rows": 37,
+          "filtered": 0,
+          "outside_window": 14,
+          "other_town": 0,
+          "seconds": 108.440796292
+        }
+      ]
+    },
+    {
+      "slug": "stockholm",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 200,
+          "rows": 200,
+          "filtered": 0,
+          "outside_window": 0,
+          "other_town": 0,
+          "seconds": 520.914873541
+        }
+      ]
+    }
+  ],
+  "towns_discovered": 2,
+  "totals": {
+    "candidates": 251,
+    "rows": 237,
+    "filtered": 0,
+    "outside_window": 14,
+    "other_town": 0,
+    "failures": 0
+  },
+  "merge": {
+    "raw": 237,
+    "out": 226,
+    "merged": 11,
+    "duplicate_rate": 0.046413502109704644
+  },
+  "build": {
+    "dir": ".lineup-index",
+    "shards": 2,
+    "bytes": 13423,
+    "published": 226,
+    "outside_window": 0,
+    "refused": 0,
+    "towns": 2
+  }
+}

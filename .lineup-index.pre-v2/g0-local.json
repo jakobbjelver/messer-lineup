@@ -1,0 +1,64 @@
+{
+  "sources": [
+    "dice",
+    "tickster"
+  ],
+  "started_at": "2026-11-17T22:42:02.024368Z",
+  "finished_at": "2026-11-17T22:43:51.934618Z",
+  "dry_run": false,
+  "window": {
+    "from": "2026-11-17",
+    "to": "2027-03-17",
+    "days": 120
+  },
+  "towns": [
+    {
+      "slug": "copenhagen",
+      "sources": [
+        {
+          "id": "dice",
+          "candidates": 0,
+          "rows": 0,
+          "filtered": 0,
+          "outside_window": 0,
+          "other_town": 0,
+          "seconds": 0,
+          "error": "dice: https://dice.fm/browse/copenhagen: https://dice.fm/browse/copenhagen answered 404"
+        },
+        {
+          "id": "tickster",
+          "candidates": 51,
+          "rows": 37,
+          "filtered": 0,
+          "outside_window": 14,
+          "other_town": 0,
+          "seconds": 109.758505708
+        }
+      ]
+    }
+  ],
+  "towns_discovered": 1,
+  "totals": {
+    "candidates": 51,
+    "rows": 37,
+    "filtered": 0,
+    "outside_window": 14,
+    "other_town": 0,
+    "failures": 0
+  },
+  "merge": {
+    "raw": 37,
+    "out": 37,
+    "merged": 0,
+    "duplicate_rate": 0
+  },
+  "build": {
+    "dir": ".lineup-index",
+    "shards": 1,
+    "bytes": 2375,
+    "published": 37,
+    "outside_window": 0,
+    "refused": 0,
+    "towns": 1
+  }
+}

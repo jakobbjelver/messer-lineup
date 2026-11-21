@@ -1,0 +1,163 @@
+{
+  "sources": [
+    "tickster"
+  ],
+  "started_at": "2026-11-20T15:49:23.521887Z",
+  "finished_at": "2026-11-20T15:58:58.415972Z",
+  "dry_run": false,
+  "window": {
+    "from": "2026-11-20",
+    "to": "2027-03-20",
+    "days": 120
+  },
+  "towns": [
+    {
+      "slug": "copenhagen",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 49,
+          "rows": 24,
+          "filtered": 0,
+          "outside_window": 13,
+          "not_an_artist": 0,
+          "other_town": 0,
+          "seconds": 28.744023625,
+          "not_music": 12,
+          "not_music_why": {
+            "form:wrestling": 1,
+            "venue": 11
+          },
+          "dropped_venues": {
+            "H.J. Hansen Vin København": 4,
+            "Sundby Idrætspark": 2,
+            "Thoras Café": 2,
+            "Thoras spisesal": 3
+          }
+        }
+      ]
+    },
+    {
+      "slug": "stockholm",
+      "sources": [
+        {
+          "id": "tickster",
+          "candidates": 979,
+          "rows": 331,
+          "filtered": 0,
+          "outside_window": 164,
+          "not_an_artist": 42,
+          "other_town": 1,
+          "seconds": 546.115246917,
+          "not_music": 441,
+          "not_music_why": {
+            "form:fotboll": 2,
+            "form:frukost": 1,
+            "form:humor": 1,
+            "form:julbord": 1,
+            "form:kidz": 1,
+            "form:marknad": 1,
+            "form:stand-up": 1,
+            "form:vendors": 1,
+            "venue": 432
+          },
+          "dropped_venues": {
+            "ABBA The Museum": 1,
+            "ABF Stockholm": 8,
+            "ABF-huset, Sveavägen 41": 7,
+            "Arenatältet": 10,
+            "Armémuseum": 4,
+            "BOQUERIA": 1,
+            "Bio Skandia": 60,
+            "Ccap": 1,
+            "China teatern": 1,
+            "Clarion Hotel Amaranten": 1,
+            "Clarion Hotel Sign": 1,
+            "Clarion Hotel Stockholm": 5,
+            "Clarion Hotel® Sign": 5,
+            "Drakenbergssalen, Hornstull": 3,
+            "Eataly": 1,
+            "Ekonomiska museet – Kungliga myntkabinettet": 3,
+            "Etnografiska museet": 10,
+            "Filmhuset Bio Mauritz": 2,
+            "Golden Hits": 1,
+            "Golden Hits, Studion": 1,
+            "Hallwylska museet": 1,
+            "Hedvig Eleonora församlingshem": 1,
+            "Hilton Stockholm Slussen": 10,
+            "Historiska Museet i Stockholm": 1,
+            "Historiska museet": 1,
+            "KTH-Hallen": 2,
+            "Konstakademien": 2,
+            "Kulturskolan, Medborgarhuset, Stockholm": 4,
+            "Kungsgatan 62": 1,
+            "Källarbyn": 1,
+            "Le Bistrot de Wasahof": 7,
+            "Livrustkammaren": 7,
+            "Mariatorget Pitchers-Casino": 14,
+            "Maxim": 2,
+            "Medelhavsmuseet": 9,
+            "Münchenbryggeriet Mässhallen": 1,
+            "Nalen Restaurang": 1,
+            "Nordic Light Hotel": 1,
+            "Orionteatern": 46,
+            "Orionteatern.": 29,
+            "Oscarsteatern": 1,
+            "Playhouse Teater": 17,
+            "Prins Eugens Waldemarsudde": 4,
+            "Pygméteatern": 1,
+            "Scandic Continental": 1,
+            "Scandic Malmen": 2,
+            "Scandic Sjöfartshotellet": 3,
+            "Solvalla": 7,
+            "Stockholm Waterfront": 1,
+            "Studion i Hjorthagens Kulturhus": 3,
+            "Teater Brunnsgatan Fyra": 15,
+            "Teaterbrasseriet": 7,
+            "Thielska Galleriet": 2,
+            "Torsgatan 19": 2,
+            "Tyrgatan 8": 1,
+            "Unga Klara, Kulturhuset Stadsteatern": 34,
+            "Vasateatern": 2,
+            "Vinterträdgården": 14,
+            "Värtahamnen": 4,
+            "Zita": 2,
+            "Åkeshovs Arena": 1,
+            "Ångfartyget Blidösund": 36,
+            "Östasiastiska museet": 5
+          }
+        }
+      ]
+    }
+  ],
+  "towns_discovered": 2,
+  "totals": {
+    "candidates": 1028,
+    "rows": 355,
+    "filtered": 0,
+    "outside_window": 177,
+    "other_town": 1,
+    "not_an_artist": 42,
+    "not_music": 453,
+    "unclassified": 0,
+    "failures": 0,
+    "retried": 0,
+    "queued": 0,
+    "given_up": 0
+  },
+  "merge": {
+    "raw": 355,
+    "out": 335,
+    "merged": 20,
+    "duplicate_rate": 0.056338028169014086
+  },
+  "build": {
+    "dir": ".lineup-index",
+    "shards": 2,
+    "bytes": 20582,
+    "published": 335,
+    "outside_window": 0,
+    "refused": 0,
+    "towns": 2
+  }
+}
