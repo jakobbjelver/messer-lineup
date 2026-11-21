@@ -117,14 +117,18 @@ export default function App() {
     let live = true;
     loadIndex()
       .then((next) => {
-        if (live) setLoaded(next);
+        if (!live) return null;
+        setLoaded(next);
+        // The manifest names the portraits file; a build from before content addressing has no `files` map, and the
+        // loader falls back to the legacy name.
+        return loadPortraits(next.manifest.files?.portraits);
+      })
+      .then((map) => {
+        if (live && map) setPortraits(map);
       })
       .catch((err: unknown) => {
         if (live) setError(err instanceof Error ? err.message : String(err));
       });
-    loadPortraits().then((map) => {
-      if (live) setPortraits(map);
-    });
     return () => {
       live = false;
     };

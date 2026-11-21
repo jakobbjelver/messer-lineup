@@ -33,14 +33,14 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
     loadIndex()
       .then(async ({ manifest, towns }) => {
         const shows = await loadArtistRows(manifest, artistKey);
-        if (live) setPhase({ kind: "ready", shows, manifest, towns });
+        if (!live) return;
+        setPhase({ kind: "ready", shows, manifest, towns });
+        const map = await loadPortraits(manifest.files?.portraits);
+        if (live) setPortraits(map);
       })
       .catch((err: unknown) => {
         if (live) setPhase({ kind: "error", message: err instanceof Error ? err.message : String(err) });
       });
-    loadPortraits().then((map) => {
-      if (live) setPortraits(map);
-    });
     return () => {
       live = false;
     };

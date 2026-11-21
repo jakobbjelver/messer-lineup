@@ -115,4 +115,9 @@ type Manifest struct {
 	Window  Window    `json:"window"`
 	Sources []Source  `json:"sources"`
 	Towns   []Index   `json:"towns"`
+	// Files names the derived artifacts this build publishes beside the shards, kind → path inside the index
+	// (`{"portraits":"artists/portraits-<sha>.json"}`). The name is content-addressed, so an immutable cache header
+	// is honest and a returning visitor sees a new artifact the night it changes — which a stable filename with
+	// `max-age=31536000` never does.
+	Files map[string]string `json:"files,omitempty"`
 }

@@ -47,6 +47,8 @@ export type Manifest = {
   window: { from: string; to: string; days: number };
   sources: { id: string; index: string; ok: boolean; rows?: number }[];
   towns: TownEntry[];
+  /** Derived artifacts, kind → content-addressed path (`{"portraits":"artists/portraits-<sha>.json"}`). */
+  files?: Record<string, string>;
 };
 
 export type Town = { id: string; name: string; c: string; lat: number; lon: number; tz: string };

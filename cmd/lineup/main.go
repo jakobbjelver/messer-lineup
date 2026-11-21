@@ -163,7 +163,6 @@ func runPortraits(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	indexDir := fs.String("index", ".lineup-index", "the built index whose artists to resolve")
 	statePath := fs.String("state", "", "where resolved artists are remembered (default .lineup-state/portraits.json)")
-	out := fs.String("out", "", "the published file (default <index>/artists/portraits.json)")
 	limit := fs.Int("limit", 0, "resolve at most N new artists this run (0 = all)")
 	var only stringList
 	fs.Var(&only, "only", "resolve these names instead of the index: repeatable, or comma-separated (a probe, not a build)")
@@ -176,7 +175,6 @@ func runPortraits(args []string, stdout, stderr io.Writer) int {
 	report, err := portraits.Run(context.Background(), portraits.Options{
 		IndexDir:  *indexDir,
 		StatePath: *statePath,
-		Out:       *out,
 		Limit:     *limit,
 		Only:      only,
 		DryRun:    *dryRun,

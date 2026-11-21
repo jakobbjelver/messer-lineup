@@ -28,6 +28,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 
+	"github.com/jakobbjelver/messer-lineup/internal/artifact"
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
@@ -112,7 +113,7 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		return rep, errors.New("portraits: no index directory")
 	}
 	if opts.Out == "" {
-		opts.Out = filepath.Join(opts.IndexDir, File)
+		opts.Out = opts.IndexDir
 	}
 	if opts.StatePath == "" {
 		opts.StatePath = filepath.Join(filepath.Dir(filepath.Clean(opts.IndexDir)), ".lineup-state", "portraits.json")
@@ -232,7 +233,6 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 	}
 
 	rep.Written = len(result)
-	rep.Path = opts.Out
 	if opts.DryRun {
 		return rep, nil
 	}
@@ -243,12 +243,13 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		return rep, err
 	}
 	encoded = append(encoded, '\n')
-	if err := os.MkdirAll(filepath.Dir(opts.Out), 0o755); err != nil {
+	// Content-addressed: a new face means a new name, which is the only way a client that cached the old one can tell
+	// the difference. See internal/artifact for the bug this closes.
+	name, err := artifact.Write(opts.Out, "portraits", encoded)
+	if err != nil {
 		return rep, err
 	}
-	if err := os.WriteFile(opts.Out, encoded, 0o644); err != nil {
-		return rep, err
-	}
+	rep.Path = name
 	rep.Bytes = int64(len(encoded))
 	return rep, nil
 }

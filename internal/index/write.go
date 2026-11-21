@@ -132,6 +132,13 @@ func Write(dir string, shows []model.Show, opts WriteOptions) (model.Manifest, S
 	}
 	stats.Towns = len(manifest.Towns)
 
+	// A derived artifact (portraits, genres) is written by its own command after the index, and that command records
+	// its content-addressed name in the manifest. A rebuild must not forget what the last publish shipped, so the map
+	// is carried forward here and only the artifact's own writer changes it.
+	if previous, err := ReadManifest(dir); err == nil && len(previous.Files) > 0 {
+		manifest.Files = previous.Files
+	}
+
 	if err := writeJSONFile(filepath.Join(dir, ManifestFile), manifest); err != nil {
 		return model.Manifest{}, stats, err
 	}

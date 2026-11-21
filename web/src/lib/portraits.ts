@@ -14,13 +14,23 @@ export type PortraitMap = Map<string, Portrait>;
 
 const BASE = (import.meta.env.VITE_DATA_BASE ?? "").replace(/\/$/, "");
 
-let pending: Promise<PortraitMap> | null = null;
+/** The pre-content-addressing name, for an index published by an older build. */
+const LEGACY_FILE = "artists/portraits.json";
 
-export function loadPortraits(): Promise<PortraitMap> {
-  if (pending) return pending;
-  pending = (async () => {
+/**
+ * One cache per published name. The name is content-addressed, so a new nightly is a new file and therefore a new
+ * entry: a returning visitor asks for the name this manifest named, and gets the faces resolved today. The old
+ * arrangement — one stable name, `immutable` for a year, `force-cache` in the tab — meant a visitor who loaded the
+ * board once kept that file while every later nightly was invisible to them.
+ */
+const cache = new Map<string, Promise<PortraitMap>>();
+
+export function loadPortraits(file: string = LEGACY_FILE): Promise<PortraitMap> {
+  const cached = cache.get(file);
+  if (cached) return cached;
+  const pending = (async () => {
     try {
-      const res = await fetch(`${BASE}/artists/portraits.json`, { cache: "force-cache" });
+      const res = await fetch(`${BASE}/${file.replace(/^\//, "")}`, { cache: "force-cache" });
       if (!res.ok) return new Map();
       const body = (await res.json()) as Record<string, Portrait>;
       const map: PortraitMap = new Map();
@@ -32,6 +42,12 @@ export function loadPortraits(): Promise<PortraitMap> {
       return new Map();
     }
   })();
+  cache.set(file, pending);
+  pending.then((map) => {
+    // A missing file is not an error (a build that has not published portraits yet), so it is not cached for ever:
+    // the next visit may find one.
+    if (map.size === 0) cache.delete(file);
+  });
   return pending;
 }
 

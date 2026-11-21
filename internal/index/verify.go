@@ -113,6 +113,35 @@ func Verify(dir string, now time.Time) (Report, error) {
 		}
 	}
 
+	// Derived artifacts: every name must exist, sit under artists/, carry its own digest, and decode as an object.
+	// The digest is the whole point — a stable filename with an immutable cache header is a file that never reaches a
+	// returning visitor again.
+	kinds := make([]string, 0, len(manifest.Files))
+	for kind := range manifest.Files {
+		kinds = append(kinds, kind)
+	}
+	sort.Strings(kinds)
+	for _, kind := range kinds {
+		name := manifest.Files[kind]
+		if !strings.HasPrefix(name, "artists/") {
+			add(ManifestFile, "files[%s] = %q, want a path under artists/", kind, name)
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+		if err != nil {
+			add(ManifestFile, "files[%s] names %s, which cannot be read: %v", kind, name, err)
+			continue
+		}
+		digest := sha256.Sum256(raw)
+		if !strings.Contains(name, hex.EncodeToString(digest[:])) {
+			add(ManifestFile, "files[%s] = %s does not carry its own digest", kind, name)
+		}
+		var object map[string]any
+		if err := json.Unmarshal(raw, &object); err != nil {
+			add(ManifestFile, "files[%s] is not a JSON object: %v", kind, err)
+		}
+	}
+
 	rep.Towns = len(manifest.Towns)
 	from := manifest.Window.From.Format(dayLayout)
 	to := manifest.Window.To.Format(dayLayout)

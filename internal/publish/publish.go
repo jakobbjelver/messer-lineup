@@ -28,7 +28,6 @@ import (
 
 	lineupindex "github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
-	"github.com/jakobbjelver/messer-lineup/internal/portraits"
 
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
@@ -194,16 +193,33 @@ func collect(dir string) ([]Object, error) {
 	if err != nil {
 		return nil, fmt.Errorf("publish: no shards: %w", err)
 	}
-	// The portraits artifact is optional on purpose: a build that has not resolved any is a supported state, and
-	// the board falls back to initials. When it exists, it is immutable and cached like a shard.
-	if info, err := os.Stat(filepath.Join(dir, portraits.File)); err == nil {
-		objects = append(objects, Object{
-			Key:          portraits.File,
-			Path:         filepath.Join(dir, portraits.File),
-			Size:         info.Size(),
-			CacheControl: cacheControl(ShardMaxAge),
-			ContentType:  "application/json; charset=utf-8",
-		})
+	// Derived artifacts are optional on purpose: a build that has not resolved any is a supported state, and the board
+	// falls back to initials. When one exists, its name comes from the manifest — content-addressed, cached like a
+	// shard — and it is uploaded exactly as the board will ask for it.
+	if manifest, err := lineupindex.ReadManifest(dir); err == nil {
+		kinds := make([]string, 0, len(manifest.Files))
+		for kind := range manifest.Files {
+			kinds = append(kinds, kind)
+		}
+		sort.Strings(kinds)
+		for _, kind := range kinds {
+			key := manifest.Files[kind]
+			if !strings.HasPrefix(key, "artists/") {
+				return nil, fmt.Errorf("publish: %s names %q, which is not under artists/", kind, key)
+			}
+			path := filepath.Join(dir, filepath.FromSlash(key))
+			info, err := os.Stat(path)
+			if err != nil {
+				return nil, fmt.Errorf("publish: %s lists %s: %w", kind, key, err)
+			}
+			objects = append(objects, Object{
+				Key:          key,
+				Path:         path,
+				Size:         info.Size(),
+				CacheControl: cacheControl(ShardMaxAge),
+				ContentType:  "application/json; charset=utf-8",
+			})
+		}
 	}
 	for _, entry := range shards {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".jsonl.gz") {

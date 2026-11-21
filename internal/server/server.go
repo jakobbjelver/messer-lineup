@@ -137,7 +137,16 @@ func (s *server) townsFile(w http.ResponseWriter, r *http.Request) {
 // holds reports and state, and a static handler over it would publish whatever a run happened to leave behind.
 func (s *server) artistsFile(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimPrefix(r.URL.Path, "/artists/")
-	if name != "portraits.json" {
+	// The manifest's files map is the allowlist: an artifact this build did not name is not part of the index, and a
+	// stale name from a previous publish must 404 rather than serve bytes the board will not ask for.
+	published := false
+	for _, artifact := range s.manifest.Files {
+		if artifact == filepath.ToSlash("artists/"+name) {
+			published = true
+			break
+		}
+	}
+	if !published {
 		writeError(w, http.StatusNotFound, "unknown_artifact", "that artifact is not published")
 		return
 	}
