@@ -49,6 +49,17 @@ export const TASTE_CAP = 200;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * The fields this build understands. A key outside this set is refused — not ignored.
+ *
+ * `JSON.parse` hands back whatever was written, and a decoder that reads the fields it knows while dropping the rest
+ * turns an unknown filter into "no filter": a feed that was asked for one genre would answer the whole town, and the
+ * subscriber would have no way to tell. That is why the key set is checked explicitly, and why a token carrying a field
+ * from a newer build (a genre today) is a `400` until this build implements it. Adding a field means adding it here
+ * **and** to `CalendarSpec`, in the same change.
+ */
+const FIELDS = new Set(["v", "t", "f", "o", "a", "s"]);
+
 /** Encodes a spec into a token. Throws on anything it cannot represent, because a bad token is a bad link. */
 export function encodeSpec(spec: CalendarSpec): string {
   // The cap is enforced here as well as on the way in: a button that writes a token the feed will refuse with a 400 is
@@ -70,6 +81,8 @@ export function decodeSpec(token: string): CalendarSpec | null {
   }
   if (!parsed || typeof parsed !== "object") return null;
   const spec = parsed as Record<string, unknown>;
+  // Refuse rather than ignore: see FIELDS.
+  for (const key of Object.keys(spec)) if (!FIELDS.has(key)) return null;
   if (spec.v !== 1) return null;
   if (typeof spec.t !== "string" || spec.t.length === 0 || spec.t.length > 64) return null;
 

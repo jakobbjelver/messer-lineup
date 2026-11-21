@@ -54,6 +54,10 @@ type calendarSpec struct {
 	S *calendarSource `json:"s,omitempty"`
 }
 
+// calendarFields is the whole vocabulary of a token this build serves. See decodeCalendarSpec for why the set is
+// enforced rather than trusted.
+var calendarFields = map[string]bool{"v": true, "t": true, "f": true, "o": true, "a": true, "s": true}
+
 // calendarSource says where a live artist list comes from. The snapshot in `a` stays the fallback: a provider that
 // is down, a handle that was deleted or an account whose statistics are not computed yet must degrade to the list
 // the subscriber saw — never to an empty calendar and never to the whole town.
@@ -253,10 +257,24 @@ func (s *server) townLabel(id string) string {
 
 // decodeCalendarSpec is strict on purpose: a token that is nearly valid is a link that will silently show the wrong
 // board, so anything unexpected is refused rather than defaulted.
+//
+// The key set is checked before the struct is filled. `json.Unmarshal` ignores fields it does not know, and that is
+// the one failure a subscriber can never see: a token asking for a filter this build has not implemented would read as
+// "no filter" and the feed would answer the whole town. A field from a newer build is therefore a refusal (`400`),
+// never a default — adding one means adding it here and to `calendarSpec` in the same change.
 func decodeCalendarSpec(token string) (calendarSpec, bool) {
 	raw, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(token, "="))
 	if err != nil {
 		return calendarSpec{}, false
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil || fields == nil {
+		return calendarSpec{}, false
+	}
+	for key := range fields {
+		if !calendarFields[key] {
+			return calendarSpec{}, false
+		}
 	}
 	var spec calendarSpec
 	if err := json.Unmarshal(raw, &spec); err != nil {

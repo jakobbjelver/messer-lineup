@@ -55,6 +55,17 @@ const halfWindowToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk", f
   .replace(/\//g, "_")
   .replace(/=+$/, "");
 
+/**
+ * A token from a newer build: a version and a field this build does not serve. Both runtimes must refuse it with the
+ * same envelope. The failure this asserts against is the quiet one — a decoder that ignores the field it does not know
+ * would answer the whole town, and the subscriber could not tell.
+ */
+const futureToken = Buffer.from(JSON.stringify({ v: 2, t: "copenhagen-dk", g: ["metal"] }), "utf8")
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
 const REQUESTS = [
   // Liveness: the clock is the whole point, so only its presence is compared.
   { method: "GET", path: "/healthz", compare: { kind: "shape", keys: ["ok", "as_of"] } },
@@ -99,6 +110,8 @@ const REQUESTS = [
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
   // Half a window is refused, not completed: that rule is the one a client-side encoder must not violate either.
   { method: "GET", path: `/calendar/${halfWindowToken}.ics`, compare: { kind: "error", code: "invalid_calendar", status: 400 } },
+  // A field from a newer build is a refusal, never a default (see futureToken).
+  { method: "GET", path: `/calendar/${futureToken}.ics`, compare: { kind: "error", code: "invalid_calendar", status: 400 } },
 ];
 
 async function call(base, req) {
