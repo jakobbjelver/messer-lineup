@@ -595,3 +595,59 @@ func TestRunAppliesTheMusicPolicy(t *testing.T) {
 		t.Fatalf("unclassified venues = %v", src.UnclassifiedVenues)
 	}
 }
+
+// expandingAdapter is a platform whose page carries more than one date: the shape a ticketing platform publishes for a
+// tour stop with two nights, or a festival with several slots.
+type expandingAdapter struct {
+	*fakeAdapter
+	pages map[string][]model.Show
+}
+
+func (e *expandingAdapter) Details(_ context.Context, c model.Candidate) ([]model.Show, error) {
+	shows, ok := e.pages[c.URL]
+	if !ok {
+		return nil, errors.New("no event")
+	}
+	return shows, nil
+}
+
+func TestExpanderKeepsEveryDateOnOnePage(t *testing.T) {
+	day := time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC)
+	next := day.AddDate(0, 0, 1)
+	adapter := &expandingAdapter{
+		fakeAdapter: &fakeAdapter{
+			id:    "nortic",
+			towns: map[string][]string{"berlin": {"https://n.test/e1"}},
+		},
+		pages: map[string][]model.Show{
+			"https://n.test/e1": {
+				showAt("https://n.test/e1", "KISS", "Stadionmässan", "berlin-de", day, "nortic"),
+				showAt("https://n.test/e1", "KISS", "Stadionmässan", "berlin-de", next, "nortic"),
+			},
+		},
+	}
+	report := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"berlin"}, DryRun: true})
+	if report.Totals.Candidates != 1 || report.Totals.Rows != 2 {
+		t.Fatalf("totals = %+v, want 1 candidate and 2 rows", report.Totals)
+	}
+}
+
+// A page the platform itself labels as theatre is a fact about the inventory, not a failure: the retry queue must not
+// spend a second attempt on an answer that was already correct.
+func TestNotMusicIsCountedAsAFact(t *testing.T) {
+	adapter := &fakeAdapter{
+		id:      "nortic",
+		towns:   map[string][]string{"berlin": {"https://n.test/h1"}},
+		failure: map[string]error{"https://n.test/h1": model.ErrNotMusic},
+	}
+	report := run(t, Options{Adapters: []Adapter{adapter}, Towns: []string{"berlin"}, DryRun: true})
+	if report.Totals.Failures != 0 {
+		t.Fatalf("failures = %d, want 0", report.Totals.Failures)
+	}
+	if report.Totals.NotMusic != 1 {
+		t.Fatalf("not music = %d, want 1", report.Totals.NotMusic)
+	}
+	if report.Totals.Queued != 0 {
+		t.Fatalf("queued = %d, want 0 (a fact is not retried)", report.Totals.Queued)
+	}
+}

@@ -1,0 +1,1563 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+
+
+
+
+
+    
+    
+
+<head>
+    
+        
+        
+            <title>Boka biljetter till KISS</title>
+        
+    
+
+    <link rel="canonical" href="https://tickets.nortic.se/ticket/event/74827" />
+
+    
+
+    <script type="text/javascript">
+        var eventPageTranslations = {
+            'dagny.eventpage.loadingpaymentpage' : "Laddar betalsida",
+            'dagny.eventpage.pleasewait' : "Vänligen vänta",
+            'dagny.eventpage.showisalreadyloading' : "En show laddas redan. Vänligen vänta...",
+            'dagny.eventpage.soldout' : "Inga biljetter tillgängliga",
+            'dagny.eventpage.soldoutshort' : "Slutsåld",
+            'dagny.eventpage.remaining' : "kvar",
+            'dagny.eventpage.waitlist.modaltitle': "Väntelista",
+            'dagny.eventpage.waitlist.modalheader': "Ange din emailadress så får du ett meddelande om biljetter blir tillgängliga",
+            'dagny.eventpage.waitlist.tooltip': "Få meddelande om biljetter blir tillgängliga",
+            'dagny.eventpage.waitlist.emailexists': "Din emailadress är redan tillagd",
+            'dagny.invalidemail': "Felaktig epostadress",
+            'dagny.eventpage.waitlist.submitted': "har lagts till i väntelistan",
+            'words.main.error1': "Ett fel uppstod, var vänlig försök igen",
+            'dagny.paymentpage.email': "E-post",
+            'dagny.supplies.fewleft': "Fåtal kvar!",
+            'dagny.eventpage.released': "Släpps",
+            'dagny.eventpage.confirmNotAddToCart': "Vill du fortsätta utan att lägga till biljetterna i varukorgen",
+        };
+    </script>
+    
+        <meta property="og:url"                content="https://tickets.nortic.se/ticket/event/74827" />
+
+        
+            
+            
+                <meta property="og:title" content="Boka biljetter till KISS" />
+            
+        
+        <meta property="og:title"              content="Boka biljetter till KISS" />
+        <meta property="og:description"        content="Upplev KISS som du aldrig hört dem förut!" />
+        <meta property="og:image"              content="https://branding.nortic.io/organizer/3617/event/74827?redirect" />
+
+        <meta name="twitter:card"              content="summary_large_image">
+        <meta name="twitter:title"             content="Boka biljetter till KISS">
+        <meta name="twitter:description"       content="Upplev KISS som du aldrig hört dem förut!">
+        <meta name="twitter:image"             content="https://branding.nortic.io/organizer/3617/event/74827?redirect">
+
+        <meta name="description" content="Upplev KISS som du aldrig hört dem förut!"/>
+        <meta name="keywords" content="PUGH - HYLLNINGSKONSERT MED KÄRLEK!, Konsert, Biljetter"/>
+        
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/citronkaka-service/dist/index.iife.js?v=12.5.3" charset="UTF-8"></script>
+        
+        <script type="text/javascript">
+            var eventTranslations = {
+                'dagny.eventpage.campaign' : "Kampanj",
+                'dagny.eventpage.campaignInfo' : "Ange din kampanjkod nedan för att låsa upp dolda kategorier.",
+                'dagny.eventpage.inputCode' : "Ange kod",
+                'dagny.eventpage.errorCode' : "Felaktig kod. Försök igen.",
+                'dagny.eventpage.unlockCode' : "Låste upp kategori",
+                'dagny.eventpage.unlockDiscount' : "Låste upp rabatt"
+            };
+
+        </script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js" defer></script>
+
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/qtip2/jquery.qtip.min.js?v=12.5.3" defer charset="UTF-8"></script>
+        
+            
+            
+                <script type="text/javascript" src="//cloud.nortic.se/scripts/3pp/materialize/materialize.min.js?v=12.5.3" defer charset="UTF-8"></script>
+            
+        
+
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/discountTracker.js?v=12.5.3" defer charset="UTF-8"></script>
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/3pp/ettrics/material-design-modal.js?v=12.5.3" defer charset="UTF-8"></script>
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/orderTracker.js?v=12.5.3" defer charset="UTF-8"></script>
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/event.js?v=12.5.3" defer charset="UTF-8"></script>
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/basketCartHandler.js?v=12.5.3" defer charset="UTF-8"></script>
+        <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/unnumberedOrderTracker.js?v=12.5.3" defer charset="UTF-8"></script>
+
+        
+            
+            
+                <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/eventPage.js?v=12.5.3" defer charset="UTF-8"></script>
+            
+        
+
+        <script src='https://www.google.com/recaptcha/api.js?hl=sv' defer></script>
+    
+    
+
+
+    
+
+    
+
+    
+
+    
+        
+
+
+
+<div id="basket-cart-loading-overlay" class="display-none">
+    <div class="spinner-container display-none">
+        <div class="preloader-wrapper active" style="width: 100px; height: 100px;">
+            <div class="spinner-layer blue-spinner">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+        <div class="basket-cart-loading-overlay-text-wrapper">
+            <span class="basket-cart-loading-overlay-text">
+            </span>
+        </div>
+    </div>
+</div>
+
+        <script type="text/javascript">
+            var paymentPageTranslations = {
+                'dagny.paymentpage.tickets': "Biljetter",
+                'dagny.paymentpage.delivery': "Leverans",
+                'dagny.paymentpage.paymentmethod': "Betalmetod",
+                'dagny.paymentpage.cancellationinsurance': "Avbeställningsförsäkring",
+                'dagny.paymentpage.insurance': "Försäkring",
+                'dagny.paymentpage.items': "st",
+                'dagny.paymentpage.gotopayment': "Bekräfta order",
+                'dagny.paymentpage.gotodibsforpayment': "Gå till DIBS för betalning",
+                'dagny.paymentpage.confirmchoicesandsendinvoice': "Bekräfta dina val och skicka faktura",
+                'dagny.paymentpage.proceed': "Fortsätt",
+                'dagny.paymentpage.update': "Uppdatera",
+                'dagny.paymentpage.repeatemail': "Repetera e-post",
+                'dagny.paymentpage.firstname': "Förnamn",
+                'dagny.paymentpage.lastname': "Efternamn",
+                'dagny.paymentpage.name': "Namn",
+                'dagny.paymentpage.cellphonenumber': "Mobilnummer",
+                'dagny.paymentpage.phonenumber': "Telefonnummer",
+                'dagny.paymentpage.ssn': "Personnummer",
+                'dagny.paymentpage.organizationname': "Namn på företag/organisation",
+                'dagny.paymentpage.organizationnumber': "Organisationsnummer",
+                'dagny.paymentpage.selectsex': "Välj kön",
+                'dagny.paymentpage.man': "Man",
+                'dagny.paymentpage.woman': "Kvinna",
+                'dagny.paymentpage.infosaved': "Uppgifterna har sparats",
+                'dagny.paymentpage.address': "Adress",
+                'dagny.paymentpage.careOf': "C/O",
+                'dagny.paymentpage.postcode': "Postnummer",
+                'dagny.paymentpage.city': "Ort",
+                'dagny.paymentpage.ticketsaredeliveredto': "Biljetter levereras till",
+                'dagny.paymentpage.servicefee': "Serviceavgift",
+                'dagny.paymentpage.nationality': "Nationalitet",
+                'dagny.paymentpage.selectnationality': "Välj nationalitet",
+                'dagny.paymentpage.nationalIdOrPassportNumber': "Personnummer/Passnummer",
+            };
+
+            var basketCartTranslations = {
+
+                'dagny.basketcart.loadingpaymentpage' : "Laddar betalsida",
+                'dagny.basketcart.pleasewait' : "Vänligen vänta",
+                'dagny.basketcart.objects' : "Objekt",
+                'dagny.basketcart.youhave' : "Du har",
+                'dagny.basketcart.minutesleft' : "minuter kvar",
+                'dagny.basketcart.minuteleft' :  "minut kvar",
+                'dagny.basketcart.beforeorderexpire' :  "på dig att slutföra ordern innan dina biljetter släpps",
+                'dagny.basketcart.extend' : "Utöka",
+                'dagny.basketcart.orderCleared' : "Din order är borttagen, du skickas nu till början av bokningen.",
+                'dagny.basketcart.removingOrder' : "Tömmer varukorg",
+                'dagny.basketcart.removePartOrder' : "Tar bort delorder",
+                'dagny.basketcart.removePartOrderCompleted': "Din delorder har tagits bort.",
+                'dagny.basketcart.confirmRemovePartOrder' : "Är du säker du vill ta bort denna delorder?",            }
+        </script>
+    
+
+
+    
+        <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/reset.css?v=12.5.3" onerror="this.onerror=null;this.href='/styles/reset.css?v=12.5.3';" />
+        
+            
+            
+                <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/3pp/materialize/materialize.min.css?v=12.5.3" onerror="this.onerror=null;this.href='/styles/3pp/materialize/materialize.min.css?v=12.5.3';" />
+            
+        
+    
+
+    <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/3pp/ettrics/material-design-modal.css?v=12.5.3" onerror="this.onerror=null;this.href='/styles/3pp/ettrics/material-design-modal.css?v=12.5.3';" />
+    <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/3pp/animate/animate.css?v=12.5.3" onerror="this.onerror=null;this.href='/styles/3pp/animate/animate.css?v=12.5.3';" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:100,300,400,700,900" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,700,900" rel="stylesheet">
+
+    
+        <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/dagny/custom/organizer/3617/event/74827/custom12716343341564229540.css?lm=1761313568276&v=12.5.3" onerror="this.onerror=null;this.href='/styles/dagny/custom/organizer/3617/event/74827/custom12716343341564229540.css?lm=1761313568276&v=12.5.3';" />
+    
+    
+
+    
+        
+            
+            
+                <link rel="stylesheet" type="text/css" href="//cloud.nortic.se/styles/dagny/dagny.css?v=12.5.3" onerror="this.onerror=null;this.href='/styles/dagny/dagny.css?v=12.5.3';" />
+            
+        
+    
+    
+    
+        <link rel="stylesheet" href="https://nortic-assets.web.app/custom-css/prod/eventsystem/organizers/3617/styles.css">
+    
+    
+        <link rel="stylesheet" href="https://nortic-assets.web.app/custom-css/prod/eventsystem/organizers/3617/events/74827/styles.css">
+    
+    
+    
+        <script src="https://nortic-assets.web.app/custom-js/prod/eventsystem/organizers/3617/script.js" defer crossorigin="anonymous"></script>
+    
+    
+        <script src="https://nortic-assets.web.app/custom-js/prod/eventsystem/organizers/3617/events/74827/script.js" defer crossorigin="anonymous"></script>
+    
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta charset="UTF-8"/>
+
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    
+
+
+
+    <script type="text/javascript">
+        <!-- Google Tag Manager -->
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://fiskaren.nortic.se/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-MCSKZXBX');
+        <!-- End Google Tag Manager -->
+
+        <!-- Customer tracking config -->
+        window.dataLayer.push({
+            event: 'init_tracking',
+            
+                nortic_server_url: 'https://fiskaren.nortic.se',
+            
+            
+                nortic_organizer_id: '3617'
+                
+                
+            
+            
+                ,nortic_event_id: '74827'
+                
+            
+            
+                
+                
+                
+            
+            ,nortic_event_tracking_ga_id: '',
+            nortic_event_tracking_meta_pixel_id: '',
+            nortic_event_tracking_meta_access_token: '',
+            nortic_event_tracking_tiktok_pixel_id: '',
+            nortic_event_tracking_tiktok_access_token: '',
+            
+        });
+
+        <!-- End Customer tracking config -->
+    </script>
+
+    <script type="text/javascript" src="//cloud.nortic.se/scripts/nortic/dagny/quick-checkout/google-tag-manager.js?v=12.5.3" charset="UTF-8"></script>
+    
+</head>
+
+<script type="text/javascript">
+    js_translations = [];
+    js_translations['prebuycode'] = "Försläppskod";
+    js_translations['prebuycodeinfo'] = "Ange din försläppskod i rutan för att få tillgång till försäljningen innan den släpps.";
+    js_translations['ticketsreleased'] = "Biljetterna släpps";
+    js_translations['inputcode'] = "Ange kod";
+    js_translations['wrongcode'] = "Felaktig kod. Försök igen.";
+    js_translations['correctcode'] = "Korrekt kod! Öppnar bokningen.";
+</script>
+<body id="st-container" data-eventid="74827" data-organizerid="3617" data-currency="SEK" data-organizercart="false" data-basketcartorganizerid="" data-usewaitlist="" data-organizerusewaitlist="false" class="event-page">
+<script type="text/javascript">
+    console.log('PUSH EVENT DETAIL VIEW ');
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: 'eec.detail',
+        ecommerce: {
+            detail: {
+                products: [{
+                    id: '74827',
+                    name: 'KISS',
+                    category: 'Konsert',
+                    /*category: 'Musicals',
+                    variant: 'Adult',*/
+                    brand: 'Dagny'
+                }]
+            }
+        }
+    });
+
+    console.log('Pushed! ');
+</script>
+
+
+
+
+
+
+<div id="event-page-loading-overlay-basket" class="display-none" style="width: 100%;
+    height: 100%;
+    z-index: 5000;
+    background-color: rgb(23 18 44 / 84%);
+    position: fixed;">
+    <div class="spinner-container display-none" style="display: flex; height: 100%; align-items: center; justify-content: center; align-content: center; flex-direction: column">
+        <div class="preloader-wrapper active" style="width: 100px; height: 100px;">
+            <div class="spinner-layer spinner-blue">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+
+            <div class="spinner-layer spinner-red">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+
+            <div class="spinner-layer spinner-yellow">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+
+            <div class="spinner-layer spinner-green">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 2em">
+            <span style="font-weight: 500; font-size: 36px; color: #fff; text-shadow: 0px -1px 8px black;">
+            Lägger till i varukorg
+            </span>
+        </div>
+    </div>
+</div>
+<div id="event-page-loading-overlay" class="display-none"></div>
+<div id="force-open-modal-loading-overlay" class="display-none">
+    
+<div class="preloader-wrapper big active">
+    <div class="spinner-layer spinner-blue">
+        <div class="circle-clipper left">
+            <div class="circle"></div>
+        </div><div class="gap-patch">
+        <div class="circle"></div>
+    </div><div class="circle-clipper right">
+        <div class="circle"></div>
+    </div>
+    </div>
+
+    <div class="spinner-layer spinner-red">
+        <div class="circle-clipper left">
+            <div class="circle"></div>
+        </div><div class="gap-patch">
+        <div class="circle"></div>
+    </div><div class="circle-clipper right">
+        <div class="circle"></div>
+    </div>
+    </div>
+
+    <div class="spinner-layer spinner-yellow">
+        <div class="circle-clipper left">
+            <div class="circle"></div>
+        </div><div class="gap-patch">
+        <div class="circle"></div>
+    </div><div class="circle-clipper right">
+        <div class="circle"></div>
+    </div>
+    </div>
+
+    <div class="spinner-layer spinner-green">
+        <div class="circle-clipper left">
+            <div class="circle"></div>
+        </div><div class="gap-patch">
+        <div class="circle"></div>
+    </div><div class="circle-clipper right">
+        <div class="circle"></div>
+    </div>
+    </div>
+</div>
+</div>
+
+
+
+
+
+
+<div id="basket-overlay" class="overlay-hidden event-page-overlay"></div>
+
+
+
+
+<div id="share-modal" class="modal">
+    <div class="modal-content">
+        <h5>Dela</h5>
+        <div class="row">
+            <div class="col s12" id="social-share-buttons-row">
+                <a class="social-share-button" href="javascript:socialClick('facebook', 'https://tickets.nortic.se/ticket/event/74827');">
+                    <img src="//cloud.nortic.se/images/dagny/icons/facebook.svg" alt="Dela på Facebook" class="tooltipped" data-tooltip="Dela på Facebook" onerror="this.onerror=null;this.src='/images/dagny/icons/facebook.svg';" />
+                </a>
+                <a class="social-share-button" href="javascript:socialClick('twitter', 'https://tickets.nortic.se/ticket/event/74827');">
+                    <img src="//cloud.nortic.se/images/dagny/icons/twitter.svg" alt="Dela på Twitter" class="tooltipped" data-tooltip="Dela på Twitter" onerror="this.onerror=null;this.src='/images/dagny/icons/twitter.svg';" />
+                </a>
+                <a class="social-share-button" href="javascript:socialClick('linkedin', 'https://tickets.nortic.se/ticket/event/74827');">
+                    <img src="//cloud.nortic.se/images/dagny/icons/linkedin.svg" alt="Dela på LinkedIn" class="tooltipped" data-tooltip="Dela på LinkedIn" onerror="this.onerror=null;this.src='/images/dagny/icons/linkedin.svg';" />
+                </a>
+            </div>
+        </div>
+        <div class="row gray-background" id="share-url-row">
+            <div class="col s12">
+                <input type="text" readonly class="materialize-textarea" id="share-url" value="https://tickets.nortic.se/ticket/event/74827"/>
+            </div>
+            <div class="col s12" id="button-row">
+                <a class="btn" id="copy-link-button">Kopiera länk</a>
+                <a href="mailto:?subject=KISS&body=Boka biljetter till KISS på https://tickets.nortic.se/ticket/event/74827" class="btn btn-flat">Dela via e-post</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<nav class="st-menu st-effect-2" id="menu-2"></nav>
+<div class="st-pusher">
+    <div class="st-content">
+        <div class="st-content-inner"><!-- extra div for emulating position:fixed of the menu -->
+            
+<div class="floating-buttons">
+    <div id="basket" class="pointer display-none z-depth-2">
+        <div class="amount-blob valign-wrapper">
+            <span class="icon"><i class="material-icons">shopping_cart</i></span>
+            <span class="amount">0</span>
+        </div>
+        <div class="price-container  valign-wrapper">
+            
+                <div class="price">0</div>
+            
+        </div>
+        <div class="proceed-arrow-blob valign-wrapper">
+            <span class="proceed-arrow"><i class="material-icons">keyboard_arrow_right</i></span>
+        </div>
+       <div class="discount display-none">
+               <div class="discount-wrapper">
+                   <p class="discount-name" style="color: white;"></p>
+                   <p class="discount-price" style="color: red;"></p>
+               </div>
+       </div>
+    </div>
+    <div id="addons-basket" class="pointer display-none z-depth-2">
+        <div class="amount-blob valign-wrapper">
+            <div class="preloader-wrapper small active">
+                <div class="spinner-layer yellow-spinner">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+            <span class="icon">
+               <i class="material-icons addon-icon">star</i>
+            </span>
+            <span class="amount">0</span>
+        </div>
+        <div class="price-container  valign-wrapper">
+            
+            <div class="price">0</div>
+            
+        </div>
+        <div class="proceed-arrow-blob valign-wrapper">
+            <span class="proceed-arrow"><i class="material-icons">keyboard_arrow_right</i></span>
+        </div>
+    </div>
+
+    <div class="fixed-action-btn " id="main-fab">
+        <a class="display-none btn-floating btn-large theme-secondary-background-color waves-effect">
+            <i class="large material-icons">more_vert</i>
+        </a>
+        <ul class="items">
+        </ul>
+    </div>
+    </div>
+
+            
+
+<div id="cart-overview-modal" class="modal">
+    <div class="modal-content">
+        <div class="detail-container">
+
+        </div>
+        <div class="shopping-cart-overview-buttons">
+            <button id="basket-cart-overview-go-to-payment" type="button"
+                    class="btn waves-effect theme-background-color uppercase goto-button modal-action modal-close"
+                    style="float: right; margin-left: 1em;">
+                Till kassan
+            </button>
+            <button id="basket-cart-overview-clear" type="button"
+                    class="btn waves-effect theme-secondary-background-color uppercase goto-button modal-action"
+                    style="float: right">
+                Töm varukorg
+            </button>
+        </div>
+    </div>
+</div>
+            
+<header id="main-header" >
+    <div class="row no-margin valign-wrapper">
+        <div class="col s2 m1 valign" id="main-menu-button-container" style="pointer-events: initial">
+            
+                
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                        <a href="/ticket/organizer/3617" class="back-to-organizer"><i
+                                class="material-icons pointer">arrow_back</i></a>
+                    
+                
+            
+            
+                
+            
+        </div>
+        
+        <div class="col s2 m1 valign right-align hide-on-small-and-down" id="cart">
+        </div>
+        <div class="col s2 m1 valign right-align" id="dropdown-button-container" style="pointer-events: initial">
+            
+<i class="material-icons  dropdown-button pointer" data-beloworigin="true" data-activates="help-menu">more_vert</i>
+<ul id="help-menu" class="dropdown-content">
+    
+
+    <li><a href="javascript:;" id="help-button">Hjälp</a></li>
+    <li><a id="share-modal-button" href="#share-modal" data-modalid="#share-modal" class="modal-trigger">Dela</a></li>
+    <li class="divider"></li>
+    <li class="no-hover">
+        <div id="flag-row" class="row">
+            <div class="col s6 valign-wrapper" onclick="window.location.href = window.location.pathname + '?language=sv'">
+                <span class="valign center-block">
+                    <img src="//cloud.nortic.se/images/dagny/icons/swe.svg" alt="Svenska" class="active-flag" onerror="this.onerror=null;this.src='/images/dagny/icons/swe.svg';" />
+                </span>
+            </div>
+            <div class="col s6 valign-wrapper" onclick="window.location.href = window.location.pathname + '?language=en'">
+                <span class="valign center-block">
+                    <img src="//cloud.nortic.se/images/dagny/icons/eng.svg" alt="English" class="" onerror="this.onerror=null;this.src='/images/dagny/icons/eng.svg';" />
+                </span>
+            </div>
+            <div class="col s6 valign-wrapper" onclick="window.location.href = window.location.pathname + '?language=de'">
+                <span class="valign center-block">
+                    <img src="//cloud.nortic.se/images/dagny/icons/ger.svg" alt="Deutsch" class="" onerror="this.onerror=null;this.src='/images/dagny/icons/ger.svg';" />
+                </span>
+            </div>
+            <div class="col s6 valign-wrapper" onclick="window.location.href = window.location.pathname + '?language=fi'">
+                <span class="valign center-block">
+                    <img src="//cloud.nortic.se/images/dagny/icons/fi.svg" alt="Suomalainen" style="width:24px;height:16px
+" class="" onerror="this.onerror=null;this.src='/images/dagny/icons/fi.svg';" />
+                </span>
+            </div>
+        </div>
+    </li>
+</ul>
+        </div>
+    </div>
+    
+</header>
+
+
+<!-- Our custom modal-->
+<div id="material-modal" class="material-modal modal__bg " role="dialog">
+    <div class="modal__dialog">
+        <div class="modal__content z-depth-4">
+            <!-- modal close button -->
+            <a href="" class="modal__close demo-close">
+                x
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="preloader-container" class="display-none">
+    <div class="spinner-container display-none">
+        <div id="preloader-wrapper" class="preloader-wrapper active">
+            <div class="spinner-layer blue-spinner">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="loading-what" style="display: none;">
+        <div class="show-name"></div>
+        <div class="details"></div>
+    </div>
+    <div id="centered-content" style="display: none;">
+        <img src="//cloud.nortic.se/images/dagny/predefined/n_black.svg" alt="Nortic" class="black-logo logo" onerror="this.onerror=null;this.src='/images/dagny/predefined/n_black.svg';" />
+        <img src="//cloud.nortic.se/images/dagny/predefined/n_white.svg" alt="Nortic" class="white-logo logo" onerror="this.onerror=null;this.src='/images/dagny/predefined/n_white.svg';" />
+    </div>
+    <div id="captcha-div" active="false" style="display: none;"></div>
+</div>
+
+            
+
+
+<div id="basket-cart-warning-modal" class="modal">
+    <div class="modal-content">
+        <h5>
+            Varning
+        </h5>
+        Du kommer att föralora innehållet i din varukorg
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="cancel modal-action modal-close waves-effect waves-red btn-flat ">
+
+            Avbryt
+        </button>
+        <button type="button" class="confirm modal-action modal-close waves-effect waves-green btn-flat">
+            Fortsätt
+        </button>
+    </div>
+</div>
+
+<div id="basket-cart-warning-modal-2" class="modal">
+    <div class="modal-content">
+        <h5>
+            Varning
+        </h5>
+        Du har inte lagt till ditt tidigare val i varukorgen, vill du göra det?
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="cancel modal-action modal-close waves-effect waves-red btn-flat ">
+
+            Nej
+        </button>
+        <button type="button" class="confirm modal-action modal-close waves-effect waves-green btn-flat">
+            Ja
+        </button>
+    </div>
+</div>
+
+            
+
+
+<div class="floating-buttons basket-cart-floating-buttons" style="width: auto">
+    <div id="basket-cart-wrapper" class="display-none">
+        <div style="display: flex">
+            <div id="basket-cart" class="pointer z-depth-2">
+                <div class="amount-blob valign-wrapper">
+                    <div style="position: relative; width: 100%; height: 100%">
+                        <span class="icon"><i class="material-icons">shopping_cart</i></span>
+                        <div class="chip amount"></div>
+                    </div>
+                </div>
+                <div class="text-wrapper">
+                    <div class="title-container">
+                        Varukorg
+                    </div>
+                </div>
+            </div>
+            <div id="basket-cart-go-to-payment" class="pointer z-depth-2" style="margin-left: 1em">
+                <div class="payment-blob valign-wrapper">
+                    <span class="icon"> <i class="material-icons">payment</i></span>
+                </div>
+                <div class="text-wrapper">
+                    <span>
+                            Till kassan
+                    </span>
+                    <div class="proceed-arrow-blob valign-wrapper">
+                        <span class="proceed-arrow"><i class="material-icons">keyboard_arrow_right</i></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="floating-buttons" style="width: auto">
+    <div id="add-to-basket-cart" class="pointer display-none">
+        <div class="valign-wrapper">
+            <button class="btn waves-effect waves-light btn-large add" type="button" style="width: 100%">
+                <i class="material-icons left">add_circle_outline</i>
+                <span>
+                Lägg till i varukorg
+                </span>
+                <span class="amount"> </span>
+            </button>
+        </div>
+    </div>
+</div>
+            <main>
+                
+<div class="message-default" style="display:none">
+    <p>Köp dina biljetter direkt på webben hos Nortic</p>
+</div>
+<div class="change-browser-plz" style="display: none;">
+    <h5>Gammal webbläsare</h5>
+    <p>Webbläsaren du använder har inte stöd för alla våra funktioner. För att kunna använda Nortic
+        behövs en nyare webbläsare. Vi rekommenderar Google Chrome.</p>
+    <a href='https://play.google.com/store/apps/details?id=com.android.chrome&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'/></a>
+    
+    </div>
+<div class="container">
+
+
+
+</div>
+
+<section id="top">
+    <div id="background-container">
+        
+        <div class="obfuscator"></div>
+    </div>
+
+    <div id="main-ribbon" class="container">
+        <div class="slider-wrapper" id="event-info-slider-wrapper">
+            
+                
+                    <div class="slider-inner no-select">
+                        
+                            
+                            <span class="event-info slider-item"><i class="material-icons">style</i><span class="event-info-label">2 orter</span></span>
+                            <span class="event-info slider-item"><i class="material-icons">date_range</i> <span class="event-info-label">27 januari 2027 - 28 januari 2027</span></span>
+                        
+                    </div>
+                
+            
+        </div>
+        
+            
+            
+                
+                    
+                    
+                        
+                    
+                
+                <h1>
+                    <span>
+                    
+                    KISS
+                    </span>
+                </h1>
+                
+
+                <input type="hidden" id="orgid-input" value="3617">
+                <a id="read-more"></a>
+                
+                    
+                    
+                        
+                            <div class="event-information minimized">
+                                <span id="event-information-text"><p>Upplev KISS som du aldrig h&ouml;rt dem f&ouml;rut!</p>
+<p>F&ouml;rest&auml;ll dig de ikoniska rockklassikerna av KISS &ndash; men med en m&auml;ktig symfoniorkester som ger l&aring;tarna en ny dimension!</p>
+<p>Efter succ&eacute;n i Moskva 2018 tar dirigenten Ulf Wadenbrandt nu konceptet till Sverige, tillsammans med Sweden Symphony Orchestra &ndash; sminkade i sann KISS-anda &ndash; och Mikkey Dee med v&auml;nner.</p>
+<p>Fr&aring;n &ldquo;Detroit Rock City&rdquo; till &ldquo;I Was Made for Lovin&rsquo; You&rdquo;, l&aring;t dig svepas med av en musikupplevelse som sammanf&ouml;r rockens r&aring;a kraft med den symfoniska orkesterns pampighet.</p>
+<p>En kv&auml;ll fylld av passion, energi och en unik hyllning till rockhistoriens st&ouml;rsta band &ndash; missa inte detta spektakel!</p></span>
+                            </div>
+                        
+                    
+                
+                
+                    <a class="btn waves-effect theme-background-color uppercase event-information-button"
+                       style="display: none"
+                        data-expanded="false"
+                        data-organizerid="3617"
+                        data-text-default="Läs mer"
+                        data-text-triggered="DÖLJ INFO">Läs mer</a>
+                
+            
+        
+
+
+
+    </div>
+</section>
+
+<style>
+    #background-container {
+        background-image: url("https://branding.nortic.io/organizer/3617/event/74827?redirect");
+    }
+
+    
+    @media (max-width: 700px) {
+        #background-container {
+            background-image: url("https://branding.nortic.io/organizer/3617/event/74827?redirect&type=mobile");
+        }
+    }
+    
+</style>
+
+                
+                    
+                    
+                    
+                        
+
+
+
+
+
+
+
+<section id="active-events">
+    <div class="container">
+        <div class="spinner-container" id="show-calendar-loader-container">
+            <div class="preloader-wrapper big active" id="show-calendar-loader">
+                <div class="spinner-layer spinner-color-secondary">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div><div class="gap-patch">
+                    <div class="circle"></div>
+                </div><div class="circle-clipper right">
+                    <div class="circle"></div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="show-listing" class="display-none">
+
+            
+                
+                    
+                    
+                    
+                
+            
+            <div id="show-listing-body">
+                <div class="row">
+                    <div class="col s12">
+                        
+                        
+                            
+                            
+                                
+                                
+                                    
+                                        
+                                        
+                                            
+                                        
+                                    
+                                    
+                                
+                                
+                                
+
+                                
+                                    
+                                    
+
+                                    
+                                    
+                                        <div class="show-listing-month valign-wrapper row no-margin">
+                                            <div class="col s12">
+                                                <span class="uppercase bold month-name">
+                                                
+                                                    
+                                                    
+                                                        januari 2027</span>
+                                                    
+                                                
+                                            </div>
+                                        </div>
+                                    
+                                
+                                
+                                
+                                
+                                
+
+                                
+                                    
+                                    
+                                    
+                                
+                                
+                                
+
+                                
+                                
+                                
+
+                                <div style="position: relative;"
+                                     class="show-listing-show pointer sd2027-01-27
+    
+     numbered-show 
+    modal__trigger"
+                                     data-showtype="numbered-show"
+                                     data-fab="booking-fab"
+                                     data-showid="306916"
+                                     data-arenatype="numbered-show"
+                                    
+                                     
+                                     
+                                     
+                                     
+                                     data-releasedate="2025-10-25 10:00" data-prereleaseaccesscode="true"
+                                     
+                                     
+                                        
+                                     
+                                     data-modal="#material-modal">
+                                    <div class="row no-margin valign-wrapper">
+                                        
+                                            <div class="col m1 center-align dateball-container">
+                                                <span class="dateball default-color">
+                                                    
+                                                        
+                                                        
+                                                            <span>27</span>
+                                                        
+                                                    
+                                                </span>
+                                            </div>
+                                        
+                                        <div class="col s3 m3 l3 hide-on-small-and-down large-screen-date">
+                                            
+                                            
+                                            
+                                                
+                                                    <span class="capitalize bold">
+                                                        
+                                                            
+                                                            
+                                                                onsdag
+                                                            
+                                                        
+                                                    </span>
+                                                    <br/>
+                                                    
+                                                        
+                                                            27 januari 19:00
+                                                        
+                                                        
+                                                    
+                                                
+                                                
+                                                
+                                                
+                                                
+                                            
+                                        </div>
+                                        <div class="col s3 m3 hide-on-small-and-down left-align show-name-container">
+                                            <div class="bold show-name">27/1 - 2027 - Kiss</div>
+                                            
+                                            
+                                                
+
+                                                
+                                                
+                                                    <div class="supply-blobs"></div>
+                                                
+                                            
+                                        </div>
+                                        <div class="col s2 m2 hide-on-small-and-down price-range">
+                                            från 865 SEK
+                                        </div>
+                                        <div class="col s3 m2 hide-on-small-and-down location-med-and-up right-align">
+                                            
+                                                <span>
+                                                    
+                                                        
+                                                        
+                                                            
+                                                            
+                                                                
+                                                                    <a target="_blank" class="cancel-trigger arenaLocationLink" href="http://www.google.se/maps/place/55.58102,12.99115">Stadionmässan</a><br/><span class="bold">Malmö</span>
+                                                                
+                                                                
+                                                            
+                                                        
+                                                    
+                                                </span>
+                                            
+                                        </div>
+                                        <div class="col s10 hide-on-med-and-up left-align combined-name-and-info">
+                                            <span class="bold show-name">27/1 - 2027 - Kiss</span>
+                                            
+                                            
+                                                
+                                                    <div class="supply-blobs"></div>
+                                                
+                                                
+                                                
+                                            
+                                            <br />
+                                            <div class="hide-on-med-and-up price-range">
+                                                
+                                                    
+                                                    
+                                                        från 865 SEK
+                                                    
+                                                
+                                            </div>
+                                            
+                                                <div class="show-info-small">
+                                                
+                                                    
+                                                        
+                                                        
+                                                            <span class="capitalize">onsdag</span>
+                                                        
+                                                    
+                                                    <br/>
+                                                    27 januari 19:00
+                                                    <br>
+                                                
+                                                
+                                                
+                                                    
+                                                        <span class="small-arena">
+                                                            <span class="bold">Stadionmässan</span><br/>
+                                                            Malmö
+                                                        </span>
+                                                    
+                                                    
+                                                
+                                                
+                                                
+                                                
+                                            </div>
+                                            
+                                            
+                                        </div>
+
+                                        <div class="row hide-on-med-and-up showcalander-btn-wrapper">
+                                            <div class="m2 center-align show-listing-arrow">
+                                                
+                                                    <a class="btn waves-effect waves-light theme-background-color"><i class="material-icons right">arrow_forward</i><span>Biljetter</span></a>
+                                                
+                                                
+                                                <div class="preloader-wrapper display-none active">
+                                                    <div class="spinner-layer spinner-color-secondary">
+                                                        <div class="circle-clipper left">
+                                                            <div class="circle"></div>
+                                                        </div><div class="gap-patch">
+                                                        <div class="circle"></div>
+                                                    </div><div class="circle-clipper right">
+                                                        <div class="circle"></div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        
+                                        <div class="col s2 m2 center-align show-listing-arrow hide-on-small-and-down">
+                                            
+                                                <a class="btn waves-effect waves-light theme-background-color"><i class="material-icons right">arrow_forward</i><span>Biljetter</span></a>
+                                            
+                                            
+                                            <div class="preloader-wrapper display-none active">
+                                                <div class="spinner-layer spinner-color-secondary">
+                                                    <div class="circle-clipper left">
+                                                        <div class="circle"></div>
+                                                    </div><div class="gap-patch">
+                                                    <div class="circle"></div>
+                                                </div><div class="circle-clipper right">
+                                                    <div class="circle"></div>
+                                                </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            
+                        
+                            
+                            
+                                
+                                
+                                    
+                                        
+                                        
+                                            
+                                        
+                                    
+                                    
+                                
+                                
+                                
+
+                                
+                                
+                                
+                                
+                                
+
+                                
+                                
+                                    
+                                    
+                                    
+                                
+                                
+
+                                
+                                
+                                
+
+                                <div style="position: relative;"
+                                     class="show-listing-show pointer sd2027-01-28
+    
+     unnumbered-show 
+    "
+                                     data-showtype="unnumbered-show"
+                                     data-fab="booking-fab"
+                                     data-showid="307835"
+                                     data-arenatype="unnumbered-show"
+                                    
+                                     
+                                     
+                                     
+                                     
+                                     data-releasedate="2025-11-07 10:00" data-prereleaseaccesscode="true"
+                                     
+                                     
+                                        
+                                     
+                                     data-modal="#material-modal">
+                                    <div class="row no-margin valign-wrapper">
+                                        
+                                            <div class="col m1 center-align dateball-container">
+                                                <span class="dateball default-color">
+                                                    
+                                                        
+                                                        
+                                                            <span>28</span>
+                                                        
+                                                    
+                                                </span>
+                                            </div>
+                                        
+                                        <div class="col s3 m3 l3 hide-on-small-and-down large-screen-date">
+                                            
+                                            
+                                            
+                                                
+                                                    <span class="capitalize bold">
+                                                        
+                                                            
+                                                            
+                                                                torsdag
+                                                            
+                                                        
+                                                    </span>
+                                                    <br/>
+                                                    
+                                                        
+                                                            28 januari 19:00
+                                                        
+                                                        
+                                                    
+                                                
+                                                
+                                                
+                                                
+                                                
+                                            
+                                        </div>
+                                        <div class="col s3 m3 hide-on-small-and-down left-align show-name-container">
+                                            <div class="bold show-name">28/1 - 2027 - Kiss</div>
+                                            
+                                            
+                                                
+
+                                                
+                                                
+                                                    <div class="supply-blobs"></div>
+                                                
+                                            
+                                        </div>
+                                        <div class="col s2 m2 hide-on-small-and-down price-range">
+                                            från 865 SEK
+                                        </div>
+                                        <div class="col s3 m2 hide-on-small-and-down location-med-and-up right-align">
+                                            
+                                                <span>
+                                                    
+                                                        
+                                                        
+                                                            
+                                                            
+                                                                
+                                                                
+                                                                    <a target="_blank" class="cancel-trigger arenaLocationLink" href="http://www.google.se/maps/place/56.84922,15.39116">Craft Arena </a><br/><span class="bold">Kosta</span>
+                                                                
+                                                            
+                                                        
+                                                    
+                                                </span>
+                                            
+                                        </div>
+                                        <div class="col s10 hide-on-med-and-up left-align combined-name-and-info">
+                                            <span class="bold show-name">28/1 - 2027 - Kiss</span>
+                                            
+                                            
+                                                
+                                                    <div class="supply-blobs"></div>
+                                                
+                                                
+                                                
+                                            
+                                            <br />
+                                            <div class="hide-on-med-and-up price-range">
+                                                
+                                                    
+                                                    
+                                                        från 865 SEK
+                                                    
+                                                
+                                            </div>
+                                            
+                                                <div class="show-info-small">
+                                                
+                                                    
+                                                        
+                                                        
+                                                            <span class="capitalize">torsdag</span>
+                                                        
+                                                    
+                                                    <br/>
+                                                    28 januari 19:00
+                                                    <br>
+                                                
+                                                
+                                                
+                                                    
+                                                    
+                                                        <span class="small-arena">
+                                                            <span class="bold">
+                                                                Craft Arena 
+                                                            </span><br/>
+                                                            Kosta
+                                                        </span>
+                                                    
+                                                
+                                                
+                                                
+                                                
+                                            </div>
+                                            
+                                            
+                                        </div>
+
+                                        <div class="row hide-on-med-and-up showcalander-btn-wrapper">
+                                            <div class="m2 center-align show-listing-arrow">
+                                                
+                                                    <a class="btn waves-effect waves-light theme-background-color"><i class="material-icons right">expand_more</i><span>Biljetter</span></a>
+                                                
+                                                
+                                                <div class="preloader-wrapper display-none active">
+                                                    <div class="spinner-layer spinner-color-secondary">
+                                                        <div class="circle-clipper left">
+                                                            <div class="circle"></div>
+                                                        </div><div class="gap-patch">
+                                                        <div class="circle"></div>
+                                                    </div><div class="circle-clipper right">
+                                                        <div class="circle"></div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        
+                                        <div class="col s2 m2 center-align show-listing-arrow hide-on-small-and-down">
+                                            
+                                                <a class="btn waves-effect waves-light theme-background-color"><i class="material-icons right">expand_more</i><span>Biljetter</span></a>
+                                            
+                                            
+                                            <div class="preloader-wrapper display-none active">
+                                                <div class="spinner-layer spinner-color-secondary">
+                                                    <div class="circle-clipper left">
+                                                        <div class="circle"></div>
+                                                    </div><div class="gap-patch">
+                                                    <div class="circle"></div>
+                                                </div><div class="circle-clipper right">
+                                                    <div class="circle"></div>
+                                                </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-contents unnumbered-show display-none show-307835" data-showid="307835" data-maxperbooking="30" >
+                                    <div id="captcha-div-307835" class="recaptcha-container">
+                                    </div>
+                                </div>
+                                
+                            
+                        
+                    </div>
+                </div>
+                <div class="display-none fake-month show-listing-month row">
+                    <div class="col s12">
+                            <span class="uppercase bold month-name" style="margin-left: 30px">
+                              Välj datum i kalender för att se tillgång
+                            </span>
+                    </div>
+                </div>
+
+            </div>
+            
+                
+            
+        </div>
+    </div>
+</section>
+                    
+                
+                
+            </main>
+            
+                
+<footer class="page-footer">
+    <div class="container">
+            <div class="row valign-wrapper">
+                <div id="left-column" class="col s12 m12 valign">
+                    <a id="nortic-footer-link" href="https://nortic.se" target="_blank">
+                        <img src="//cloud.nortic.se/images/dagny/footer/nortic_white.svg" alt="Nortic" onerror="this.onerror=null;this.src='/images/dagny/footer/nortic_white.svg';" />
+                    </a>
+                    <span id="divider"></span>
+                    <a href="/support" class="uppercase my-pages-handle">
+                        Mina Sidor</a>
+                    <a href="/support" class="uppercase support-page-handle">
+                        Support</a>
+                    <a href="https://hub.nortic.se/policy/tillganglighetsredogorelse-biljettforsaljning" class="uppercase">
+                        Tillgänglighetsredogörelse</a>
+                </div>
+            </div>
+    </div>
+    </div>
+</footer>
+
+            
+        </div>
+    </div>
+</div>
+<script src="/scripts/es6-shim/es6-shim.min.js"></script>
+
+<script src="/scripts/jarena/formatted/core/core.js?v=12.5.3"></script>
+<script src="/scripts/jarena/formatted/core/webgpu-renderer.js?v=12.5.3"></script>
+<script src="/scripts/jarena/formatted/extensions/bookingsextension.js?v=12.5.3"></script>
+<script src="/scripts/jarena/formatted/instances/dagny.js?v=12.5.3"></script>
+<script>
+    var requiredVacantSeats = undefined;
+</script>
+
+
+<script type='application/ld+json'>
+
+
+
+    
+    
+        [
+        
+            
+            {
+                "@context": "http://www.schema.org",
+                "@type": "Event",
+                "name": "KISS",
+                "description": "[Konsert]  Upplev KISS som du aldrig hört dem förut! ",
+                "startDate": "2027-01-27T19:00",
+                "endDate": "2027-01-27",
+                "location": {
+                    "@type": "Place",
+                    "name": "Stadionmässan - Malmö",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "streetAddress": "Stadiongatan 25",
+                        "addressLocality": "Malmö",
+                        "postalCode": "217 62",
+                        "addressCountry": "Sweden"
+                    }
+                },
+                
+                    "image": [
+                    "https://tickets.nortic.sehttps://branding.nortic.io/organizer/3617/event/74827?redirect"
+                    ],
+                
+                "offers": {
+                    "@type": "Offer",
+                    "description": "Köp biljett",
+                    "priceCurrency": "SEK",
+                    "url": "https://tickets.nortic.se/dagny/show/306916",
+                    "availability": "https://schema.org/InStock"
+                    ,"price": "865.0"
+                }
+            },
+            
+        
+            
+            {
+                "@context": "http://www.schema.org",
+                "@type": "Event",
+                "name": "KISS",
+                "description": "[Konsert]  Upplev KISS som du aldrig hört dem förut! ",
+                "startDate": "2027-01-28T19:00",
+                "endDate": "2027-01-28",
+                "location": {
+                    "@type": "Place",
+                    "name": "Craft Arena  - Kosta",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "streetAddress": "Dåvedshultsvägen 3",
+                        "addressLocality": "Kosta",
+                        "postalCode": "36543",
+                        "addressCountry": "Sweden"
+                    }
+                },
+                
+                    "image": [
+                    "https://tickets.nortic.sehttps://branding.nortic.io/organizer/3617/event/74827?redirect"
+                    ],
+                
+                "offers": {
+                    "@type": "Offer",
+                    "description": "Köp biljett",
+                    "priceCurrency": "SEK",
+                    "url": "https://tickets.nortic.se/dagny/show/307835",
+                    "availability": "https://schema.org/InStock"
+                    ,"price": "865.0"
+                }
+            }
+            
+        
+        ]
+    
+
+
+ </script>
+    <script src="/scripts/nortic/dagny/addonContentHandler.js"></script>
+    <script src="/scripts/citronkaka-ui/dist/index.js" type="module"></script>
+
+
+</body>
+</html>

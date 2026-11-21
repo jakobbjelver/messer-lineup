@@ -34,6 +34,29 @@ type Adapter interface {
 	Detail(ctx context.Context, candidate model.Candidate) (model.Show, error)
 }
 
+// Expander is an adapter whose page can hold more than one event: a tour stop with two nights, a festival with five
+// slots, a dance night on four dates. The miner prefers Details when it is implemented and treats each returned show
+// exactly like a single Detail result — same window, same music policy, same counters, once per show.
+//
+// It is a separate interface rather than a changed Adapter so the two sources that return one show per page keep
+// their signature, and a future source with a multi-date page has one obvious method to implement.
+type Expander interface {
+	Details(ctx context.Context, candidate model.Candidate) ([]model.Show, error)
+}
+
+// detailsOf asks the adapter for every show on a page. A page that returns none and no error is a page with no event,
+// which is not a failure the retry queue should spend an attempt on.
+func detailsOf(ctx context.Context, adapter Adapter, candidate model.Candidate) ([]model.Show, error) {
+	if expander, ok := adapter.(Expander); ok {
+		return expander.Details(ctx, candidate)
+	}
+	show, err := adapter.Detail(ctx, candidate)
+	if err != nil {
+		return nil, err
+	}
+	return []model.Show{show}, nil
+}
+
 // Options is one run.
 type Options struct {
 	Adapters   []Adapter     // every platform this run reads
@@ -163,12 +186,22 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 					src.Warning = fmt.Sprintf("%v — stopped after %d of %d candidates", err, i, len(candidates))
 					break
 				}
-				show, derr := adapter.Detail(ctx, candidate)
+				pageShows, derr := detailsOf(ctx, adapter, candidate)
 				if derr != nil {
 					if errors.Is(derr, model.ErrNotAnArtist) {
 						// Parsed, but the platform used an admission label as the event name. Counted apart
 						// from a failure: nothing went wrong, the row was never a show.
 						src.NotAnArtist++
+						continue
+					}
+					if errors.Is(derr, model.ErrNotMusic) {
+						// The platform's own category says this is not a gig. A fact, not a failure: a retry would
+						// spend a second attempt on an answer that was already correct.
+						src.NotMusic++
+						if src.Why == nil {
+							src.Why = map[string]int{}
+						}
+						src.Why["category"]++
 						continue
 					}
 					kind := classify(derr)
@@ -203,59 +236,61 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 				if opts.State != nil && retried[candidate.URL] {
 					opts.State.SuccessJob(state.JobID(adapter.ID(), state.JobDetail, candidate.URL))
 				}
-				if _, perr := model.Project(show); perr != nil {
-					src.Failures["not publishable: "+perr.Error()]++
-					continue
-				}
-				if countries != nil && !countries[countryOf(show.Town)] {
-					src.Filtered++
-					continue
-				}
-				if townSlug(show.Town) != slug {
-					// A platform's town page can carry events from anywhere in the country (Tickster's
-					// Copenhagen list does); they belong to another town's run, not to this one.
-					src.Elsewhere++
-					continue
-				}
-				if !inWindow(show.Start, window) {
-					src.Outside++
-					continue
-				}
-				// The music policy runs last, after the window: a room that never programmes music is a fact
-				// about the room, but the count is only interesting for shows this town would have published.
-				unclassified := ""
-				if opts.Venues != nil {
-					switch verdict := opts.Venues.Decide(show.VenueKey, show.Artist); {
-					case !verdict.Keep:
-						src.NotMusic++
-						if src.Why == nil {
-							src.Why = map[string]int{}
-						}
-						src.Why[verdict.Reason]++
-						if verdict.Reason == "venue" {
-							if src.DroppedVenues == nil {
-								src.DroppedVenues = map[string]int{}
-							}
-							src.DroppedVenues[show.Venue]++
-						}
+				for _, show := range pageShows {
+					if _, perr := model.Project(show); perr != nil {
+						src.Failures["not publishable: "+perr.Error()]++
 						continue
-					case verdict.Reason == "unclassified":
-						unclassified = show.Venue
 					}
-				}
-				if len(show.Sources) == 0 {
-					show.Sources = []string{adapter.ID()}
-				}
-				src.Rows++
-				if unclassified != "" {
-					src.Unclassified++
-					if src.UnclassifiedVenues == nil {
-						src.UnclassifiedVenues = map[string]int{}
+					if countries != nil && !countries[countryOf(show.Town)] {
+						src.Filtered++
+						continue
 					}
-					src.UnclassifiedVenues[unclassified]++
+					if townSlug(show.Town) != slug {
+						// A platform's town page can carry events from anywhere in the country (Tickster's
+						// Copenhagen list does); they belong to another town's run, not to this one.
+						src.Elsewhere++
+						continue
+					}
+					if !inWindow(show.Start, window) {
+						src.Outside++
+						continue
+					}
+					// The music policy runs last, after the window: a room that never programmes music is a fact
+					// about the room, but the count is only interesting for shows this town would have published.
+					unclassified := ""
+					if opts.Venues != nil {
+						switch verdict := opts.Venues.Decide(show.VenueKey, show.Artist); {
+						case !verdict.Keep:
+							src.NotMusic++
+							if src.Why == nil {
+								src.Why = map[string]int{}
+							}
+							src.Why[verdict.Reason]++
+							if verdict.Reason == "venue" {
+								if src.DroppedVenues == nil {
+									src.DroppedVenues = map[string]int{}
+								}
+								src.DroppedVenues[show.Venue]++
+							}
+							continue
+						case verdict.Reason == "unclassified":
+							unclassified = show.Venue
+						}
+					}
+					if len(show.Sources) == 0 {
+						show.Sources = []string{adapter.ID()}
+					}
+					src.Rows++
+					if unclassified != "" {
+						src.Unclassified++
+						if src.UnclassifiedVenues == nil {
+							src.UnclassifiedVenues = map[string]int{}
+						}
+						src.UnclassifiedVenues[unclassified]++
+					}
+					shows = append(shows, show)
+					townSet.Add(show)
 				}
-				shows = append(shows, show)
-				townSet.Add(show)
 			}
 			src.Seconds = time.Since(started).Seconds()
 			if warn := yieldWarning(opts.yieldFloor(), baseline, haveBaseline, src); warn != "" && src.Warning == "" {

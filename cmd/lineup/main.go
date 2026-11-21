@@ -26,6 +26,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/publish"
 	"github.com/jakobbjelver/messer-lineup/internal/server"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
+	"github.com/jakobbjelver/messer-lineup/internal/sources/nortic"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/tickster"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/venues"
@@ -460,7 +461,7 @@ func (s *stringList) Set(value string) error {
 func runMine(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("lineup mine", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	sources := fs.String("source", "dice", "platforms to read: dice, tickster (comma-separated)")
+	sources := fs.String("source", "dice", "platforms to read: dice, tickster, nortic (comma-separated)")
 	var towns stringList
 	fs.Var(&towns, "town", "town slug; repeatable, or comma-separated")
 	countries := fs.String("country", "", "keep only towns in these countries (dk,se)")
@@ -608,8 +609,10 @@ func buildAdapters(client *fetch.Client, list string) ([]mine.Adapter, error) {
 			out = append(out, dice.New(client))
 		case "tickster":
 			out = append(out, tickster.New(client))
+		case "nortic":
+			out = append(out, nortic.New(client))
 		default:
-			return nil, fmt.Errorf("unknown source %q (known: dice, tickster)", id)
+			return nil, fmt.Errorf("unknown source %q (known: dice, tickster, nortic)", id)
 		}
 	}
 	if len(out) == 0 {
