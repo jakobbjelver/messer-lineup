@@ -32,16 +32,26 @@ STATUS_FILE="$HOME/Artifacts/messer-lineup/last-run.json"
 stamp() { date "+%Y-%m-%d %H:%M"; }
 day() { date "+%Y-%m-%d"; }
 
-# write_status <state> <detail> [rows] — the last line of every path through this script.
+# write_status <state> <detail> [rows] — the machine-readable answer to "did last night work?".
+#
+# It is written atomically (temp + rename) because a watcher may read it at any moment, and a half-written JSON file
+# reads as a broken run. The `running` line is written before the sweep starts: a night that takes 40 minutes must be
+# distinguishable from a night that never happened, and a check that fires mid-run must say "still running" rather than
+# report the previous night as tonight's success.
 write_status() {
   local state="$1" detail="$2" rows="${3:-0}"
   python3 - "$STATUS_FILE" "$state" "$detail" "$rows" "$TOWNS" "$LOG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" <<'PY'
-import json, sys
+import json, os, sys
 path, state, detail, rows, towns, log, at = sys.argv[1:8]
-json.dump(
-    {"state": state, "detail": detail, "rows": int(rows or 0), "towns": towns, "log": log, "at": at},
-    open(path, "w"),
-)
+tmp = path + ".tmp"
+with open(tmp, "w") as handle:
+    json.dump(
+        {"state": state, "detail": detail, "rows": int(rows or 0), "towns": towns, "log": log, "at": at},
+        handle,
+    )
+    handle.flush()
+    os.fsync(handle.fileno())
+os.replace(tmp, path)
 PY
 }
 
@@ -50,6 +60,7 @@ LOG="$LOG_DIR/nightly-$(day).log"
 # Everything goes to the log; exactly one line goes to the caller (a cron job delivers that verbatim).
 exec 3>&1 1>>"$LOG" 2>&1
 
+write_status "running" "the sweep is running" 0
 echo "=== nightly $(stamp) · towns $TOWNS"
 
 if [ -f "$ENV_FILE" ]; then
