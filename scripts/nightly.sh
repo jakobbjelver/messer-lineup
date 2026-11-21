@@ -77,7 +77,7 @@ START=$(date +%s)
 # `--coverage` is what keeps the public honesty record equal to the run that published: the block is generated, so
 # the only way it can drift is if the producer is not asked for it (it was hand-refreshed on 2026-11-20 for exactly
 # that reason).
-if ! ./bin/lineup mine --source tickster --town "$TOWNS" --index "$INDEX" --state "$STATE/state.json" \
+if ! ./bin/lineup mine --source tickster,nortic --town "$TOWNS" --index "$INDEX" --state "$STATE/state.json" \
     --report "$REPORT" --coverage "$COVERAGE"; then
   echo "nightly: mine failed; nothing was published"
   printf '| %s | %s | mine failed | — | — |\n' "$(stamp)" "$TOWNS" >>"$LEDGER"

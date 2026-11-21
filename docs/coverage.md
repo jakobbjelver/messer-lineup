@@ -10,6 +10,25 @@ carried, `Referer` on click-through, robots honoured). Reproduce with `make prob
 Byte sizes below are one sample; a dynamic page varies a little per request, which is why every verdict is
 a status code and never a size.
 
+## v2: the second source landed (2026-11-21)
+
+**Nortic** is the second source, and the v1 note's "dead as HTML" verdict was wrong: the city pages link to
+`tickets.nortic.se/ticket/event/<id>`, and that host publishes `sitemap-events.xml` (2 226 URLs at measurement).
+Every event page carries schema.org `Event` JSON-LD and a `[Konsert]` / `[Festival]` category prefix, which is a
+cleaner music filter than anything Tickster publishes.
+
+The first two-source run: **1 041 rows** (Tickster 717, Nortic 324), four towns, duplicate rate **3.3 %**,
+`lineup verify` green, published. Stockholm 535, Malmö 218, Gothenburg 264, Copenhagen 24. The rooms Nortic adds are
+the ones v1 had zero rows for: Plan B (34 rows), Palladium (29), Fasching (77), Kollektivet Livet (61),
+Eric Ericsonhallen (12), Münchenbryggeriet (10), Storkyrkan (18), Malmö Live.
+
+**The hit rate did not move.** 42 Last.fm artists and 17 ListenBrainz artists still match **0** of 1 041 rows. The
+index is broader (913 distinct artist names) but the artists on those two lists are not touring Swedish rooms in this
+window — the window is 21 Nov → 21 Mar, and the lists are classic rock and Americana, whose tours are summer. That is
+a fact about the season and the inventory, not about the parser. The next levers are the artist-name field (26 % of
+rows still carry a show title: `Gud förbannat - Nu får det bära eller brista`, `Möt Lucia i Storkyrkan`) and genre
+input, not another platform.
+
 ## Reachability, which is the first thing to measure
 
 | Source | Market | Sitemap | Detail page | Verdict |
@@ -121,6 +140,9 @@ inventory is the mid-size Nordic promoter layer, not the clubs and concert halls
 actually plays. No list length, cap or UI change moves this; a second source per town does. Re-measure with
 `scripts/inventory.py --index .lineup-index` and the same diff against a provider's top-N.
 
+**Re-measured 2026-11-21 at 1 041 rows and two sources: still 0 and 0.** The v2 section above has the reading; the
+number that matters did not move, and the record should not pretend otherwise.
+
 ## Four towns, one platform, and what the merge actually found
 
 The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg,malmo` at a 2 s interval
@@ -190,14 +212,16 @@ festival: a room's class and an event's form decide, never the word "festival".
 
 | Candidate | What it does from this host | Verdict |
 |---|---|---|
+| Nortic | `tickets.nortic.se/sitemap-events.xml` lists 2 226 event URLs; every page carries `Event` JSON-LD with a `[Konsert]`/`[Festival]` category | **yes — shipped 2026-11-21** (see the v2 section) |
 | Ticketmaster Discovery | the register form is a moderation queue, the key is shown in the portal and never emailed, and Denmark is not a Discovery market | **no, for now** — nothing is gated on it; revisit only if the account clears |
 | Eventim SE | sitemaps 200, every event page 403 behind the same edge as `.de`; an off-mini test needs an egress we do not own | **no** |
 | Billetto | `202` challenge page, including `/api/v3/*` | **no** |
 | Billetlugen | listings yield links, event pages 403, cards carry no date and no venue | **links only** |
 | DICE | 404 for every Nordic town (DE/GB/US only) | **no, for the Nordics** |
 
-So v1 ships **one source per town**, written down rather than implied. The next coverage lever is more towns on
-the source we can already read (Malmö, Oslo, Aarhus), not a second platform.
+So v1 shipped **one source per town**, written down rather than implied. v2 added the second (Nortic, SE only); more
+towns on a platform we can already read remain the cheap lever, but the table above is why the second platform came
+first. The next town still needs a classification pass, not an adapter.
 
 ## What this means for the gates
 
@@ -205,12 +229,13 @@ the source we can already read (Malmö, Oslo, Aarhus), not a second platform.
   town: 30/30/30 rows, each in the right town. Eventim DE and AXS cannot do it from this egress.
 - **G0-local** is re-cut to a one-source promise (ADR-003): **Copenhagen clears ≥ 20 rows from Tickster alone** —
   51 candidates → 37 rows, 14 outside the window, zero failures, one shard of 2 375 bytes, `lineup verify`
-  green. The two-source clause is unreachable: Billetto answers a challenge page, and Billetlugen's event pages
-  answer 403.
-- **The duplicate rate is a fixture, not a live number.** No town we mine has two sources (DICE: DE/GB/US;
-  Tickster: DK/NO/SE), so `internal/match` proves the merge — same gig from two sources merges, two gigs in one
-  room on one night do not, a venue spelling difference merges only on position — and `lineup mine --source a,b`
-  will report a live rate the day two sources share a town.
+  green. The two-source clause was unreachable in v1 (Billetto answers a challenge page, Billetlugen's event pages
+  answer 403); **since 2026-11-21 Stockholm, Gothenburg and Malmö clear it from two sources**, and Copenhagen still
+  clears it from Tickster alone.
+- **The duplicate rate is live now.** Three towns have two sources (Tickster + Nortic), and the first two-source run
+  merged 1 077 rows into 1 041 shows — **3.3 %**, under the 8 % cap. Thirty-six rows were the same gig listed twice,
+  which is the cross-source match the fixture-only version could not prove. `internal/match` still holds the rules:
+  same gig from two sources merges, two gigs in one room on one night do not.
 - **A town costs one classification pass, not a new adapter**: `--town gothenburg` and `--town malmo` reused the
   `se` market file and the same microdata parser; the work was 69 rooms (45 music / 24 other) and 27 rooms
   (15 / 12). Malmö is small enough to read in one page (266 candidates, 144 s) and its duplicate rate is 9.2 %

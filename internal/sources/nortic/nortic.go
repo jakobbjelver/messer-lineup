@@ -77,12 +77,14 @@ func New(client *fetch.Client) *Source {
 	return &Source{client: client, sitemapURL: base + "/sitemap.xml", pages: map[string]pageResult{}}
 }
 
-// WithBase points the reader at another origin (a test server, or a mirror).
+// WithBase points the reader at another origin (a test server, or a mirror). It builds a new Source rather than copying
+// one: the struct holds a mutex, and a copy would carry a second lock that guards the same maps.
 func (s *Source) WithBase(origin string) *Source {
-	copied := *s
-	copied.sitemapURL = strings.TrimRight(origin, "/") + "/sitemap.xml"
-	copied.pages = map[string]pageResult{}
-	return &copied
+	return &Source{
+		client:     s.client,
+		sitemapURL: strings.TrimRight(origin, "/") + "/sitemap.xml",
+		pages:      map[string]pageResult{},
+	}
 }
 
 // ID names the source.
