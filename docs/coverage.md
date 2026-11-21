@@ -87,15 +87,15 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_tickster · measured · 2026-11-21T00:42:46Z_
+_tickster · measured · 2026-11-21T03:10:01Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
 | copenhagen | tickster | 48 | 24 | 11 | 0 | 0 | 27 |
-| gothenburg | tickster | 685 | 258 | 259 | 0 | 0 | 378 |
-| malmo | tickster | 266 | 158 | 55 | 0 | 0 | 144 |
-| stockholm | tickster | 962 | 315 | 442 | 0 | 0 | 527 |
-| **total** | | **1961** | **755** | **767** | **0** | **0** | |
+| gothenburg | tickster | 684 | 258 | 259 | 0 | 0 | 378 |
+| malmo | tickster | 266 | 158 | 55 | 0 | 0 | 147 |
+| stockholm | tickster | 959 | 315 | 442 | 0 | 0 | 520 |
+| **total** | | **1957** | **755** | **767** | **0** | **0** | |
 
 Music policy: **767** rows dropped (form:allsang 1, form:buffe 1, form:dinner 2, form:forestallning 1, form:fotboll 3, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 16, form:musical 2, form:musikal 2, form:provning 38, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 4, form:vendors 1, form:wrestling 2, venue 667).
 
