@@ -7,15 +7,16 @@ import (
 	"path/filepath"
 
 	"github.com/jakobbjelver/messer-lineup/internal/genres"
+	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
 // genreArtists resolves a token's genre ids to the artist keys the published artifact lists.
 //
 // A build that has not published genres yet answers an empty set, which makes a genre-only feed an empty calendar rather
 // than the whole town — the plan's rule, and the honest one: the subscriber asked for a filter, not for everything.
-func (s *server) genreArtists(ids []string) (map[string]bool, error) {
+func (s *server) genreArtists(manifest model.Manifest, ids []string) (map[string]bool, error) {
 	out := make(map[string]bool)
-	name := s.manifest.Files["genres"]
+	name := manifest.Files["genres"]
 	if name == "" {
 		return out, nil
 	}

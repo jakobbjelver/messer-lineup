@@ -63,11 +63,11 @@ const halfWindowToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk", f
   .replace(/=+$/, "");
 
 /**
- * A token from a newer build: a version and a field this build does not serve. Both runtimes must refuse it with the
- * same envelope. The failure this asserts against is the quiet one — a decoder that ignores the field it does not know
+ * A token carrying a field this build does not serve. Both runtimes must refuse it with the same envelope — a decoder
+ * that ignores it would answer a different board than the subscriber asked for. The failure this asserts against is the quiet one — a decoder that ignores the field it does not know
  * would answer the whole town, and the subscriber could not tell.
  */
-const futureToken = Buffer.from(JSON.stringify({ v: 2, t: "copenhagen-dk", g: ["metal"] }), "utf8")
+const futureToken = Buffer.from(JSON.stringify({ v: 2, t: "copenhagen-dk", z: 1 }), "utf8")
   .toString("base64")
   .replace(/\+/g, "-")
   .replace(/\//g, "_")

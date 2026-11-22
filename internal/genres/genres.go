@@ -82,9 +82,15 @@ var stoplist = map[string]bool{
 	"swedish": true, "svenskt": true, "svensk": true, "sverige": true, "sweden": true,
 	"scandinavian": true, "scandinavia": true, "nordic": true,
 	"danish": true, "norwegian": true, "finnish": true, "icelandic": true,
+	// Nationalities are the largest unmapped family after the province words: they say where a band is from, which the
+	// board does not filter on, and they crowd out the tags that are real gaps in the vocabulary.
+	"american": true, "british": true, "usa": true, "uk": true, "german": true, "french": true, "irish": true,
+	"australian": true, "canadian": true, "european": true,
 	"seen live": true, "set live": true, "live": true,
 	"favorites": true, "favourites": true, "favorite": true, "favourite": true,
-	"female vocalists": true, "male vocalists": true,
+	"female vocalists": true, "male vocalists": true, "female vocalist": true, "male vocalist": true,
+	// Listener noise: a tag that could be put on anything is not a genre.
+	"all": true, "instrumental": true, "guitar": true, "chillout": true,
 	"eurovision": true, "spotify": true,
 	"60s": true, "70s": true, "80s": true, "90s": true, "00s": true, "10s": true, "20s": true,
 	"awesome": true, "beautiful": true, "good": true, "best": true, "chill": true, "party": true,
@@ -99,12 +105,12 @@ var aliases = []struct {
 	id     string
 }{
 	// Metal first: it is the most reliably tagged corner of Last.fm and `metal` alone must never fall through to rock.
-	{"metal", "metal"}, {"metalcore", "metal"}, {"grindcore", "metal"}, {"sludge", "metal"}, {"doom", "metal"},
+	{"metal", "metal"}, {"metalcore", "metal"}, {"grindcore", "metal"}, {"sludge", "metal"}, {"doom", "metal"}, {"stoner", "metal"},
 	{"blackgaze", "metal"}, {"djent", "metal"},
 
 	{"punk", "punk"}, {"hardcore", "punk"}, {"emo", "punk"}, {"shoegaze", "punk"}, {"grunge", "punk"},
 
-	{"hip hop", "hip-hop"}, {"hip-hop", "hip-hop"}, {"rap", "hip-hop"}, {"grime", "hip-hop"},
+	{"hip hop", "hip-hop"}, {"hip-hop", "hip-hop"}, {"hiphop", "hip-hop"}, {"rap", "hip-hop"}, {"grime", "hip-hop"},
 
 	{"techno", "electronic"}, {"house", "electronic"}, {"ambient", "electronic"}, {"trance", "electronic"},
 	{"dance", "electronic"}, {"electro", "electronic"}, {"idm", "electronic"}, {"drum and bass", "electronic"},
@@ -130,6 +136,7 @@ var aliases = []struct {
 	{"visa", "folk"}, {"ballad", "folk"},
 
 	{"indie rock", "rock"}, {"alt rock", "rock"}, {"alternative", "rock"}, {"rock", "rock"}, {"indie", "rock"},
+	{"psychedelia", "rock"}, {"progg", "rock"},
 	{"post-rock", "rock"}, {"psychedelic", "rock"}, {"garage", "rock"}, {"progressive rock", "rock"},
 
 	{"pop", "pop"}, {"chamber pop", "pop"}, {"k-pop", "pop"}, {"europop", "pop"},

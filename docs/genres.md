@@ -56,9 +56,30 @@ visitor is never served last week's map.
 - A source (`s`) still overrides `a`; the genres are added to whatever it resolved to. A provider that is down falls
   back to the snapshot, exactly as before.
 
-## Coverage
+## Coverage, measured 2026-11-22
 
-`lineup genres` prints artists, artists with at least one genre, the percentage, how many it asked this run, and the top
-unmapped tags. The number to quote is **artists with a genre / artists published**, and it grows night by night because
-the state file makes progress compound. A build with no artifact at all is supported: the board falls back to artists
-alone and a genre feed is empty rather than wrong.
+The first full run asked Last.fm about all **844** published artists:
+
+| | |
+|---|---:|
+| artists published | 844 |
+| the provider knows (has tags) | 278 |
+| **mapped to a genre** | **264 — 95 % of the artists the provider knows** |
+| of all published artist strings | 31 % |
+
+The gap is the artist field, not the mapping: **566 artist strings (67 %) have no Last.fm page at all**, because they are
+headlines rather than acts — `A Zero8 Christmas`, `Abonnemang Stockholm — våren 2027`, `A Tribute To Lemmy Kilmister`.
+`docs/artists.md` measures the same thing from the other side. The mapping maps what the provider knows; no vocabulary
+can map a name that is not a name.
+
+The spread is plausible: rock 134, pop 81, electronic 68, folk 59, jazz 35, punk 34, metal 31, soul 24, hip-hop 23,
+blues 18, experimental 15, country 10, world 7, reggae 6, classical 4, soundtrack 2. A metal-only board is **38 rows**
+(Stockholm 18, Gothenburg 11, Malmö 6, Copenhagen 3) and the feed returns exactly those 18 for Stockholm.
+
+**The caveat is the name.** A genre is a name match, and Last.fm has namesakes: *Boiler Room* is a club night here and a
+band there, *Across the River* is a Springsteen tribute and a stoner band. The feed's `g` is therefore as good as the
+artist identity, not better — which is why the row still carries its own name and link, and why the next lever is artist
+identity, not a longer synonym list.
+
+A build with no artifact at all is supported: the board falls back to artists alone and a genre feed is empty rather
+than wrong.

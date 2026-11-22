@@ -91,9 +91,18 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries := s.manifest.Towns
+	// The manifest is read per request, not from the copy this process booted with: a self-hosted server lives through
+	// a nightly publish, and a feed built from the boot manifest keeps yesterday's window, shards and artifacts — and
+	// never sees a genre file published since boot.
+	manifest, err := index.ReadManifest(s.opts.IndexDir)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "index_unavailable", err.Error())
+		return
+	}
+
+	entries := manifest.Towns
 	if spec.T != calendarAnywhere {
-		entry, found := s.townEntry(spec.T)
+		entry, found := townEntry(manifest, spec.T)
 		if !found {
 			writeError(w, http.StatusNotFound, "unknown_town", fmt.Sprintf("this index does not publish %q", spec.T))
 			return
@@ -102,7 +111,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The window: the token's when it names one, the published one otherwise.
-	from, to := s.manifest.Window.From.Format(calendarDay), s.manifest.Window.To.Format(calendarDay)
+	from, to := manifest.Window.From.Format(calendarDay), manifest.Window.To.Format(calendarDay)
 	if spec.F != "" {
 		from, to = spec.F, spec.O
 	}
@@ -122,7 +131,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 		wanted[key] = true
 	}
 	if len(spec.G) > 0 {
-		fromGenres, err := s.genreArtists(spec.G)
+		fromGenres, err := s.genreArtists(manifest, spec.G)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "genres_unreadable", err.Error())
 			return
@@ -170,7 +179,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 	})
 
 	name, description := s.feedTitle(spec.T, labels, filtered, len(wanted), spec.G)
-	builtAt := s.manifest.BuiltAt
+	builtAt := manifest.BuiltAt
 	if builtAt.IsZero() {
 		builtAt = s.opts.Now()
 	}
@@ -242,8 +251,8 @@ func feedSlug(scope string) string {
 	return b.String()
 }
 
-func (s *server) townEntry(id string) (model.Index, bool) {
-	for _, entry := range s.manifest.Towns {
+func townEntry(manifest model.Manifest, id string) (model.Index, bool) {
+	for _, entry := range manifest.Towns {
 		if entry.Town == id {
 			return entry, true
 		}
