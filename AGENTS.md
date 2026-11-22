@@ -35,7 +35,8 @@ instead of one document.
 | `web/` | the board: Vite + React 19, the token sheet (`styles/tokens.css`) and the board's own CSS, a two-step first-run gate, the day-grouped list, the month calendar, and a loader that reads `manifest.json` + one shard |
 | `src/worker.ts` | the Worker (Hono): `/healthz`, `/readyz`, the two `/api/v1/artists/*` routes and the calendar feed; assets are served by the platform first, so only these paths invoke the script |
 | `scripts/contract.mjs` | G1 — the same requests against `lineup serve` and `wrangler dev`, diffed by status and body/error code |
-| `cmd/lineup/` | the entry point: `mine`, `verify`, `doctor`, `serve`, `publish`, `portraits`, `version` — every command does something today |
+| `cmd/lineup/` | the entry point: `mine`, `verify`, `doctor`, `serve`, `publish`, `portraits`, `genres`, `version` — every command does something today |
+| `internal/genres/` | the sixteen-word vocabulary, the Last.fm tag mapping, and the `artists/genres-<sha>.json` artifact (both directions) |
 | `internal/model/` | `Show` (full fidelity), `Row` (the published nine keys), identity keys |
 | `internal/clock/` | the only place the wall clock is read; every selection path takes the time as a parameter |
 | `internal/index/` | the read side of the published format: manifest, picker, shards, the row contract |
@@ -46,6 +47,7 @@ instead of one document.
 | `internal/fetch/` | the HTTP client: browser header profile, explicit gzip, per-host limiter, robots cache |
 | `internal/sources/` | one adapter per platform, plus the registry loader (P0.7+) |
 | `internal/venues/` | the music policy: a room's class (music/other) and the event forms that are never a gig |
+| `web/scripts/probe-board.mjs` | the design gates: header, head row, one Subscribe control, square corners, one hue, page floor, the settings panel. `make probe-board` builds a generated fixture index and runs it |
 | `sources/` | the registry, data only — `countries/*.toml`, `aliases/*.toml`, and `venues/<market>.json` (the classified rooms) |
 | `web/` | the board; built to `web/dist` and served as static assets |
 | `wrangler.jsonc` | the one deployment: assets first, script only for `/api/v1/*` and `/calendar/*` |

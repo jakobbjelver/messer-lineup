@@ -49,3 +49,5 @@ docs/SKILL.template.md
 
 # TypeScript build info (regenerated on every build)
 *.tsbuildinfo
+# The design probe's fixture: generated at run time, dated relative to today (a committed window expires).
+testdata/index/

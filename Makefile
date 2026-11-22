@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
+.PHONY: probe-board csp all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
 
 all: build
 
@@ -41,6 +41,10 @@ web:
 web-edge:
 	@cd web && VITE_DATA_BASE=$${DATA_BASE:-https://lineup-data.messer.wtf} npm run --silent build
 
+# The CSP's inline-script hash is a copy of the built page: rewrite it after any edit to index.html's theme bootstrap.
+csp:
+	@node web/scripts/cspcheck.mjs --write
+
 web-dev:
 	@cd web && npm run dev
 
@@ -66,6 +70,14 @@ keycheck:
 # The distance contract: the radius the edge uses, the pairs a source actually emits, and the formatter's widths.
 geocheck:
 	@node web/scripts/geocheck.mjs
+
+# The design gates, against a generated fixture index (the probe needs a known board, and a board is a window).
+probe-board: build
+	@go run ./scripts/fixture -dir testdata/index
+	@./bin/lineup serve --index testdata/index --web web/dist --addr 127.0.0.1:8016 >/tmp/lineup-probe.log 2>&1 & pid=$$!; \
+	trap "kill $$pid 2>/dev/null" EXIT; \
+	for i in $$(seq 1 60); do curl -sf http://127.0.0.1:8016/healthz >/dev/null && break; sleep .2; done; \
+	node web/scripts/probe-board.mjs http://127.0.0.1:8016 --town stockholm-se
 
 # G1: the same requests against both runtimes. Needs `make serve` and `make worker-dev` running.
 contract:

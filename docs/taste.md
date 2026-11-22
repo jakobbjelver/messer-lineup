@@ -5,6 +5,11 @@ the first taste input to ship is the one that needs no account at all.
 
 ## What exists today
 
+**Choose genres.** Sixteen words (see `docs/genres.md`) beside the artist picker; each is a set of artist keys from the
+published genre artifact. The board is a **union**: a row is yours when its artist is in your list *or* plays one of
+your genres, so a genre-only board is a board — `?town=stockholm-se&g=metal` — and the two inputs never cancel each
+other. Six genres at most, because a taste is a choice.
+
 **Type or paste artists.** The list is parsed in the browser (`web/src/lib/taste.ts`), reduced to identity keys
 by the same function the miner uses (`web/src/lib/key.ts`, checked against `internal/model/testdata/keys.json`
 by `make keycheck`), and matched against the shard the board already has. A row whose artist is in the set is
@@ -17,7 +22,8 @@ https://lineup.messer.wtf/?town=copenhagen-dk&a=boiler-room,paul-van-dyk
 ```
 
 which makes a personalised board a link you can send, and makes "forget my taste" a matter of clearing the
-parameter. No cookie, no session, no server-side list.
+parameter. No cookie, no session, no server-side list. Genres are `?g`, and the same rule holds: clear it and the
+board forgets them.
 
 ## The two imports, and why there are no more
 

@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Board
-        run: cd web && npm ci && npm run build
+        run: cd web && npm ci && npm run build && node scripts/cspcheck.mjs
 
       - name: Board tests
         run: cd web && npm test
@@ -42,3 +42,32 @@ jobs:
 
       - name: Build
         run: make build
+
+  # The design gates. A UI regression that the type system cannot see — a rounded corner, a second subscribe control,
+  # a header row that no longer closes on the right — is what this catches. The index is generated at run time because
+  # a board is a window: a committed one would expire and fail for a reason that is not a regression.
+  probe:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Board
+        run: cd web && npm ci && npm run build
+
+      - name: Chromium
+        run: cd web && npx playwright install --with-deps chromium
+
+      - name: Design gates
+        run: make probe-board
