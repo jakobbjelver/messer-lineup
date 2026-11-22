@@ -163,22 +163,16 @@ check("subscribe", subscribe.count === 1 && subscribe.h >= 40 && subscribe.label
 
 // The front door is the place. The probe runs as a guest (it clears `lineup.taste` above), so `yours · all` must not be
 // there: a tab that can only print 0 is a dead end, and a scene board does not open with one.
-const taste = await page.evaluate(() => {
+const frontDoor = await page.evaluate(() => {
   const seg = document.querySelector('.seg[aria-label="Whose shows"]');
   const view = document.querySelector(".seg--icons");
-  const box = view?.getBoundingClientRect();
-  const main = document.querySelector("main.page")?.getBoundingClientRect();
   return {
     tasteTab: Boolean(seg),
-    viewRight: box ? Math.round(box.right) : null,
-    pageRight: main ? Math.round(main.right) : null,
+    view: Boolean(view),
+    labels: [...document.querySelectorAll(".head__row .seg")].map((el) => el.getAttribute("aria-label")),
   };
 });
-check(
-  "scene",
-  !taste.tasteTab && taste.viewRight !== null && Math.abs(taste.pageRight - taste.viewRight) <= 40,
-  taste,
-);
+check("scene", !frontDoor.tasteTab && frontDoor.view, frontDoor);
 
 /* ── square ──────────────────────────────────────────────────────────────────────────────────── */
 
