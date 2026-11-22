@@ -84,8 +84,18 @@
 .head {
   padding: 18px 0 6px;
 }
-/* One row, two ends: what the list is made of (`yours · all`) and how it is drawn (`list · calendar`). Both
-   switch the same list, so they sit on the same line — the bar keeps only what is not about the list. */
+/* The title row: the board's name, and the one control that promises something about it. On a desktop they share the
+   line with the control at the right end; on a phone the row is a column, so the name reads first and the subscription
+   sits under it on its own line. */
+.head__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+/* One row, two ends: what the list is made of (`yours · all`) and how it is drawn (`list · calendar`). Both switch the
+   same list, so they share a line at every width — the bar keeps only what is not about the list. */
 .head__row {
   display: flex;
   align-items: center;
@@ -94,13 +104,12 @@
   gap: 10px 16px;
   margin-top: 12px;
 }
-/* The right end keeps the view switch and the subscription together, and may take its own line on a phone rather than
-   squeezing the label. */
-.head__end {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
+@media (max-width: 720px) {
+  .head__title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }
 .head__row .seg {
   margin-top: 0;
@@ -429,6 +438,22 @@ a.show__artist:hover {
     background-position: -20% 0;
   }
 }
+/* A face holds the box until its bytes are all here: the shimmer is the same one a lookup uses, so the row never
+   changes shape, and the photo arrives as one image rather than painting in line by line. No `animation` on the
+   element — a keyframe fade starts when the <img> is inserted, which is exactly the "rolling" this avoids. */
+.avatar--loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    color-mix(in oklch, var(--foreground) 4%, transparent) 0%,
+    color-mix(in oklch, var(--foreground) 20%, transparent) 46%,
+    color-mix(in oklch, var(--foreground) 4%, transparent) 92%
+  );
+  background-size: 220% 100%;
+  animation: avatar-sweep 1.15s linear infinite;
+}
 .avatar img {
   position: absolute;
   inset: 0;
@@ -437,8 +462,16 @@ a.show__artist:hover {
   object-fit: cover;
   filter: grayscale(1) contrast(1.06) brightness(0.96);
   opacity: 0;
-  animation: fade 0.2s linear both;
-  transition: filter 0.25s linear;
+  transition: filter 0.25s linear, opacity 0.2s linear;
+}
+.avatar img[data-loaded] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar--loading::after,
+  .avatar--pending::after {
+    animation: none;
+  }
 }
 .avatar:hover img {
   filter: grayscale(1) contrast(1.1) brightness(1.04);

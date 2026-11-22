@@ -816,8 +816,11 @@
 }
 
 /* The scope row: a choice that is not a place, so it wears a globe and sits above the towns. */
+/* Anywhere is a scope, not a town: the rule says so, and the gap after it keeps the towns a group rather than a list
+   that happens to start with a globe. */
 .pick--scope {
   border-bottom: 1px solid var(--border-strong);
+  margin-bottom: 18px;
 }
 .pick__globe {
   flex: none;

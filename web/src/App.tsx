@@ -413,23 +413,39 @@ export default function App() {
 
   const head = (
     <section className="head">
-      <h1 className="head__h1">
-        <button
-          className="townbtn"
-          onClick={() => openPanel("town")}
-          aria-expanded={panel === "town"}
-          aria-label={townName ? `Change town, now ${townName}` : "Choose a town"}
-          disabled={!town}
-        >
-          {/* The scope is not a town, so it wears the glyph that says so — ink, not accent: the accent is for state,
-              and "anywhere" is an identity. Sized in `em` so it scales with the sign it sits beside. */}
-          {anywhere ? <GlobeHemisphereWest size={24} className="globe" aria-hidden="true" /> : null}
-          <span className="sign" data-t={townName}>
-            {townName}
-          </span>
-          <CaretDown size={16} className="caret" />
-        </button>
-      </h1>
+      {/* Two rows, and the subscription belongs to the title on a desktop: it is a promise about *this* board, and the
+          board's name is the town. On a phone the title is a column, so the control drops under the name and the two
+          switches keep the row below to themselves. */}
+      <div className="head__title">
+        <h1 className="head__h1">
+          <button
+            className="townbtn"
+            onClick={() => openPanel("town")}
+            aria-expanded={panel === "town"}
+            aria-label={townName ? `Change town, now ${townName}` : "Choose a town"}
+            disabled={!town}
+          >
+            {/* The scope is not a town, so it wears the glyph that says so — ink, not accent: the accent is for state,
+                and "anywhere" is an identity. Sized in `em` so it scales with the sign it sits beside. */}
+            {anywhere ? <GlobeHemisphereWest size={24} className="globe" aria-hidden="true" /> : null}
+            <span className="sign" data-t={townName}>
+              {townName}
+            </span>
+            <CaretDown size={16} className="caret" />
+          </button>
+        </h1>
+        {rows && town ? (
+          <Subscribe
+            scope={town.town}
+            label={townName ?? ""}
+            artists={taste}
+            genres={genres}
+            matched={mine.size}
+            total={rows.length}
+            source={source}
+          />
+        ) : null}
+      </div>
       {rows && town ? (
         <div className="head__row">
           <div className="seg" role="group" aria-label="Whose shows">
@@ -440,26 +456,13 @@ export default function App() {
               all <span className="num">{rows.length}</span>
             </button>
           </div>
-          <div className="head__end">
-            <div className="seg seg--icons" role="group" aria-label="View">
-              <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
-                <ListBullets size={15} />
-              </button>
-              <button aria-pressed={view === "calendar"} aria-label="Calendar view" onClick={() => applyView("calendar")}>
-                <CalendarBlank size={15} />
-              </button>
-            </div>
-            {/* One control, one mount: the board's head row is the only place a subscription is offered. The label
-                says Subscribe and nothing else; everything it means lives behind the mark beside it. */}
-            <Subscribe
-              scope={town.town}
-              label={townName ?? ""}
-              artists={taste}
-              genres={genres}
-              matched={mine.size}
-              total={rows.length}
-              source={source}
-            />
+          <div className="seg seg--icons" role="group" aria-label="View">
+            <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
+              <ListBullets size={15} />
+            </button>
+            <button aria-pressed={view === "calendar"} aria-label="Calendar view" onClick={() => applyView("calendar")}>
+              <CalendarBlank size={15} />
+            </button>
           </div>
         </div>
       ) : null}

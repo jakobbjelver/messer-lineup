@@ -12,7 +12,8 @@
  * It prints JSON and one `ok`/`FAIL` line per check, and exits non-zero on a failure. Checks:
  *
  *   header     bar height, mark box, wordmark size, settings control, town title — the sizes the spec names
- *   headRow    `yours · all` and `list · calendar` share a row; the subscribe control closes the row on the right
+ *   headRow    `yours · all` and `list · calendar` share a row, at the two edges
+ *   titleRow   the town's line and the subscription: right-aligned on desktop, stacked under the name on a phone
  *   square     every border-radius in the DOM (only `avatar` may be 50 %, plus `pick__dot` in the town panel)
  *   hue        every chromatic value's HSL hue, read through a canvas pixel (Chrome keeps oklch as a string)
  *   floor      the page is at least a viewport tall, so the footer is never a line across the middle
@@ -108,6 +109,8 @@ const geometry = await page.evaluate(() => {
     doc: document.documentElement.scrollHeight,
     board: box("#board"),
     head: box(".head"),
+    title: box(".head__title"),
+    titleH1: box(".head__h1"),
     sub: box(".subbtn"),
   };
 });
@@ -123,23 +126,29 @@ check("header", true, {
 const whose = geometry.segs.find((s) => s.label === "Whose shows");
 const view = geometry.segs.find((s) => s.label === "View");
 const sub = geometry.sub;
-const centres = [whose, view, sub].map((b) => (b ? Math.round(b.y + b.h / 2) : null));
+const titleH1 = geometry.titleH1;
+// The two switches share the second row at every width: `yours · all` at the left edge, the view at the right.
 check(
   "headRow",
   Boolean(
-    whose && view && sub &&
+    whose && view &&
       whose.h === view.h &&
       whose.x === geometry.page.x + 24 &&
-      // One line, or — on a phone — the end group on its own right-aligned line. The pair must still be centred
-      // together, and the subscribe control must still close the row on the right.
-      (Math.abs(centres[0] - centres[1]) <= 2 || view.y > whose.y + whose.h) &&
-      Math.abs(centres[1] - centres[2]) <= 2 &&
-      view.right < sub.x &&
-      Math.abs(sub.right - geometry.page.right) <= 40 &&
-      sub.h >= 40,
+      Math.abs((whose.y + whose.h / 2) - (view.y + view.h / 2)) <= 2 &&
+      Math.abs(view.right - geometry.page.right) <= 40,
   ),
-  { whose, view, sub, pageX: geometry.page.x, pageRight: geometry.page.right },
+  { whose, view, pageX: geometry.page.x, pageRight: geometry.page.right },
 );
+
+// The title row: desktop puts the subscription at the right end of the name's line; a phone stacks it under the name,
+// at the page's left edge. Both are the design; a third arrangement is a regression.
+const oneLine = Boolean(titleH1 && sub) &&
+  Math.abs((titleH1.y + titleH1.h / 2) - (sub.y + sub.h / 2)) <= 2 &&
+  Math.abs(sub.right - geometry.page.right) <= 40;
+const stacked = Boolean(titleH1 && sub) &&
+  sub.y >= titleH1.y + titleH1.h - 2 &&
+  Math.abs(sub.x - (geometry.page.x + 24)) <= 2;
+check("titleRow", Boolean(oneLine || stacked), { titleH1, sub, oneLine, stacked, pageX: geometry.page.x, pageRight: geometry.page.right });
 
 /* ── subscribe ───────────────────────────────────────────────────────────────────────────────── */
 
