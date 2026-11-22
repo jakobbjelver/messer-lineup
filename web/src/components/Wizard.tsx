@@ -32,9 +32,11 @@ type Props = {
 };
 
 /**
- * The first run: two questions, one sheet.
+ * The first run: two questions, one sheet — where, then (optionally) who.
  *
- * The steps are `ArtistPicker` and `TownPicker` with a shell around them — the same two components
+ * The place comes first because the board is a scene board: a visitor with no artist list still gets
+ * a board, so asking for one before showing them anything would be a wall in front of the product.
+ * The steps are `TownPicker` and `ArtistPicker` with a shell around them — the same two components
  * the settings sheet mounts in isolation. The progress rule is the only chrome: no dots, no step
  * names, no "welcome to Lineup" paragraph. The gate is escapable by design; a wall that traps a
  * shared link is a bug.
@@ -79,15 +81,10 @@ export default function Wizard({
       <div className="wiz__body" key={step}>
         <Mark size={24} />
         <h1 className="wiz__h1" id="wiz-h">
-          {step === 1 ? "Who do you go see?" : "Where?"}
+          {step === 1 ? "Where?" : "Who do you go see?"}
         </h1>
 
         {step === 1 ? (
-          <>
-            <ArtistPicker value={taste} onChange={onTaste} portraits={portraits} />
-            <GenrePicker value={genres} onChange={onGenres} />
-          </>
-        ) : (
           <TownPicker
             posts={posts}
             names={names}
@@ -99,12 +96,17 @@ export default function Wizard({
             located={located}
             onRelease={onRelease}
           />
+        ) : (
+          <>
+            <ArtistPicker value={taste} onChange={onTaste} portraits={portraits} />
+            <GenrePicker value={genres} onChange={onGenres} />
+          </>
         )}
       </div>
 
       <div className="wiz__foot">
         {step === 2 ? (
-          <button className="wiz__back" type="button" aria-label="Back to artists" onClick={() => setStep(1)}>
+          <button className="wiz__back" type="button" aria-label="Back to the town" onClick={() => setStep(1)}>
             <ArrowLeft size={16} />
           </button>
         ) : (
@@ -118,7 +120,7 @@ export default function Wizard({
             else onDone();
           }}
         >
-          {step === 1 ? (taste.length > 0 ? "Continue" : "Skip") : "Show me"}
+          {step === 1 ? "Continue" : "Show me"}
         </button>
       </div>
     </div>
