@@ -94,7 +94,9 @@ miner and a published index at `lineup-data.messer.wtf` — about a thousand sho
 Taste is a list you pick, paste or import (ListenBrainz, or a Last.fm handle through our own origin).
 `docs/coverage.md` is the measured state of every source — including the hit rate, which is the honest number: two
 real taste lists matched zero rows, because the rooms they play are not on the platforms we read yet.
-`docs/artists.md` is how a title becomes an artist name. `docs/state.md` is what a board is a function of.
+`docs/artists.md` is how a title becomes an artist name, and `docs/genres.md` is how a tag becomes one of sixteen genres
+the board can be filtered by. A board is a link: `?town`, `?a` for artists, `?g` for genres — and subscribing to it is
+one control in the head row. `docs/state.md` is what a board is a function of.
 
 **v1 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and files a
 failure report rather than failing quietly. There is no account, no session and no third-party provider beyond
