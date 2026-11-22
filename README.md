@@ -6,11 +6,15 @@
 
 **A season board for the artists you actually listen to.**
 
-`MIT` · `Go` · `static index` · `pre-release`
+`MIT` · `Go` · `v1.0.0`
 <!-- /messer:hero -->
 
-Lineup has no account. Your taste is a list you paste, pick from the acts playing near you, or import from
-ListenBrainz; the board itself is public, and a fresh visitor still gets the town board.
+**[lineup.messer.wtf](https://lineup.messer.wtf)** — a global season board: the artists you listen to, in
+rooms near a point you choose, in a date window. No account, no session; the board is public and a taste
+list lives in the URL.
+
+Your taste is a list you paste, pick from the acts playing near you, or import from ListenBrainz; a fresh
+visitor still gets the town board.
 
 ## Run
 
@@ -24,6 +28,30 @@ make check     # gofmt + vet + tests + the public-tree scan
 publication rules before anything leaves the machine; `lineup serve` serves the same index locally, for
 self-host. Mining never happens in the board's runtime.
 
+### Self-host
+
+The published instance is one Worker on an edge network. The same board runs from one binary and one
+directory, with no account and no database:
+
+```bash
+make build web                 # bin/lineup + web/dist (the same-origin build)
+./bin/lineup mine --source tickster --town copenhagen,stockholm --index .lineup-index
+./bin/lineup serve --index .lineup-index --web web/dist --addr 127.0.0.1:8016
+```
+
+Or as a container, which builds both halves and serves them on `:8080`:
+
+```bash
+docker build -t messer-lineup .
+docker run -p 8080:8080 -v /srv/lineup/index:/data/index messer-lineup
+```
+
+The index is a **volume, not a baked asset** — it is a publish artifact that changes nightly. `lineup
+serve` reads `LINEUP_INDEX`, `LINEUP_WEB` and `LINEUP_ADDR` from the environment so a container can be
+configured with `ENV` alone (a flag still wins). `LASTFM_KEY` is optional and enables only the Last.fm
+taste import; without it that route answers `not_configured`, which is a fact about the build rather than
+a provider outage. The music policy travels with the binary: `sources/venues/<market>.json`.
+
 ## What it does
 
 |  |  |
@@ -36,9 +64,24 @@ self-host. Mining never happens in the board's runtime.
 | **No account** | the board is public; the taste is local |
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/screenshot-dark.jpg">
-  <img src="docs/brand/screenshot-light.jpg" alt="The board: Stockholm, one day at a time, with the artist, the room and the ticket link" width="1400">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/screen-dark.png">
+  <img src="docs/brand/screen-light.png" alt="The board: Copenhagen, one day at a time, with the artist, the room and the ticket link" width="1200">
 </picture>
+
+## API
+
+The board is served from the same origin as its data. Every route is a `GET`; nothing here needs a key.
+
+| Path | Answers |
+|---|---|
+| `/index/{manifest.json,towns.json,towns/<town>-<sha256>.jsonl.gz}` | the published index — content-addressed shards, immutable |
+| `/api/v1/artists/portraits?n=<names>` | up to eight artist faces, keyed by the name that was sent |
+| `/api/v1/artists/search?q=<name>` | MusicBrainz lookups for the artist picker |
+| `/api/v1/taste/lastfm?user=<handle>` | a Last.fm top-artist list, read through our own origin |
+| `/calendar/<token>.ics` | the subscription feed for one board |
+
+Two runtimes answer the same contract: the Worker in front of people and `lineup serve` on a machine that
+self-hosts the same index. `internal/model/testdata/keys.json` is the identity contract both must satisfy.
 
 ## How it works
 
@@ -67,7 +110,8 @@ The board is a React app served beside a small API; mining never happens there.
 
 Read [`AGENTS.md`](AGENTS.md) — the code contract. The primer is [`docs/llms.txt`](docs/llms.txt).
 `make check` is the gate, and it includes the public-tree scan: this repository is mined source, and a
-leak of a private key path or a price would be a product failure, not a documentation one.
+leak of a private key path or a price would be a product failure, not a documentation one. Messer UI is
+gated too — `check.mjs --static`, `blocks.mjs` and `brand-check.mjs` run in CI against this checkout.
 
 Contributions are closed. Issues are for takedown requests and data corrections — see
 [`CONTRIBUTING.md`](CONTRIBUTING.md). A vulnerability goes to a private advisory, per
@@ -87,55 +131,35 @@ takedown requests are honoured. The index is an advertisement, never an archive.
 owns the crawl. Both read the same index files, and the parts that must agree are held to one fixture
 file rather than to prose.
 
+## How it is served
+
+Two hosts, two jobs: the index is static in an R2 bucket (`lineup-data.messer.wtf`) and the board is one
+Worker with assets (`lineup.messer.wtf`). A page view is an asset request, so it never invokes the Worker
+and costs nothing; the script answers only what cannot be a file. The route table, the assets-first rule
+and the two-runtime contract test are in [`docs/serving.md`](docs/serving.md); publishing is in
+[`docs/publishing.md`](docs/publishing.md).
+
 ## Status
 
-The board is live at `lineup.messer.wtf` with four towns (Copenhagen, Stockholm, Gothenburg, Malmö), a nightly
-miner and a published index at `lineup-data.messer.wtf` — about a thousand shows from two ticketing platforms.
-Taste is a list you pick, paste or import (ListenBrainz, or a Last.fm handle through our own origin).
-`docs/coverage.md` is the measured state of every source — including the hit rate, which is the honest number: two
-real taste lists matched zero rows, because the rooms they play are not on the platforms we read yet.
-`docs/artists.md` is how a title becomes an artist name, and `docs/genres.md` is how a tag becomes one of sixteen genres
-the board can be filtered by. A board is a link: `?town`, `?a` for artists, `?g` for genres — and subscribing to it is
-one control in the head row. `docs/state.md` is what a board is a function of.
+The board is live at **[lineup.messer.wtf](https://lineup.messer.wtf)** with four towns (Copenhagen,
+Stockholm, Gothenburg, Malmö), a nightly miner and a published index at `lineup-data.messer.wtf` — about a
+thousand shows from two ticketing platforms. Taste is a list you pick, paste or import (ListenBrainz, or a
+Last.fm handle through our own origin).
 
-**v1 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and files a
-failure report rather than failing quietly. There is no account, no session and no third-party provider beyond
-Last.fm's public read. v2 — the search for a second source, which is the only thing that moves the hit rate — is
-planned separately; v1's coverage record says why one source per town is the ceiling this product currently has.
+`docs/coverage.md` is the measured state of every source — including the hit rate, which is the honest
+number: two real taste lists matched zero rows, because the rooms they play are not on the platforms we
+read yet. `docs/artists.md` is how a title becomes an artist name, and `docs/genres.md` is how a tag
+becomes one of sixteen genres the board can be filtered by. A board is a link: `?town`, `?a` for artists,
+`?g` for genres — and subscribing to it is one control in the head row. `docs/state.md` is what a board is
+a function of.
+
+**v1.0.0 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and
+files a failure report rather than failing quietly. There is no account, no session and no third-party
+provider beyond Last.fm's public read. v2 — the search for a second source, which is the only thing that
+moves the hit rate — is planned separately; v1's coverage record says why one source per town is the
+ceiling this product currently has.
 
 ## License
 
 MIT — including the miners and the index format. Not accepting contributions; see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Self-host
-
-The published instance is one Worker on an edge network. The same board runs from one binary and one directory,
-with no account and no database:
-
-```bash
-make build web                 # bin/lineup + web/dist (the same-origin build)
-./bin/lineup mine --source tickster --town copenhagen,stockholm --index .lineup-index
-./bin/lineup serve --index .lineup-index --web web/dist --addr 127.0.0.1:8016
-```
-
-Or as a container, which builds both halves and serves them on `:8080`:
-
-```bash
-docker build -t messer-lineup .
-docker run -p 8080:8080 -v /srv/lineup/index:/data/index messer-lineup
-```
-
-The index is a **volume, not a baked asset** — it is a publish artifact that changes nightly. `lineup serve`
-reads `LINEUP_INDEX`, `LINEUP_WEB` and `LINEUP_ADDR` from the environment so a container can be configured with
-`ENV` alone (a flag still wins). `LASTFM_KEY` is optional and enables only the Last.fm taste import; without it
-that route answers `not_configured`, which is a fact about the build rather than a provider outage. The music
-policy travels with the binary: `sources/venues/<market>.json`.
-
-## How it is served
-
-Two hosts, two jobs: the index is static in an R2 bucket (`lineup-data.messer.wtf`) and the board is one
-Worker with assets (`lineup.messer.wtf`). A page view is an asset request, so it never invokes the Worker and
-costs nothing; the script answers only what cannot be a file. The route table, the assets-first rule and the
-two-runtime contract test are in [`docs/serving.md`](docs/serving.md); publishing is in
-[`docs/publishing.md`](docs/publishing.md).
