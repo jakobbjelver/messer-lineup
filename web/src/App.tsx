@@ -8,7 +8,7 @@ import Subscribe from "./components/Subscribe";
 import Wizard from "./components/Wizard";
 import Loader from "./components/Loader";
 import { Empty, Failed } from "./components/states";
-import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf } from "./lib/board";
+import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf, nearestElsewhere } from "./lib/board";
 import {
   EMPTY_GENRE_MAP,
   GENRE_CAP,
@@ -33,6 +33,7 @@ import {
   type Town,
   type TownEntry,
 } from "./lib/indexData";
+import { Key } from "./lib/key";
 import { locationSupported, useDevicePosition } from "./lib/location";
 import { loadPortraits, sourceNames, type PortraitMap } from "./lib/portraits";
 import {
@@ -334,6 +335,8 @@ export default function App() {
   const tasteKeys = useMemo(() => new Set(taste.map((entry) => entry.key)), [taste]);
   // A genre is a set of artist keys, so the board's membership test stays one set lookup per row.
   const genreKeys = useMemo(() => keysForGenres(genreMap, genres), [genreMap, genres]);
+  /** The reader's artists, by identity: what the consolation line searches every town for. */
+  const artistKeys = useMemo(() => new Set([...tasteKeys, ...genreKeys]), [tasteKeys, genreKeys]);
   const mine = useMemo(() => computeMine(rows ?? [], tasteKeys, genreKeys), [rows, tasteKeys, genreKeys]);
   const visible = useMemo(() => {
     if (!rows) return [];
@@ -350,6 +353,39 @@ export default function App() {
 
   const hasTaste = taste.length > 0;
   const hasGenres = genres.length > 0;
+
+  /* ── the consolation line ────────────────────────────────────────────────────────────────────── */
+
+  // When a town has nothing of yours, the useful answer is the soonest one elsewhere. Loaded lazily (only on an empty
+  // board, once per town), and a failed anywhere read prints nothing: a consolation is not worth an error state.
+  const [elsewhere, setElsewhere] = useState<{ row: Row; km: number | null } | null>(null);
+  const elsewhereTown = useRef<string | null>(null);
+  const scopeId = town?.town ?? null;
+  const emptyBoard = Boolean(loaded && rows && scopeId && scopeId !== ANYWHERE && visible.length === 0 && (hasTaste || hasGenres));
+  useEffect(() => {
+    if (!emptyBoard || !loaded || !rows || !scopeId) {
+      setElsewhere(null);
+      elsewhereTown.current = null;
+      return;
+    }
+    const origin = position.state === "granted" ? position.point : null;
+    // Keyed by the scope **and** the origin: a fix that arrives after the line was drawn changes the answer (150 km is
+    // a filter, not a decoration), so it must re-ask rather than keep the town-only line.
+    const key = `${scopeId}@${origin ? `${origin.lat},${origin.lon}` : "none"}`;
+    if (elsewhereTown.current === key) return;
+    elsewhereTown.current = key;
+    let live = true;
+    loadBoard(loaded.manifest, ANYWHERE)
+      .then((all) => {
+        if (live) setElsewhere(nearestElsewhere(all, artistKeys, scopeId, origin));
+      })
+      .catch(() => {
+        if (live) setElsewhere(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [emptyBoard, loaded, rows, scopeId, artistKeys, position]);
   const mineMode = filter === "mine";
   /** The scope is `anywhere`: every published town at once. Never a default — only the URL or an explicit pick. */
   const anywhere = town?.town === ANYWHERE;
@@ -477,7 +513,17 @@ export default function App() {
           }
           action={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
           secondary={{ label: "Add artists or genres", onClick: () => openPanel("taste") }}
-        />
+        >
+          {elsewhere ? (
+            <p className="elsewhere">
+              Soonest elsewhere:{" "}
+              <a href={`/a/${Key(elsewhere.row.a)}`}>{elsewhere.row.a}</a> · {elsewhere.row.v}
+              {elsewhere.km !== null
+                ? `, ${Math.round(elsewhere.km)} km`
+                : `, ${townLabel({ town: elsewhere.row.c }, loaded.towns)}`}
+            </p>
+          ) : null}
+        </Empty>
       ) : (
         <Empty
           title="No artists yet."

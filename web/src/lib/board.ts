@@ -8,6 +8,7 @@
 
 import { Key } from "./key";
 import { dateOf, dayOf, type Row } from "./indexData";
+import { distanceKm, pointOf, type Point } from "./geo";
 
 export type DayGroup = { day: string; rows: Row[] };
 
@@ -36,6 +37,41 @@ export function mineKeys(rows: Row[], tasteKeys: Set<string>, genreKeys: Set<str
     if (tasteKeys.has(key) || genreKeys.has(key)) out.add(row.k);
   }
   return out;
+}
+
+/** A consolation row is only a consolation if it is one: this is the radius, in kilometres. */
+export const NEARBY_KM = 150;
+
+/**
+ * When nothing is here, the soonest thing elsewhere.
+ *
+ * A board is one town of yours; a reader with a taste list and no local dates is not out of options, they are in the
+ * wrong town. This picks **one** matching show in another town — the soonest — and nothing else: no list, no count, no
+ * second screen. With a position it only accepts a venue within `NEARBY_KM` and returns the distance; without one it
+ * returns the town, because a town name is a fact and kilometres from nowhere are a guess. A row with no venue
+ * position cannot be "nearby", so a fix skips it rather than pretending.
+ *
+ * `keys` is the reader's **artist** set (taste ∪ genres), not the row keys of the board they are looking at: the whole
+ * point is a row in a town that board knows nothing about, so its `k` could not be in a set built from that board.
+ */
+export function nearestElsewhere(
+  rows: Row[],
+  keys: Set<string>,
+  scope: string,
+  origin: Point | null,
+): { row: Row; km: number | null } | null {
+  if (keys.size === 0) return null;
+  const candidates = rows
+    .filter((row) => keys.has(Key(row.a)) && row.c !== scope)
+    .sort((a, b) => dateOf(a.d).getTime() - dateOf(b.d).getTime() || a.k.localeCompare(b.k));
+  if (!origin) return candidates.length > 0 ? { row: candidates[0]!, km: null } : null;
+  for (const row of candidates) {
+    const point = pointOf(row);
+    if (!point) continue;
+    const km = distanceKm(origin, point);
+    if (km <= NEARBY_KM) return { row, km };
+  }
+  return null;
 }
 
 export function filterMine(rows: Row[], mine: Set<string>): Row[] {

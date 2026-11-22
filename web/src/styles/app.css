@@ -494,6 +494,20 @@ a.show__artist:hover {
   gap: 8px;
   margin-top: 6px;
 }
+/* One line, one link: where the nearest of your shows is when none are here. It is a sentence, not a control. */
+.elsewhere {
+  margin: 10px 0 0;
+  font: 400 12.5px/1.6 var(--font);
+  color: var(--text-3);
+}
+.elsewhere a {
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border-strong);
+}
+.elsewhere a:hover {
+  border-color: var(--primary);
+}
+
 /* The artist page offers the same control as the board head row: one subscription, one label. */
 .artist__acts {
   margin-top: 12px;
