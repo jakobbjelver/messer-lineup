@@ -337,11 +337,19 @@ export default function App() {
   const genreKeys = useMemo(() => keysForGenres(genreMap, genres), [genreMap, genres]);
   /** The reader's artists, by identity: what the consolation line searches every town for. */
   const artistKeys = useMemo(() => new Set([...tasteKeys, ...genreKeys]), [tasteKeys, genreKeys]);
+  const hasTaste = taste.length > 0;
+  const hasGenres = genres.length > 0;
+  /**
+   * `yours` is a taste affordance, so it exists only when there is a taste to filter by. Derived, never an effect: a
+   * `filter` that some effect resets would be a state the reader cannot see but that changes what renders.
+   */
+  const canFilter = hasTaste || hasGenres;
+  const mineMode = filter === "mine" && canFilter;
   const mine = useMemo(() => computeMine(rows ?? [], tasteKeys, genreKeys), [rows, tasteKeys, genreKeys]);
   const visible = useMemo(() => {
     if (!rows) return [];
-    return filter === "mine" ? filterMine(rows, mine) : rows;
-  }, [rows, filter, mine]);
+    return mineMode ? filterMine(rows, mine) : rows;
+  }, [rows, mineMode, mine]);
   const days = useMemo(() => groupByDay(visible), [visible]);
   const sheetRows = useMemo(
     () => (daySheet ? (days.find((group) => group.day === daySheet)?.rows ?? []) : []),
@@ -350,9 +358,6 @@ export default function App() {
 
   const firstMonth = rows && rows.length > 0 ? monthOf(dayOf(rows[0]!.d)) : monthOf(today);
   const shownMonth = month ?? firstMonth;
-
-  const hasTaste = taste.length > 0;
-  const hasGenres = genres.length > 0;
 
   /* ── the consolation line ────────────────────────────────────────────────────────────────────── */
 
@@ -386,7 +391,6 @@ export default function App() {
       live = false;
     };
   }, [emptyBoard, loaded, rows, scopeId, artistKeys, position]);
-  const mineMode = filter === "mine";
   /** The scope is `anywhere`: every published town at once. Never a default — only the URL or an explicit pick. */
   const anywhere = town?.town === ANYWHERE;
   /**
@@ -448,14 +452,16 @@ export default function App() {
       </div>
       {rows && town ? (
         <div className="head__row">
-          <div className="seg" role="group" aria-label="Whose shows">
-            <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
-              yours <span className="num">{mine.size}</span>
-            </button>
-            <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-              all <span className="num">{rows.length}</span>
-            </button>
-          </div>
+          {canFilter ? (
+            <div className="seg" role="group" aria-label="Whose shows">
+              <button aria-pressed={mineMode} onClick={() => setFilter("mine")}>
+                yours <span className="num">{mine.size}</span>
+              </button>
+              <button aria-pressed={!mineMode} onClick={() => setFilter("all")}>
+                all <span className="num">{rows.length}</span>
+              </button>
+            </div>
+          ) : null}
           <div className="seg seg--icons" role="group" aria-label="View">
             <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
               <ListBullets size={15} />
@@ -497,8 +503,10 @@ export default function App() {
         />
       );
     }
-    if (visible.length === 0) {
-      return hasTaste || hasGenres ? (
+    // A filter that matches nothing keeps the consolation; a scene board's empty town is handled above, so the
+    // "no artists yet" dead end this used to have does not exist any more.
+    if (visible.length === 0 && canFilter) {
+      return (
         <Empty
           title={
             hasTaste
@@ -527,13 +535,6 @@ export default function App() {
             </p>
           ) : null}
         </Empty>
-      ) : (
-        <Empty
-          title="No artists yet."
-          detail="Pick the ones you go see — this address is your board."
-          action={{ label: "Add artists", onClick: () => openPanel("taste") }}
-          secondary={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
-        />
       );
     }
     if (view === "calendar") {

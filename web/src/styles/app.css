@@ -114,6 +114,11 @@
 .head__row .seg {
   margin-top: 0;
 }
+/* One child keeps the row's other end: a visitor with no taste list has no `yours · all`, and the view control must not
+   slide to the left edge when it is alone. */
+.head__row .seg--icons {
+  margin-left: auto;
+}
 .head__h1 {
   display: flex;
   align-items: baseline;
