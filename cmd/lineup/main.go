@@ -24,6 +24,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 	"github.com/jakobbjelver/messer-lineup/internal/portraits"
 	"github.com/jakobbjelver/messer-lineup/internal/publish"
+	"github.com/jakobbjelver/messer-lineup/internal/resolve"
 	"github.com/jakobbjelver/messer-lineup/internal/server"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/dice"
 	"github.com/jakobbjelver/messer-lineup/internal/sources/nortic"
@@ -478,6 +479,10 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	asJSON := fs.Bool("json", false, "print the report as JSON")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
 	fromReport := fs.String("from", "", "render a saved report (JSON) instead of sweeping")
+	resolveNames := fs.Bool("resolve", true, "resolve artist names that carry a show title (Deezer exact-name, cached)")
+	noResolve := fs.Bool("no-resolve", false, "skip artist-name resolution")
+	resolveLimit := fs.Int("resolve-limit", 120, "resolve at most N new names this run (0 = all)")
+	artistState := fs.String("artist-state", "", "where name decisions are remembered (default beside --state)")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
@@ -527,20 +532,41 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
+	// Artist names: the resolver is on by default because an unclean key cannot match a listener or a genre. Its
+	// decisions are keyed by the raw name and cached beside the miner's state, so a nightly asks only about names it
+	// has never seen (and about a negative once a month).
+	var nameResolver *resolve.Resolver
+	artistStatePath := ""
+	if *resolveNames && !*noResolve {
+		artistStatePath = *artistState
+		if artistStatePath == "" {
+			artistStatePath = filepath.Join(filepath.Dir(*statePath), "artists.json")
+		}
+		decisions, err := resolve.LoadState(artistStatePath)
+		if err != nil {
+			fmt.Fprintf(stderr, "lineup mine: %v\n", err)
+			return exitRefused
+		}
+		nameResolver = &resolve.Resolver{Matcher: resolve.NewDeezer(nil), State: decisions, Now: clk.Now()}
+	}
+
 	report, err := mine.Run(context.Background(), mine.Options{
-		Adapters:     adapters,
-		Towns:        towns,
-		Countries:    []string{*countries},
-		DryRun:       *dryRun,
-		IndexDir:     *indexDir,
-		Prune:        *prune,
-		Interval:     *interval,
-		MaxPerTown:   *maxPerTown,
-		Now:          clk.Now(),
-		Log:          stderr,
-		State:        mem,
-		BudgetPerDay: *budget,
-		Venues:       rooms,
+		Adapters:        adapters,
+		Towns:           towns,
+		Countries:       []string{*countries},
+		DryRun:          *dryRun,
+		IndexDir:        *indexDir,
+		Prune:           *prune,
+		Interval:        *interval,
+		MaxPerTown:      *maxPerTown,
+		Now:             clk.Now(),
+		Log:             stderr,
+		State:           mem,
+		BudgetPerDay:    *budget,
+		Venues:          rooms,
+		Resolver:        nameResolver,
+		ResolveLimit:    *resolveLimit,
+		ArtistStatePath: artistStatePath,
 	})
 	if err != nil {
 		// A run that died still measured something; the report is written before the complaint.

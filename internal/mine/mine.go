@@ -19,6 +19,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+	"github.com/jakobbjelver/messer-lineup/internal/resolve"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/venues"
 
@@ -103,6 +104,14 @@ type Options struct {
 	// Venues is the music policy: the rooms that do not programme music, and the event forms that are never a
 	// gig. Nil means no filter — a measurement of a market before its rooms are curated.
 	Venues *venues.Registry
+
+	// Resolver rewrites an artist string that carries a show title into the artist, before the merge. Nil means
+	// names are published as the source spelled them.
+	Resolver *resolve.Resolver
+	// ResolveLimit bounds the provider calls one run may make (0 = all).
+	ResolveLimit int
+	// ArtistStatePath is where the resolver's decisions are saved; empty means do not persist them.
+	ArtistStatePath string
 }
 
 // Run sweeps, merges and (unless DryRun) writes an index. It always returns a report when it returns at all: a
@@ -341,10 +350,31 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 		report.Towns = append(report.Towns, town)
 	}
 
+	// Names, before the merge: two spellings of the same bill must dedupe as one key, so the resolver runs on the
+	// shows rather than on the rows it is about to publish.
+	if opts.Resolver != nil {
+		names := make([]string, len(shows))
+		for index, show := range shows {
+			names[index] = show.Artist
+		}
+		resolved, err := opts.Resolver.Resolve(ctx, names, opts.ResolveLimit)
+		if err != nil {
+			return report, fmt.Errorf("mine: resolving artist names: %w", err)
+		}
+		resolved.Applied = opts.Resolver.Apply(shows)
+		report.Resolve = &resolved
+		if opts.ArtistStatePath != "" {
+			if err := opts.Resolver.State.Save(opts.ArtistStatePath); err != nil {
+				return report, fmt.Errorf("mine: saving artist decisions: %w", err)
+			}
+		}
+		logf("resolve %d lookup(s) · %d resolved · %d undecided · %d row(s) rewritten",
+			resolved.Lookups, resolved.Resolved, resolved.Undecided, resolved.Applied)
+	}
+
 	merged, mergeStats := match.Merge(shows)
 	report.Merge = mergeStats
 	report.TownCount = townSet.Len()
-
 	report.Totals = totalsOf(report.Towns)
 
 	if !opts.DryRun {
@@ -383,18 +413,19 @@ func Run(ctx context.Context, opts Options) (Report, error) {
 
 // Report is one run, in the shape the coverage record is rendered from.
 type Report struct {
-	Sources    []string     `json:"sources"`
-	StartedAt  time.Time    `json:"started_at"`
-	FinishedAt time.Time    `json:"finished_at"`
-	DryRun     bool         `json:"dry_run"`
-	Countries  []string     `json:"countries,omitempty"`
-	Window     model.Window `json:"window"`
-	Towns      []TownReport `json:"towns"`
-	TownCount  int          `json:"towns_discovered"`
-	Totals     Totals       `json:"totals"`
-	Merge      match.Stats  `json:"merge"`
-	Build      *BuildReport `json:"build,omitempty"`
-	Note       string       `json:"note,omitempty"`
+	Sources    []string        `json:"sources"`
+	StartedAt  time.Time       `json:"started_at"`
+	FinishedAt time.Time       `json:"finished_at"`
+	DryRun     bool            `json:"dry_run"`
+	Countries  []string        `json:"countries,omitempty"`
+	Window     model.Window    `json:"window"`
+	Towns      []TownReport    `json:"towns"`
+	TownCount  int             `json:"towns_discovered"`
+	Totals     Totals          `json:"totals"`
+	Merge      match.Stats     `json:"merge"`
+	Resolve    *resolve.Report `json:"resolve,omitempty"`
+	Build      *BuildReport    `json:"build,omitempty"`
+	Note       string          `json:"note,omitempty"`
 }
 
 // TownReport is one town's part of a run, per source.

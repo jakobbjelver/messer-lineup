@@ -13,6 +13,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/match"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
+	"github.com/jakobbjelver/messer-lineup/internal/resolve"
 	"github.com/jakobbjelver/messer-lineup/internal/state"
 	"github.com/jakobbjelver/messer-lineup/internal/venues"
 
@@ -685,5 +686,47 @@ func TestGoneLinkIsCountedAsAFact(t *testing.T) {
 	}
 	if report.Totals.Gone != 1 {
 		t.Fatalf("gone = %d, want 1", report.Totals.Gone)
+	}
+}
+
+// nameMatcher is a provider in a map: the names it knows, keyed by identity.
+type nameMatcher struct{ names map[string]bool }
+
+func (m *nameMatcher) Matches(_ context.Context, name string) (bool, error) {
+	return m.names[model.Key(name)], nil
+}
+
+// TestResolverRunsBeforeTheMerge: the same bill spelled two ways must become one key, or the board shows the gig twice.
+func TestResolverRunsBeforeTheMerge(t *testing.T) {
+	day := time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC)
+	adapter := &fakeAdapter{
+		id:    "tickster",
+		towns: map[string][]string{"stockholm": {"u1", "u2"}},
+		shows: map[string]model.Show{
+			"u1": showAt("u1", "Amanda Ginsburg - Det är jul nu igen", "Pustervik", "stockholm-se", day, "tickster"),
+			"u2": showAt("u2", "Amanda Ginsburg", "Pustervik", "stockholm-se", day, "tickster"),
+		},
+	}
+	resolver := &resolve.Resolver{
+		Matcher: &nameMatcher{names: map[string]bool{"amanda-ginsburg": true}},
+		State:   &resolve.State{Format: resolve.Format, Map: map[string]resolve.Decision{}},
+		Now:     time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC),
+	}
+	report := run(t, Options{
+		Adapters:        []Adapter{adapter},
+		Towns:           []string{"stockholm"},
+		DryRun:          true,
+		Resolver:        resolver,
+		ResolveLimit:    0,
+		ArtistStatePath: filepath.Join(t.TempDir(), "artists.json"),
+	})
+	if report.Resolve == nil || report.Resolve.Applied != 1 {
+		t.Fatalf("resolve = %+v, want one applied decision", report.Resolve)
+	}
+	if report.Merge.Merged != 1 {
+		t.Fatalf("merge = %+v, want the two spellings folded into one", report.Merge)
+	}
+	if report.Totals.Rows != 2 {
+		t.Fatalf("rows = %d, want the two source rows before the merge", report.Totals.Rows)
 	}
 }
