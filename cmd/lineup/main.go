@@ -20,6 +20,7 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/doctor"
 	"github.com/jakobbjelver/messer-lineup/internal/fetch"
+	"github.com/jakobbjelver/messer-lineup/internal/genres"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 	"github.com/jakobbjelver/messer-lineup/internal/portraits"
@@ -67,6 +68,7 @@ func commands() []command {
 		{"publish", "copy a verified index into the public bucket", runPublish},
 		{"serve", "serve the index (and the board, once it is built) locally", runServe},
 		{"portraits", "resolve artist portraits (MusicBrainz → Wikimedia Commons) into the index", runPortraits},
+		{"genres", "map the published artists to genres (Last.fm tags) into the index", runGenres},
 		{"version", "print the build stamp", runVersion},
 	}
 }
@@ -199,6 +201,84 @@ func runPortraits(args []string, stdout, stderr io.Writer) int {
 	if !report.DryRun {
 		fmt.Fprintf(stdout, "wrote %s: %d portraits, %d bytes\n", report.Path, report.Written, report.Bytes)
 	}
+	return exitOK
+}
+
+// runGenres maps the published artists to the sixteen genres. It is a separate step for the same reason portraits is:
+// a tag lookup is not an event fact, and the sweep must be able to publish without waiting on a provider.
+func runGenres(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("lineup genres", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	indexDir := fs.String("index", ".lineup-index", "the built index whose artists to map")
+	statePath := fs.String("state", "", "where raw tags are remembered (default .lineup-state/genres.json)")
+	limit := fs.Int("limit", 0, "ask about at most N new artists this run (0 = all)")
+	reportPath := fs.String("report", "", "write the report JSON here")
+	asJSON := fs.Bool("json", false, "print the report as JSON")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+
+	path := *statePath
+	if path == "" {
+		path = filepath.Join(".lineup-state", "genres.json")
+	}
+	state, err := genres.LoadState(path)
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup genres: %v\n", err)
+		return exitRefused
+	}
+
+	key := os.Getenv("LASTFM_KEY")
+	if key == "" {
+		fmt.Fprintln(stderr, "lineup genres: LASTFM_KEY is not set")
+		return exitRefused
+	}
+
+	artifactPath, report, err := genres.Build(context.Background(), genres.Options{
+		IndexDir: *indexDir,
+		State:    state,
+		Provider: genres.NewLastFM(key, nil),
+		Limit:    *limit,
+		Log:      stderr,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "lineup genres: %v\n", err)
+		return exitRefused
+	}
+	if err := state.Save(path); err != nil {
+		fmt.Fprintf(stderr, "lineup genres: saving %s: %v\n", path, err)
+		return exitRefused
+	}
+	if *reportPath != "" {
+		file, err := os.Create(*reportPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "lineup genres: %v\n", err)
+			return exitRefused
+		}
+		if err := writeJSON(file, report); err != nil {
+			file.Close()
+			fmt.Fprintf(stderr, "lineup genres: %v\n", err)
+			return exitRefused
+		}
+		file.Close()
+	}
+	if *asJSON {
+		if err := writeJSON(stdout, report); err != nil {
+			fmt.Fprintf(stderr, "lineup genres: %v\n", err)
+			return exitRefused
+		}
+		return exitOK
+	}
+	fmt.Fprintf(stdout, "%d artists · %d with a genre (%.0f %%) · %d fetched · %d failed · %d pending\n",
+		report.Artists, report.WithGenre, report.Coverage*100, report.Fetched, report.Failed, report.Pending)
+	if len(report.Unmapped) > 0 {
+		fmt.Fprint(stdout, "unmapped:")
+		for _, tag := range report.Unmapped {
+			fmt.Fprintf(stdout, " %s(%d)", tag.Name, tag.Count)
+		}
+		fmt.Fprintln(stdout)
+	}
+	fmt.Fprintf(stdout, "wrote %s\n", artifactPath)
 	return exitOK
 }
 
