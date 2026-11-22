@@ -45,6 +45,11 @@ Row 3 is the whole of it: there is **no edge hint and no IP guess** — `/where`
 nothing asked it, and a country is not a distance anyway. A first visit meets the gate, which asks for a town; the
 first published town is only the fallback for a link with no `?town` and no stored pick.
 
+**"First published" means the one with the most on.** The manifest orders its towns by published row count, id breaking
+ties (`internal/index/write.go`, `TestRichestTownIsFirst`), and `towns.json` carries the same order so the picker and the
+fallback agree. Before 2026-11-22 the order was alphabetical, which put Copenhagen (24 rows) in front of Stockholm (521)
+for every first visit and for every link without a town.
+
 ## Anywhere, and distance
 
 Rows print kilometres only when the board knows **both ends**: the venue's own position and where the reader is. A row
