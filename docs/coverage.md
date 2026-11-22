@@ -168,10 +168,41 @@ list roughly one season ahead, and in November that season is winter.** Hit rate
 single key match is `DIO`, which is *Dio Stargazer Alliance*, a tribute.
 
 What this settles: a summer board cannot be assembled in November, because the summer inventory is not listed yet — the
-hypothesis is not refuted, it is untestable until spring. What it also settles: **the window is the cheap lever nobody
-has pulled.** About 2 000 parsed events per run are discarded for being outside 120 days; the sources themselves list
-roughly six months. Widening the publication window would grow the index without fetching one extra page. It would not,
-on this evidence, produce a match for either taste list — the missing piece is the list, not the window.
+hypothesis is not refuted, it is untestable until spring.
+
+**The 2 159 is an artefact of the test, not a leak — corrected the same day.** That number is what a *summer* window
+throws away from a *winter* inventory. The live run behind the 1 009 rows discards far less: of 8 453 candidates it
+reported **467** events outside its own window, 3 672 in towns the board does not publish, 1 836 not music, 40 not an
+artist. So widening the publication window past 120 days buys at most ~450 rows, some of them already past — not a
+doubling, and not the lever it first looked like.
+
+**The biggest bucket is towns — and it was measured, and it is noise.** Nortic publishes no per-town index: its adapter
+walks the same global sitemap (2 152 pages) for every town it is asked about, and the per-run cache makes the second and
+third town free. So a probe was run with `nortic.Towns()` widened to 35 Swedish slugs and the window at 180 days
+(`--source nortic --dry-run --no-resolve`, nothing written):
+
+| | |
+|---|---:|
+| rows, 35 town slugs, 180-day window | **667** |
+| of those, at a room the registry has never classified | **305**, across **149 rooms** |
+| towns that produced at least one row | 33 |
+| events outside the 180-day window | **38** |
+| not music (by the room or the form rule) | 1 091 |
+
+The unclassified rooms are the answer: *Ystad Teater* 27, *Jönköping Teater* 14, *Uppsala Domkyrka* 7,
+*Västerås domkyrka* 5, *Växjö domkyrka* 5, *Kalmar Slott*, *Linköpings Domkyrka*, *Stora kyrkan*. A wider town list buys
+church concerts in cathedrals and small-town theatre — exactly the noise the music policy was built to remove — and
+classifying those 149 rooms would drop most of them anyway.
+
+**And the window is worth nothing.** At 180 days only **38** events fell outside it, on the same sitemap: extending the
+publication window keeps the same towns and adds 45 rows (+14 %) on Nortic's three published towns. The 467 that the
+live 120-day run reports as outside-window are dominated by Tickster's past-dated listings, not by future inventory that
+120 days hides.
+
+**So the coverage lever is closed in both directions that do not change the product:** no more Swedish towns (noise), no
+longer window (38 events), no third Swedish platform (measured, `references/sources.md` in the operating skill). What
+remains is either a different *place* (DICE: Berlin, London, US — already measured reachable, ~7 sitemap shards) or a
+different *front door* (a scene board rather than a taste board).
 
 **Where the artist field still leaks (same day, 1 009 rows):** 181 rows (17.9 %) carry a title-shaped name, of which
 **56 rows (53 distinct names) have never been asked about** (`internal/resolve`, cache in `.lineup-state/artists.json`:
