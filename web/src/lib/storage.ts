@@ -27,6 +27,7 @@ const ONBOARDED_KEY = "lineup.onboarded";
 const IMPORT_KEY = "lineup.taste.import";
 const FEED_KEY = "lineup.calendar";
 const REMIND_KEY = "lineup.reminder";
+const GENRES_KEY = "lineup.genres";
 
 function read(key: string): string | null {
   try {
@@ -128,6 +129,22 @@ export function readFeed(): string | null {
 
 export function writeFeed(token: string | null): void {
   write(FEED_KEY, token);
+}
+
+/** The genres the reader chose, in order. Unknown ids are the reader's browser, not our state: filtered on read. */
+export function readGenres(): string[] {
+  const raw = read(GENRES_KEY);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeGenres(genres: string[]): void {
+  write(GENRES_KEY, genres.length ? JSON.stringify(genres) : null);
 }
 
 /** Whether the reader asked their calendar to remind them the day before. A preference, not a fact about the feed. */

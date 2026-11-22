@@ -9,6 +9,17 @@ import Wizard from "./components/Wizard";
 import Loader from "./components/Loader";
 import { Empty, Failed } from "./components/states";
 import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf } from "./lib/board";
+import {
+  EMPTY_GENRE_MAP,
+  GENRE_CAP,
+  isGenre,
+  keysForGenres,
+  loadGenres,
+  readGenreParam,
+  writeGenreParam,
+  type GenreId,
+  type GenreMap,
+} from "./lib/genres";
 import { distanceKm, nearestTown, pointOf, type Point } from "./lib/geo";
 import {
   ANYWHERE,
@@ -26,10 +37,12 @@ import { locationSupported, useDevicePosition } from "./lib/location";
 import { loadPortraits, sourceNames, type PortraitMap } from "./lib/portraits";
 import {
   followingSource,
+  readGenres,
   readOnboarded,
   readTaste,
   readTown,
   readView,
+  writeGenres,
   writeImport,
   writeOnboarded,
   writeTaste,
@@ -47,6 +60,8 @@ const urlTaste = readTasteParam(location.search);
 const startTaste = urlTaste.length
   ? toEntries(urlTaste, readNamesParam(location.search))
   : readTaste();
+const urlGenres = readGenreParam(location.search);
+const startGenres: GenreId[] = (urlGenres.length ? urlGenres : readGenres().filter(isGenre)).slice(0, GENRE_CAP);
 
 /**
  * The manifest entry for a scope. `anywhere` has no shard of its own — it is every shard — so the entry is the sum of
@@ -83,14 +98,18 @@ export default function App() {
   const [switching, setSwitching] = useState(false);
 
   const [taste, setTaste] = useState<TasteEntry[]>(startTaste);
+  const [genres, setGenres] = useState<GenreId[]>(startGenres);
+  const [genreMap, setGenreMap] = useState<GenreMap>(EMPTY_GENRE_MAP);
   const [wantedTown, setWantedTown] = useState<string | null>(() => urlTown ?? readTown());
   const [view, setView] = useState<View>(() => (params.get("view") === "calendar" ? "calendar" : readView()));
   const [panel, setPanel] = useState<Panel | null>(() => {
     const value = params.get("panel");
     return value === "taste" || value === "town" ? value : null;
   });
-  const [filter, setFilter] = useState<"mine" | "all">(startTaste.length ? "mine" : "all");
-  const [setup, setSetup] = useState(() => !readOnboarded() && !urlTown && startTaste.length === 0);
+  const [filter, setFilter] = useState<"mine" | "all">(startTaste.length || startGenres.length ? "mine" : "all");
+  const [setup, setSetup] = useState(
+    () => !readOnboarded() && !urlTown && startTaste.length === 0 && startGenres.length === 0,
+  );
   const [daySheet, setDaySheet] = useState<string | null>(null);
   const [month, setMonth] = useState<string | null>(null);
   const [portraits, setPortraits] = useState<PortraitMap | undefined>(undefined);
@@ -119,8 +138,11 @@ export default function App() {
       .then((next) => {
         if (!live) return null;
         setLoaded(next);
-        // The manifest names the portraits file; a build from before content addressing has no `files` map, and the
-        // loader falls back to the legacy name.
+        // The manifest names the derived files; a build from before content addressing has no `files` map, and the
+        // portraits loader falls back to the legacy name. Genres are an enhancement: a miss is an empty map.
+        void loadGenres(next.manifest.files?.genres).then((map) => {
+          if (live) setGenreMap(map);
+        });
         return loadPortraits(next.manifest.files?.portraits);
       })
       .then((map) => {
@@ -176,6 +198,19 @@ export default function App() {
     history.replaceState(history.state, "", next);
     if (entries.length === 0) setFilter("all");
   }, []);
+
+  const setGenresAndStore = useCallback(
+    (next: GenreId[]) => {
+      const capped = next.slice(0, GENRE_CAP);
+      setGenres(capped);
+      writeGenres(capped);
+      const url = writeGenreParam(capped, location.href);
+      if (history.state && typeof history.state === "object" && "panel" in history.state) panelDirty.current = true;
+      history.replaceState(history.state, "", url);
+      if (capped.length === 0 && taste.length === 0) setFilter("all");
+    },
+    [taste.length],
+  );
 
   const applyTown = useCallback((id: string) => {
     setWantedTown(id);
@@ -297,7 +332,9 @@ export default function App() {
   /* ── the board's data ────────────────────────────────────────────────────────────────────────── */
 
   const tasteKeys = useMemo(() => new Set(taste.map((entry) => entry.key)), [taste]);
-  const mine = useMemo(() => computeMine(rows ?? [], tasteKeys), [rows, tasteKeys]);
+  // A genre is a set of artist keys, so the board's membership test stays one set lookup per row.
+  const genreKeys = useMemo(() => keysForGenres(genreMap, genres), [genreMap, genres]);
+  const mine = useMemo(() => computeMine(rows ?? [], tasteKeys, genreKeys), [rows, tasteKeys, genreKeys]);
   const visible = useMemo(() => {
     if (!rows) return [];
     return filter === "mine" ? filterMine(rows, mine) : rows;
@@ -312,6 +349,7 @@ export default function App() {
   const shownMonth = month ?? firstMonth;
 
   const hasTaste = taste.length > 0;
+  const hasGenres = genres.length > 0;
   const mineMode = filter === "mine";
   /** The scope is `anywhere`: every published town at once. Never a default — only the URL or an explicit pick. */
   const anywhere = town?.town === ANYWHERE;
@@ -381,6 +419,7 @@ export default function App() {
               scope={town.town}
               label={townName ?? ""}
               artists={taste}
+              genres={genres}
               matched={mine.size}
               total={rows.length}
               source={source}
@@ -420,16 +459,24 @@ export default function App() {
       );
     }
     if (visible.length === 0) {
-      return hasTaste ? (
+      return hasTaste || hasGenres ? (
         <Empty
-          title={anywhere ? "None of your artists play anywhere." : "None of your artists play here."}
+          title={
+            hasTaste
+              ? anywhere
+                ? "None of your artists play anywhere."
+                : "None of your artists play here."
+              : anywhere
+                ? "None of these genres play anywhere."
+                : "None of these genres play here."
+          }
           detail={
             anywhere
               ? `${rows.length} shows across ${loaded.manifest.towns.length} towns.`
               : `${rows.length} shows are on the board.`
           }
           action={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
-          secondary={{ label: "Add artists", onClick: () => openPanel("taste") }}
+          secondary={{ label: "Add artists or genres", onClick: () => openPanel("taste") }}
         />
       ) : (
         <Empty
@@ -468,7 +515,7 @@ export default function App() {
         days={days}
         portraits={portraits}
         mine={mine}
-        markMine={!mineMode && hasTaste}
+        markMine={!mineMode && (hasTaste || hasGenres)}
         distanceFor={distanceFor}
         today={today}
         townOf={anywhere ? (row) => townLabel({ town: row.c }, loaded.towns) : undefined}
@@ -512,6 +559,8 @@ export default function App() {
               names={loaded.towns}
               taste={taste}
               onTaste={setTaste}
+              genres={genres}
+              onGenres={setGenresAndStore}
               portraits={portraits}
               town={town.town}
               onTown={pickTown}
@@ -536,6 +585,8 @@ export default function App() {
             onClose={closePanel}
             taste={taste}
             onTaste={setTasteAndStore}
+            genres={genres}
+            onGenres={setGenresAndStore}
             town={town.town}
             onTown={pickTown}
             posts={loaded.manifest.towns}

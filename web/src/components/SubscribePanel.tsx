@@ -4,8 +4,10 @@ import { feedUrl, webcalUrl, type CalendarSource } from "../lib/calendar";
 type Props = {
   /** The town's name, or `Anywhere`. */
   label: string;
-  /** How many artists the feed carries. Zero means the whole scope. */
+  /** How many artists the feed carries. Zero means the whole scope — unless genres are set. */
   artists: number;
+  /** How many genres the feed carries. */
+  genres: number;
   /** Shows in the feed today. Zero is a watch, not an empty promise. */
   matched: number;
   /** Shows in the scope, for the whole-town line. */
@@ -32,6 +34,7 @@ type Props = {
 export default function SubscribePanel({
   label,
   artists,
+  genres,
   matched,
   total,
   source,
@@ -44,9 +47,12 @@ export default function SubscribePanel({
 }: Props) {
   const [copied, setCopied] = useState(false);
 
+  const parts = [label];
+  if (artists > 0) parts.push(`${artists} ${artists === 1 ? "artist" : "artists"}`);
+  if (genres > 0) parts.push(`${genres} ${genres === 1 ? "genre" : "genres"}`);
   const scope =
-    artists > 0
-      ? `${label} · ${artists} ${artists === 1 ? "artist" : "artists"} · ${matched} ${matched === 1 ? "show" : "shows"}`
+    artists > 0 || genres > 0
+      ? `${parts.join(" · ")} · ${matched} ${matched === 1 ? "show" : "shows"}`
       : `Everything in ${label} · ${total} ${total === 1 ? "show" : "shows"}`;
 
   const copy = async () => {

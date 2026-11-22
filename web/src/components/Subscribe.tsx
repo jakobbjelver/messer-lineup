@@ -11,8 +11,10 @@ type Props = {
   scope: string;
   /** What the scope is called on the page, for the panel's scope line. */
   label: string;
-  /** The reader's list. Empty means the whole scope, and the panel says so. */
+  /** The reader's list. Empty means the whole scope — or the genres, when there are any. */
   artists: TasteEntry[];
+  /** Genre ids, unioned with the artist list on the board and in the feed. */
+  genres?: string[];
   /** Shows the feed holds today. Zero is a watch, not a dead control. */
   matched: number;
   /** Shows in the scope, so the whole-town line can count them. */
@@ -35,19 +37,19 @@ type Props = {
  * The label is always `Subscribe`. A token that has changed is a fact about the panel, not a reason to rename the
  * control the reader already learned.
  */
-export default function Subscribe({ scope, label, artists, matched, total, source }: Props) {
+export default function Subscribe({ scope, label, artists, genres, matched, total, source }: Props) {
   const [open, setOpen] = useState(false);
   const [remind, setRemind] = useState(readReminder);
   const origin = typeof location === "undefined" ? "" : location.origin;
 
   const token = useMemo(() => {
     try {
-      return tokenFor({ scope, artists, source: source ?? undefined, reminder: remind });
+      return tokenFor({ scope, artists, genres, source: source ?? undefined, reminder: remind });
     } catch {
       // Over the cap: the picker prevents it, and a control that cannot produce a valid link must not be drawn.
       return null;
     }
-  }, [scope, artists, source, remind]);
+  }, [scope, artists, genres, source, remind]);
 
   if (!token) return null;
 
@@ -76,6 +78,7 @@ export default function Subscribe({ scope, label, artists, matched, total, sourc
             <SubscribePanel
               label={label}
               artists={artists.length}
+              genres={genres?.length ?? 0}
               matched={matched}
               total={total ?? matched}
               source={source ?? null}

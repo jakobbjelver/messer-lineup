@@ -27,11 +27,13 @@ export function groupByDay(rows: Row[]): DayGroup[] {
 }
 
 /** Which rows are the reader's. A row is yours when its artist's identity key is in the list. */
-export function mineKeys(rows: Row[], tasteKeys: Set<string>): Set<string> {
-  if (tasteKeys.size === 0) return new Set();
+export function mineKeys(rows: Row[], tasteKeys: Set<string>, genreKeys: Set<string> = new Set()): Set<string> {
+  if (tasteKeys.size === 0 && genreKeys.size === 0) return new Set();
   const out = new Set<string>();
   for (const row of rows) {
-    if (tasteKeys.has(Key(row.a))) out.add(row.k);
+    const key = Key(row.a);
+    // A genre is a membership set, not a second filter: the two are a union, and one row can arrive by both roads.
+    if (tasteKeys.has(key) || genreKeys.has(key)) out.add(row.k);
   }
   return out;
 }

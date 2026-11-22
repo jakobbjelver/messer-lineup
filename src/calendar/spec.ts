@@ -36,6 +36,11 @@ export type CalendarSpec = {
   /** A live artist list. `a` stays the fallback, so a provider that is down degrades to what the subscriber saw. */
   s?: CalendarSource;
   /**
+   * Genre ids. The feed's artist set is `a ∪ ⋃ genres[g]`, so `g` alone is a valid board and an unknown id contributes
+   * nothing. A v2 field, like `r`.
+   */
+  g?: string[];
+  /**
    * Ask the calendar client to alarm the day before each event. `1` is the only value: the field is a switch, not a
    * setting, and a client that ignores it still gets a valid calendar.
    */
@@ -66,7 +71,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  * from a newer build (a genre today) is a `400` until this build implements it. Adding a field means adding it here
  * **and** to `CalendarSpec`, in the same change.
  */
-const FIELDS = new Set(["v", "t", "f", "o", "a", "s", "r"]);
+const FIELDS = new Set(["v", "t", "f", "o", "a", "s", "r", "g"]);
 
 /** Encodes a spec into a token. Throws on anything it cannot represent, because a bad token is a bad link. */
 export function encodeSpec(spec: CalendarSpec): string {
@@ -123,6 +128,15 @@ export function decodeSpec(token: string): CalendarSpec | null {
     source = { k: "listenbrainz", u: s.u };
   }
 
+  let genres: string[] | undefined;
+  if (spec.g !== undefined) {
+    // Six is the picker's cap; the token is not a place to smuggle a bigger filter. An id is lowercase words, which is
+    // also what stops a token from carrying a path or a quote into the feed.
+    if (spec.v !== 2 || !Array.isArray(spec.g) || spec.g.length === 0 || spec.g.length > 6) return null;
+    if (!spec.g.every((id) => typeof id === "string" && /^[a-z0-9-]{1,24}$/.test(id))) return null;
+    genres = spec.g as string[];
+  }
+
   let reminder: 1 | undefined;
   if (spec.r !== undefined) {
     // A reminder is a v2 field and `1` is the only value. A v1 token carrying it was written by something that did not
@@ -137,6 +151,7 @@ export function decodeSpec(token: string): CalendarSpec | null {
     ...(from && to ? { f: from, o: to } : {}),
     ...(artists ? { a: artists } : {}),
     ...(source ? { s: source } : {}),
+    ...(genres ? { g: genres } : {}),
     ...(reminder ? { r: reminder } : {}),
   };
 }

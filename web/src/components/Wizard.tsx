@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "@phosphor-icons/react";
 import ArtistPicker from "./ArtistPicker";
+import GenrePicker from "./GenrePicker";
 import Mark from "./Mark";
 import TownPicker from "./TownPicker";
 import type { Town, TownEntry } from "../lib/indexData";
 import type { Position } from "../lib/location";
 import type { TasteEntry } from "../lib/taste";
+import type { GenreId } from "../lib/genres";
 import type { PortraitMap } from "../lib/portraits";
 
 type Props = {
@@ -13,6 +15,8 @@ type Props = {
   names: Town[];
   taste: TasteEntry[];
   onTaste: (entries: TasteEntry[]) => void;
+  genres: GenreId[];
+  onGenres: (next: GenreId[]) => void;
   portraits?: PortraitMap;
   town: string;
   onTown: (id: string) => void;
@@ -40,6 +44,8 @@ export default function Wizard({
   names,
   taste,
   onTaste,
+  genres,
+  onGenres,
   portraits,
   town,
   onTown,
@@ -77,7 +83,10 @@ export default function Wizard({
         </h1>
 
         {step === 1 ? (
-          <ArtistPicker value={taste} onChange={onTaste} portraits={portraits} />
+          <>
+            <ArtistPicker value={taste} onChange={onTaste} portraits={portraits} />
+            <GenrePicker value={genres} onChange={onGenres} />
+          </>
         ) : (
           <TownPicker
             posts={posts}
