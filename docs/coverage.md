@@ -143,6 +143,42 @@ actually plays. No list length, cap or UI change moves this; a second source per
 **Re-measured 2026-11-21 at 1 041 rows and two sources: still 0 and 0.** The v2 section above has the reading; the
 number that matters did not move, and the record should not pretend otherwise.
 
+**Re-measured again 2026-11-22 at 1 009 rows, with a third reading that is the useful one.** Last.fm (`messeratgalten`,
+42 names) and ListenBrainz (`jakob1337`, 17) make 54 distinct names. Against the live index: **0 exact matches**, and
+the only three substring hits are tribute acts — *Creedence Tribute*, *Gasline: Gasolin & Kim Larsen Tribute* and
+*Skratta Göteborg*. Both lists are US/UK classic and alternative rock; the index's artist layer is the Swedish
+mid-size scene that actually plays these rooms (Newkid 7 rows, Petter, Lisa Nilsson, Nils Landgren Funk Unit 5,
+Kebnekajse, Joel Alme, Ellen Sundberg, Nationalteaterns Rockorkester, Burt Bacharach 2). The taste list is a *listening*
+list, not a *touring* list, and no room on this index is the wrong room — it is the wrong list.
+
+## The season test, measured 2026-11-22
+
+The standing explanation for the zero was season: those acts tour in summer, and the board publishes a Nov–Mar window.
+So the sweep was run with the clock pinned — `lineup mine --now 2027-05-15` gives the window **2027-05-15 → 2027-09-12**
+— same four towns, same two sources, a scratch index, nothing published.
+
+| Window | Candidates | Rows | Published |
+|---|---:|---:|---:|
+| 2026-11-22 → 2027-03-22 (live) | 8 441 | 1 052 | **1 009** |
+| 2027-05-15 → 2027-09-12 (test) | 8 361 | 59 | **58** |
+
+The summer run parsed **2 159 events that fell outside its own window**, 3 626 in towns we do not publish and 1 112 that
+are not music. The same inventory produced 1 009 rows in the winter window and 58 in the summer one: **the platforms
+list roughly one season ahead, and in November that season is winter.** Hit rate in the summer index: **0 of 54** — the
+single key match is `DIO`, which is *Dio Stargazer Alliance*, a tribute.
+
+What this settles: a summer board cannot be assembled in November, because the summer inventory is not listed yet — the
+hypothesis is not refuted, it is untestable until spring. What it also settles: **the window is the cheap lever nobody
+has pulled.** About 2 000 parsed events per run are discarded for being outside 120 days; the sources themselves list
+roughly six months. Widening the publication window would grow the index without fetching one extra page. It would not,
+on this evidence, produce a match for either taste list — the missing piece is the list, not the window.
+
+**Where the artist field still leaks (same day, 1 009 rows):** 181 rows (17.9 %) carry a title-shaped name, of which
+**56 rows (53 distinct names) have never been asked about** (`internal/resolve`, cache in `.lineup-state/artists.json`:
+104 split, 121 undecided, 9 operator corrections). The nightly resolves 120 names, so the queue drains over a few
+nights; the ceiling on this work is 5.5 % of rows, and it is not what stands between the board and a match.
+
+
 ## Four towns, one platform, and what the merge actually found
 
 The run recorded above is the nightly shape: `--town copenhagen,stockholm,gothenburg,malmo` at a 2 s interval
