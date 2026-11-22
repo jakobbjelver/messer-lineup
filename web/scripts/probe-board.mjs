@@ -127,16 +127,12 @@ const whose = geometry.segs.find((s) => s.label === "Whose shows");
 const view = geometry.segs.find((s) => s.label === "View");
 const sub = geometry.sub;
 const titleH1 = geometry.titleH1;
-// The two switches share the second row at every width: `yours · all` at the left edge, the view at the right.
+// The second row's two ends: the view control is always at the right one, and `yours · all` joins it at the left edge
+// only when the reader has a taste to filter by. This run is a guest, so the row has one child — and a guest asserting a
+// `whose` control is the regression this check now catches (the state with a list is measured below, after a reload).
 check(
   "headRow",
-  Boolean(
-    whose && view &&
-      whose.h === view.h &&
-      whose.x === geometry.page.x + 24 &&
-      Math.abs((whose.y + whose.h / 2) - (view.y + view.h / 2)) <= 2 &&
-      Math.abs(view.right - geometry.page.right) <= 40,
-  ),
+  Boolean(view && !whose && Math.abs(view.right - geometry.page.right) <= 40),
   { whose, view, pageX: geometry.page.x, pageRight: geometry.page.right },
 );
 
@@ -162,6 +158,27 @@ const subscribe = await page.evaluate(() => {
   return { count: controls.length, w: Math.round(box.width), h: Math.round(box.height), label };
 });
 check("subscribe", subscribe.count === 1 && subscribe.h >= 40 && subscribe.label === "Subscribe", subscribe);
+
+/* ── scene ──────────────────────────────────────────────────────────────────────────────────── */
+
+// The front door is the place. The probe runs as a guest (it clears `lineup.taste` above), so `yours · all` must not be
+// there: a tab that can only print 0 is a dead end, and a scene board does not open with one.
+const taste = await page.evaluate(() => {
+  const seg = document.querySelector('.seg[aria-label="Whose shows"]');
+  const view = document.querySelector(".seg--icons");
+  const box = view?.getBoundingClientRect();
+  const main = document.querySelector("main.page")?.getBoundingClientRect();
+  return {
+    tasteTab: Boolean(seg),
+    viewRight: box ? Math.round(box.right) : null,
+    pageRight: main ? Math.round(main.right) : null,
+  };
+});
+check(
+  "scene",
+  !taste.tasteTab && taste.viewRight !== null && Math.abs(taste.pageRight - taste.viewRight) <= 40,
+  taste,
+);
 
 /* ── square ──────────────────────────────────────────────────────────────────────────────────── */
 
@@ -305,6 +322,31 @@ if (PANEL) {
   const after = (await readLocate())?.town;
   check("reopen", Boolean(before && after && before === after), { before, after });
 }
+
+// The other half of the same rule: give the guest a list and the control must appear, at the row's left edge, on the same
+// line as the view. One reload with a key in the address is the whole fixture.
+await page.goto(`${URL_UNDER_TEST}${URL_UNDER_TEST.includes("?") ? "&" : "?"}a=opeth`, { waitUntil: "networkidle" });
+await page.waitForSelector('.seg[aria-label="Whose shows"]', { timeout: 25000 });
+const listed = await page.evaluate(() => {
+  const seg = document.querySelector('.seg[aria-label="Whose shows"]');
+  const view = document.querySelector(".seg--icons");
+  const main = document.querySelector("main.page").getBoundingClientRect();
+  if (!seg || !view) return { tasteTab: Boolean(seg), view: Boolean(view) };
+  const a = seg.getBoundingClientRect();
+  const b = view.getBoundingClientRect();
+  return {
+    tasteTab: true,
+    x: Math.round(a.x),
+    expectedX: Math.round(main.x) + 24,
+    sameH: Math.round(a.height) === Math.round(b.height),
+    sameLine: Math.abs(a.y + a.height / 2 - (b.y + b.height / 2)) <= 2,
+  };
+});
+check(
+  "headRowList",
+  listed.tasteTab === true && listed.x === listed.expectedX && listed.sameH && listed.sameLine,
+  listed,
+);
 
 await browser.close();
 
