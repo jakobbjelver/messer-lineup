@@ -52,11 +52,13 @@ type calendarSpec struct {
 	O string          `json:"o,omitempty"`
 	A []string        `json:"a,omitempty"`
 	S *calendarSource `json:"s,omitempty"`
+	// R asks the client for a day-before alarm. A v2 field, and `1` is the only value: a switch, not a setting.
+	R int `json:"r,omitempty"`
 }
 
 // calendarFields is the whole vocabulary of a token this build serves. See decodeCalendarSpec for why the set is
 // enforced rather than trusted.
-var calendarFields = map[string]bool{"v": true, "t": true, "f": true, "o": true, "a": true, "s": true}
+var calendarFields = map[string]bool{"v": true, "t": true, "f": true, "o": true, "a": true, "s": true, "r": true}
 
 // calendarSource says where a live artist list comes from. The snapshot in `a` stays the fallback: a provider that
 // is down, a handle that was deleted or an account whose statistics are not computed yet must degrade to the list
@@ -158,7 +160,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 	if builtAt.IsZero() {
 		builtAt = s.opts.Now()
 	}
-	body := buildCalendar(kept, name, description, builtAt)
+	body := buildCalendar(kept, name, description, builtAt, spec.R == 1)
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Content-Disposition", `inline; filename="lineup-`+feedSlug(spec.T)+`.ics"`)
 	// Fifteen minutes: short enough to follow a nightly publish, long enough that a mail client polling twice an
@@ -280,7 +282,7 @@ func decodeCalendarSpec(token string) (calendarSpec, bool) {
 	if err := json.Unmarshal(raw, &spec); err != nil {
 		return calendarSpec{}, false
 	}
-	if spec.V != 1 || spec.T == "" || len(spec.T) > 64 {
+	if (spec.V != 1 && spec.V != 2) || spec.T == "" || len(spec.T) > 64 {
 		return calendarSpec{}, false
 	}
 	// A window is both ends or neither: half a window is a link that lies about what it shows.
@@ -303,6 +305,11 @@ func decodeCalendarSpec(token string) (calendarSpec, bool) {
 			return calendarSpec{}, false
 		}
 	}
+	// A reminder is a v2 field and `1` is the only value. A v1 token carrying it was written by something that did not
+	// understand the version it claimed, and guessing would put an alarm on somebody's phone unasked.
+	if spec.R != 0 && (spec.V != 2 || spec.R != 1) {
+		return calendarSpec{}, false
+	}
 	return spec, true
 }
 
@@ -319,7 +326,7 @@ func validDay(day string) bool {
 
 // buildCalendar renders the feed. Text is escaped and folded here rather than by a library, because the two runtimes
 // have to agree byte for byte and a dependency's folding rules would be a third opinion.
-func buildCalendar(rows []feedRow, name, description string, builtAt time.Time) string {
+func buildCalendar(rows []feedRow, name, description string, builtAt time.Time, reminder bool) string {
 	// The caller supplies the clock: the manifest's build time, never this process's. A feed whose DTSTAMP moved on
 	// every fetch would make every subscription look edited to a client that compares them.
 	stamp := builtAt.UTC().Format("20060102T150405Z")
@@ -348,20 +355,32 @@ func buildCalendar(rows []feedRow, name, description string, builtAt time.Time) 
 		if item.Town != "" {
 			location = row.V + ", " + item.Town
 		}
+		summary := row.A + " @ " + row.V
 		lines = append(lines,
 			"BEGIN:VEVENT",
 			"UID:"+escapeText(row.K+"@lineup.messer.wtf"),
 			"DTSTAMP:"+stamp,
 			"DTSTART:"+start.UTC().Format("20060102T150405Z"),
 			"DTEND:"+start.Add(calendarDuration).UTC().Format("20060102T150405Z"),
-			"SUMMARY:"+escapeText(row.A+" @ "+row.V),
+			"SUMMARY:"+escapeText(summary),
 			"LOCATION:"+escapeText(location),
 			"URL:"+row.U,
 			"STATUS:"+status,
 			"CATEGORIES:"+escapeText("Messer Lineup"),
 			"TRANSP:OPAQUE",
-			"END:VEVENT",
 		)
+		if reminder {
+			// A display alarm the day before. Some clients ignore VALARM on a subscribed calendar, which is why it is a
+			// request in the token and never a promise on the page.
+			lines = append(lines,
+				"BEGIN:VALARM",
+				"ACTION:DISPLAY",
+				"DESCRIPTION:"+escapeText(summary),
+				"TRIGGER:-P1D",
+				"END:VALARM",
+			)
+		}
+		lines = append(lines, "END:VEVENT")
 	}
 	lines = append(lines, "END:VCALENDAR")
 

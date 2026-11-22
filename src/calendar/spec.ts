@@ -20,8 +20,11 @@
  */
 
 export type CalendarSpec = {
-  /** Format version. A feed URL outlives a deploy, so a change that breaks old tokens must say so here. */
-  v: 1;
+  /**
+   * Format version. A feed URL outlives a deploy, so a change that breaks old tokens must say so here.
+   * `1` is the original vocabulary; `2` adds `r` (a reminder) and refuses to be written without a field that needs it.
+   */
+  v: 1 | 2;
   /** Town id (`copenhagen-dk`), or `anywhere` — the reserved scope that renders every published town. */
   t: string;
   /** First day, `YYYY-MM-DD`. Absent with `o`: follow the published window. */
@@ -32,6 +35,11 @@ export type CalendarSpec = {
   a?: string[];
   /** A live artist list. `a` stays the fallback, so a provider that is down degrades to what the subscriber saw. */
   s?: CalendarSource;
+  /**
+   * Ask the calendar client to alarm the day before each event. `1` is the only value: the field is a switch, not a
+   * setting, and a client that ignores it still gets a valid calendar.
+   */
+  r?: 1;
 };
 
 export type CalendarSource = {
@@ -58,7 +66,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  * from a newer build (a genre today) is a `400` until this build implements it. Adding a field means adding it here
  * **and** to `CalendarSpec`, in the same change.
  */
-const FIELDS = new Set(["v", "t", "f", "o", "a", "s"]);
+const FIELDS = new Set(["v", "t", "f", "o", "a", "s", "r"]);
 
 /** Encodes a spec into a token. Throws on anything it cannot represent, because a bad token is a bad link. */
 export function encodeSpec(spec: CalendarSpec): string {
@@ -83,7 +91,7 @@ export function decodeSpec(token: string): CalendarSpec | null {
   const spec = parsed as Record<string, unknown>;
   // Refuse rather than ignore: see FIELDS.
   for (const key of Object.keys(spec)) if (!FIELDS.has(key)) return null;
-  if (spec.v !== 1) return null;
+  if (spec.v !== 1 && spec.v !== 2) return null;
   if (typeof spec.t !== "string" || spec.t.length === 0 || spec.t.length > 64) return null;
 
   // A window is both ends or neither: half a window is a link that lies about what it shows.
@@ -115,12 +123,21 @@ export function decodeSpec(token: string): CalendarSpec | null {
     source = { k: "listenbrainz", u: s.u };
   }
 
+  let reminder: 1 | undefined;
+  if (spec.r !== undefined) {
+    // A reminder is a v2 field and `1` is the only value. A v1 token carrying it was written by something that did not
+    // understand the version it claimed, and guessing would put an alarm on somebody's phone unasked.
+    if (spec.v !== 2 || spec.r !== 1) return null;
+    reminder = 1;
+  }
+
   return {
-    v: 1,
+    v: spec.v,
     t: spec.t,
     ...(from && to ? { f: from, o: to } : {}),
     ...(artists ? { a: artists } : {}),
     ...(source ? { s: source } : {}),
+    ...(reminder ? { r: reminder } : {}),
   };
 }
 

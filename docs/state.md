@@ -66,6 +66,7 @@ without one prints its venue — and, on `anywhere`, its town.
 | `lineup.view` | `calendar` | until cleared |
 | `lineup.onboarded` | the two-step gate has been seen | until cleared |
 | `lineup.calendar` | the feed token the subscribe control last issued | until cleared |
+| `lineup.reminder` | the reader asked their calendar for a day-before alarm | until cleared |
 
 `lineup.taste.import` is the provenance that lets a feed *follow* a handle, and it is dropped the moment the list no
 longer equals what the import produced: one edit and the list is the reader's, not a provider's.

@@ -28,6 +28,8 @@ export type FeedBoard = {
   artists: TasteEntry[];
   /** A live list to prefer, with `artists` as the snapshot it falls back to. */
   source?: CalendarSource;
+  /** Ask the calendar client for a day-before alarm. A v2 field, so its presence is what moves the token's version. */
+  reminder?: boolean;
 };
 
 /**
@@ -36,10 +38,12 @@ export type FeedBoard = {
  */
 export function tokenFor(board: FeedBoard): string {
   const spec: CalendarSpec = {
-    v: 1,
+    // v2 exists for `r` today and `g` (genres) next; a board without either stays v1 so issued links keep their shape.
+    v: board.reminder ? 2 : 1,
     t: board.scope,
     ...(board.artists.length > 0 ? { a: board.artists.map((entry) => entry.key).slice(0, TASTE_CAP) } : {}),
     ...(board.source ? { s: board.source } : {}),
+    ...(board.reminder ? { r: 1 as const } : {}),
   };
   return encodeSpec(spec);
 }

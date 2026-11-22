@@ -65,6 +65,26 @@ func TestCalendarFeedRendersTheBoard(t *testing.T) {
 	}
 }
 
+func TestCalendarReminderWrapsEveryEvent(t *testing.T) {
+	handler := newServer(t, buildIndex(t))
+	token := calendarToken(t, calendarSpec{V: 2, T: "copenhagen-dk", R: 1})
+	rec := get(t, handler, "/calendar/"+token+".ics")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if got := strings.Count(body, "BEGIN:VALARM"); got != 2 {
+		t.Fatalf("valarms = %d, want one per event (2):\n%s", got, body)
+	}
+	// The alarm is inside the event, not after it: a VALARM after END:VEVENT is not part of anything.
+	if got := strings.Count(body, "END:VALARM\r\nEND:VEVENT"); got != 2 {
+		t.Fatalf("valarms are not nested in their events (%d):\n%s", got, body)
+	}
+	if !strings.Contains(body, "TRIGGER:-P1D") {
+		t.Fatalf("the alarm is not a day before:\n%s", body)
+	}
+}
+
 func TestCalendarArtistFilterAndUIDs(t *testing.T) {
 	handler := newServer(t, buildIndex(t))
 	spec := calendarSpec{V: 1, T: "copenhagen-dk", F: "2026-11-01", O: "2027-01-31", A: []string{model.Key("Efterklang")}}
@@ -132,7 +152,7 @@ func TestCalendarFoldsLongValuesOnRuneBoundaries(t *testing.T) {
 		},
 		Town: "København",
 	}}
-	body := buildCalendar(rows, "Messer Lineup — København", "Shows in København, from the Messer Lineup index.", time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC))
+	body := buildCalendar(rows, "Messer Lineup — København", "Shows in København, from the Messer Lineup index.", time.Date(2026, 11, 17, 6, 0, 0, 0, time.UTC), false)
 	for _, line := range strings.Split(strings.TrimSuffix(body, "\r\n"), "\r\n") {
 		if len(line) > 75 {
 			t.Fatalf("line of %d octets over the limit: %q", len(line), line)

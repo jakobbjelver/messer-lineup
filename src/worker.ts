@@ -449,6 +449,7 @@ app.get("/calendar/:file", async (c) => {
       townLabel: place,
       builtAt: manifest.built_at,
       origin: new URL(c.req.url).origin,
+      reminder: spec.r === 1,
       calName: `Messer Lineup — ${place}`,
       calDesc: filtered
         ? `Shows for ${count} ${word}${anywhere ? ", anywhere" : ` in ${place}`}, from the Messer Lineup index.`

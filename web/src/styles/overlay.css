@@ -658,83 +658,150 @@
 }
 
 /* ── the subscription ────────────────────────────────────────────────────────────────────────────
-   One control, under the board it describes. The count rides on the button because it is the answer to "is this
-   worth it", and the note under it is the one promise a feed actually keeps. Square, like everything else; the
-   accent is not spent here — this is not a state, it is an offer. */
+   One split control in the board head row: the label is the action, the mark beside it is the explanation. Square like
+   everything else, and the accent is not spent here — a subscription is an offer, not a state. */
 
-.subs {
-  display: grid;
-  gap: 8px;
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
+.subbtn {
+  display: inline-flex;
+  align-items: stretch;
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
 }
-.subs__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.subs__link {
-  width: fit-content;
-}
-.subs__n {
-  font: 400 11.5px/1 var(--mono);
-  color: var(--text-3);
-}
-.subs__link:hover .subs__n {
-  color: var(--text-2);
-}
-.subs__copy {
-  width: 44px;
-  height: 44px;
-  border-color: var(--border-strong);
-}
-.subs__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 14px;
-  flex-wrap: wrap;
-}
-.subs__note {
-  margin: 0;
-  font: 400 12px/1.5 var(--font);
-  color: var(--text-3);
-}
-/* A quiet subscription: a link, not a button, so it can sit under an offer without competing with it. */
-.subs--quiet {
-  margin-top: 18px;
-  padding-top: 14px;
-}
-.subs__link--quiet {
+.subbtn__go {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: auto;
-  padding: 0 0 2px;
-  font: 500 12.5px/1.2 var(--font);
-  color: var(--text-2);
-  border-bottom: 1px solid var(--border-strong);
-  transition: color 0.12s linear, border-color 0.12s linear;
-}
-.subs__link--quiet:hover {
+  gap: 8px;
+  padding: 0 12px;
+  font: 500 12.5px/1 var(--font);
   color: var(--foreground);
-  border-color: var(--primary);
+  white-space: nowrap;
+  transition: background 0.12s linear;
 }
-.subs__link--quiet .subs__n {
-  margin-left: 2px;
+.subbtn__go:hover {
+  background: var(--surface-2);
 }
-.subs__copytext {
-  padding: 0 0 2px;
-  font: 500 10.5px/1.2 var(--font);
-  letter-spacing: 0.08em;
+.subbtn__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  border-left: 1px solid var(--border);
+  color: var(--text-3);
+  transition: color 0.12s linear, background 0.12s linear;
+}
+.subbtn__info:hover,
+.subbtn__info[aria-expanded="true"] {
+  color: var(--foreground);
+  background: var(--surface-2);
+}
+
+/* The panel: a small sheet, not a tooltip. It carries the scope, the promise, the two actions and the reminder, so that
+   none of it has to sit on the page beside the control. */
+.subpop {
+  z-index: 70;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  animation: fade 0.14s var(--ease) both;
+}
+.subpop:focus-visible {
+  outline: 1px solid var(--primary-line);
+}
+.subpop__in {
+  display: grid;
+  gap: 10px;
+}
+.subpop__title {
+  margin: 0;
+  font: 600 11px/1 var(--font);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-3);
-  transition: color 0.12s linear;
 }
-.subs__copytext:hover {
+.subpop__lead {
+  margin: 0;
+  font: 400 12.5px/1.5 var(--font);
+  color: var(--text-2);
+}
+.subpop__facts {
+  display: grid;
+  gap: 7px;
+  margin: 2px 0 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.subpop__facts div {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+}
+.subpop__facts dt {
+  font: 500 9.5px/1.7 var(--font);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.subpop__facts dd {
+  margin: 0;
+  font: 400 12px/1.45 var(--font);
   color: var(--foreground);
+}
+.subpop__acts {
+  display: flex;
+  gap: 8px;
+}
+.subpop__go,
+.subpop__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  font: 500 12px/1 var(--font);
+  color: var(--foreground);
+  transition: background 0.12s linear;
+}
+.subpop__go:hover,
+.subpop__copy:hover {
+  background: var(--surface-2);
+}
+.subpop__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 12px/1.4 var(--font);
+  color: var(--text-2);
+}
+/* The global reset sets `appearance: none` on every input, which erases a native checkbox entirely — so this one is
+   drawn: a square that becomes an accent square when it is on. */
+.subpop__check input {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  cursor: pointer;
+}
+.subpop__check input:checked {
+  border-color: var(--primary);
+}
+.subpop__check input:checked::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: var(--primary);
+}
+.subpop__note {
+  margin: 0;
+  font: 400 11.5px/1.5 var(--font);
+  color: var(--text-3);
 }
 
 .cal__foot {

@@ -356,7 +356,7 @@ export default function App() {
           <CaretDown size={16} className="caret" />
         </button>
       </h1>
-      {rows ? (
+      {rows && town ? (
         <div className="head__row">
           <div className="seg" role="group" aria-label="Whose shows">
             <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
@@ -366,13 +366,25 @@ export default function App() {
               all <span className="num">{rows.length}</span>
             </button>
           </div>
-          <div className="seg seg--icons" role="group" aria-label="View">
-            <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
-              <ListBullets size={15} />
-            </button>
-            <button aria-pressed={view === "calendar"} aria-label="Calendar view" onClick={() => applyView("calendar")}>
-              <CalendarBlank size={15} />
-            </button>
+          <div className="head__end">
+            <div className="seg seg--icons" role="group" aria-label="View">
+              <button aria-pressed={view === "list"} aria-label="List view" onClick={() => applyView("list")}>
+                <ListBullets size={15} />
+              </button>
+              <button aria-pressed={view === "calendar"} aria-label="Calendar view" onClick={() => applyView("calendar")}>
+                <CalendarBlank size={15} />
+              </button>
+            </div>
+            {/* One control, one mount: the board's head row is the only place a subscription is offered. The label
+                says Subscribe and nothing else; everything it means lives behind the mark beside it. */}
+            <Subscribe
+              scope={town.town}
+              label={townName ?? ""}
+              artists={taste}
+              matched={mine.size}
+              total={rows.length}
+              source={source}
+            />
           </div>
         </div>
       ) : null}
@@ -418,11 +430,7 @@ export default function App() {
           }
           action={{ label: `Show all ${rows.length}`, onClick: () => setFilter("all") }}
           secondary={{ label: "Add artists", onClick: () => openPanel("taste") }}
-        >
-          {/* The point of a feed is that it does not need this page again: an empty board is a standing watch, and it
-              fills itself the next time one of these artists announces a date. */}
-          <Subscribe scope={town.town} artists={taste} matched={0} source={source} variant="quiet" />
-        </Empty>
+        />
       ) : (
         <Empty
           title="No artists yet."
@@ -445,9 +453,7 @@ export default function App() {
             to={loaded.manifest.window.to}
             maxFaces={wide ? 3 : 2}
             onDay={setDaySheet}
-          >
-            {hasTaste ? <Subscribe scope={town.town} artists={taste} matched={mine.size} source={source} /> : null}
-          </Calendar>
+          />
           <DaySheet
             day={daySheet}
             rows={sheetRows}
@@ -542,12 +548,6 @@ export default function App() {
             onRelease={releaseFix}
             theme={theme}
             onTheme={toggleTheme}
-            subscribe={hasTaste ? <Subscribe scope={town.town} artists={taste} matched={mine.size} source={source} /> : undefined}
-            townSubscribe={
-              anywhere ? undefined : (
-                <Subscribe scope={town.town} artists={[]} matched={town.count} variant="quiet" />
-              )
-            }
           />
         </>
       ) : null}

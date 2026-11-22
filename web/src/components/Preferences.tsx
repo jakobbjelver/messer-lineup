@@ -1,6 +1,5 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import { Moon, Sun } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
 import ArtistPicker from "./ArtistPicker";
 import ResponsiveDialog from "./ui/ResponsiveDialog";
 import TownPicker from "./TownPicker";
@@ -31,12 +30,6 @@ type Props = {
   onRelease: () => void;
   theme: Theme;
   onTheme: () => void;
-  /** The feed for this list, under the picker. */
-  subscribe?: ReactNode;
-  /** The feed for everything in this town, under the picker — a different promise, named after its contents. */
-  townSubscribe?: ReactNode;
-  /** How many shows are in the town's own feed, so its label can say. */
-  townMatched?: number;
 };
 
 /**
@@ -48,7 +41,7 @@ type Props = {
  * a setting.
  */
 export default function Preferences(props: Props) {
-  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, portraits, position, canLocate, onLocate, located, onRelease, theme, onTheme, subscribe, townSubscribe } = props;
+  const { open, tab, onTab, onClose, taste, onTaste, town, onTown, posts, names, portraits, position, canLocate, onLocate, located, onRelease, theme, onTheme } = props;
 
   return (
     <ResponsiveDialog
@@ -69,7 +62,6 @@ export default function Preferences(props: Props) {
 
         <Tabs.Content value="taste" className="panel__body">
           <ArtistPicker value={taste} onChange={onTaste} compact portraits={portraits} />
-          {subscribe}
         </Tabs.Content>
         <Tabs.Content value="town" className="panel__body">
           <TownPicker
@@ -83,7 +75,6 @@ export default function Preferences(props: Props) {
             located={located}
             onRelease={onRelease}
           />
-          {townSubscribe}
         </Tabs.Content>
 
         <div className="panel__foot">

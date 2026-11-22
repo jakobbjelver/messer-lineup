@@ -90,8 +90,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   margin-top: 12px;
+}
+/* The right end keeps the view switch and the subscription together, and may take its own line on a phone rather than
+   squeezing the label. */
+.head__end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 .head__row .seg {
   margin-top: 0;
@@ -485,30 +494,9 @@ a.show__artist:hover {
   gap: 8px;
   margin-top: 6px;
 }
-/* Something that belongs to the state and is not a button: an empty board still has a subscription to offer. */
-.state__more {
-  margin-top: 20px;
-  width: 100%;
-  max-width: 36ch;
-}
-.state__more .subs {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
-  justify-items: center;
-  text-align: center;
-}
-.state__more .subs__row {
-  justify-content: center;
-}
-.state__more .subs__link {
-  margin: 0 auto;
-}
-/* In a centred state the sentence and its state sit as one centred group: spreading them to the edges of a 36ch
-   block puts the chip on the page's centre line, which reads as belonging to nothing. */
-.state__more .subs__foot {
-  justify-content: center;
-  gap: 4px 12px;
+/* The artist page offers the same control as the board head row: one subscription, one label. */
+.artist__acts {
+  margin-top: 12px;
 }
 
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */

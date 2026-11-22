@@ -1,8 +1,8 @@
 /**
  * What the browser remembers about the reader.
  *
- * Five facts, five keys, one shape: the town they chose, the artists they chose, the view they last used, whether they
- * have seen the gate, and the feed token the subscribe control last issued. Everything else (a distance, a fix, an
+ * Five facts, six keys, one shape: the town they chose, the artists they chose, the view they last used, whether they
+ * have seen the gate, the feed token the subscribe control last issued, and whether that feed should remind them. Everything else (a distance, a fix, an
  * open panel) is memory-only by design — a stored guess is indistinguishable from a stored choice.
  *
  * The remembered token is not state about the reader's taste; it is a bookmark of our own output, kept so the control
@@ -26,6 +26,7 @@ const VIEW_KEY = "lineup.view";
 const ONBOARDED_KEY = "lineup.onboarded";
 const IMPORT_KEY = "lineup.taste.import";
 const FEED_KEY = "lineup.calendar";
+const REMIND_KEY = "lineup.reminder";
 
 function read(key: string): string | null {
   try {
@@ -127,6 +128,15 @@ export function readFeed(): string | null {
 
 export function writeFeed(token: string | null): void {
   write(FEED_KEY, token);
+}
+
+/** Whether the reader asked their calendar to remind them the day before. A preference, not a fact about the feed. */
+export function readReminder(): boolean {
+  return read(REMIND_KEY) === "1";
+}
+
+export function writeReminder(on: boolean): void {
+  write(REMIND_KEY, on ? "1" : null);
 }
 
 export function readOnboarded(): boolean {

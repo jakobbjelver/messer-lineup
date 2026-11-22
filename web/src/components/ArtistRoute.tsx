@@ -4,6 +4,7 @@ import Avatar from "./Avatar";
 import Board from "./Board";
 import Chrome from "./Chrome";
 import Loader from "./Loader";
+import Subscribe from "./Subscribe";
 import { Empty, Failed } from "./states";
 import { groupByDay, localDay } from "../lib/board";
 import { loadArtistRows, loadIndex, stampLabel, townLabel, type ArtistShow, type Manifest, type Town } from "../lib/indexData";
@@ -91,6 +92,11 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
                   </a>
                 </p>
               ) : null}
+              {/* A page about one artist is a watch: the feed is their dates in every town, and it is offered even
+                  when there are none today, because the next announcement is the point. */}
+              <div className="artist__acts">
+                <Subscribe scope="anywhere" label="Anywhere" artists={[{ key: artistKey, name }]} matched={phase.shows.length} />
+              </div>
             </div>
           </div>
         ) : null}

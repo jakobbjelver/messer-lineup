@@ -35,6 +35,8 @@ type Meta = {
   /** `X-WR-CALNAME` / `X-WR-CALDESC` overrides: a feed for a scope that is not one town names itself. */
   calName?: string;
   calDesc?: string;
+  /** Ask the client for a day-before alarm on every event. A request, not a promise: clients differ. */
+  reminder?: boolean;
 };
 
 /** Three hours: a block a client draws, not a claim about the running time. */
@@ -69,20 +71,25 @@ function vevent(row: CalendarRow, meta: Meta, stamp: string): string[] | null {
   if (Number.isNaN(start.getTime())) return null;
   const end = new Date(start.getTime() + DEFAULT_DURATION_MS);
   const status = row.st === "c" ? "CANCELLED" : "CONFIRMED";
-  return [
+  const summary = `${row.a} @ ${row.v}`;
+  const lines = [
     "BEGIN:VEVENT",
     `UID:${escapeText(`${row.k}@lineup.messer.wtf`)}`,
     `DTSTAMP:${stamp}`,
     `DTSTART:${toStamp(start)!}`,
     `DTEND:${toStamp(end)!}`,
-    `SUMMARY:${escapeText(`${row.a} @ ${row.v}`)}`,
+    `SUMMARY:${escapeText(summary)}`,
     `LOCATION:${escapeText(`${row.v}, ${row.town ?? meta.townLabel}`)}`,
     `URL:${row.u}`,
     `STATUS:${status}`,
     `CATEGORIES:${escapeText("Messer Lineup")}`,
     "TRANSP:OPAQUE",
-    "END:VEVENT",
   ];
+  if (meta.reminder) {
+    lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${escapeText(summary)}`, "TRIGGER:-P1D", "END:VALARM");
+  }
+  lines.push("END:VEVENT");
+  return lines;
 }
 
 // CRLF, folded at 75 octets, and no trailing newline beyond the final CRLF the spec requires.

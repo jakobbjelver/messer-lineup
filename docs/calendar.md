@@ -8,15 +8,17 @@ this is the one route that renders.
 base64url of a small JSON object:
 
 ```json
-{ "v": 1, "t": "copenhagen-dk", "f": "2026-11-18", "o": "2027-03-18", "a": ["opeth"] }
+{ "v": 2, "t": "copenhagen-dk", "f": "2026-11-18", "o": "2027-03-18", "a": ["opeth"], "r": 1 }
 ```
 
 | Key | Meaning |
 |---|---|
-| `v` | format version — a subscribed URL outlives a deploy, so a breaking change has to be visible |
-| `t` | town id |
-| `f` / `o` | the window, inclusive, `YYYY-MM-DD` |
+| `v` | format version — a subscribed URL outlives a deploy, so a breaking change has to be visible. `1` is the original vocabulary; `2` adds `r` (and, next, `g`) |
+| `t` | town id (`anywhere` for every town) |
+| `f` / `o` | the window, inclusive, `YYYY-MM-DD`; absent follows the published window, so a feed never dies on a baked-in date |
 | `a` | artist identity keys; absent means the whole town |
+| `s` | a live artist list to follow (`{k:"listenbrainz",u:<handle>}`), with `a` as the fallback |
+| `r` | `1` asks the client for a day-before alarm. Only a `v:2` token may carry it |
 
 **It is not signed.** Plan §7.1 called for an HMAC, and that was written before the reason was clear: a signature proves
 *we* issued the parameters, which matters only when the parameters grant something. These grant nothing — the feed is
@@ -40,9 +42,14 @@ a subscriber that receives a 404 starts showing an error instead of an empty mon
 
 ## Where the link comes from
 
-The coverage panel builds it from what is on screen — town, window, the taste list — and offers it as a `webcal://`
-link (which hands the URL to the OS calendar) with the plain `https://` address printed beside it for copying. Nothing
-is stored server-side: the token *is* the state, which is why the same link works in any client on any device.
+One control, in the board's head row: **Subscribe** opens a `webcal://` link (which hands the URL to the OS calendar)
+and the ⓘ beside it opens the panel that carries the scope, the contents, `Open in Calendar`, `Copy link` and the
+reminder switch. The label never changes; a token that has changed is explained in the panel, never by renaming the
+button. The same control sits on `/a/<key>` and subscribes to that artist everywhere. Nothing is stored server-side:
+the token *is* the state, which is why the same link works in any client on any device.
+
+The reminder is a request, not a promise: `VALARM` on a subscribed calendar is honoured by Apple's Calendar and
+ignored by some clients, so the panel offers it and the feed carries it without claiming an alarm will ring.
 
 ## Two runtimes, one shape
 
