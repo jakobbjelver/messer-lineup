@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 )
 
 // Format is the file's format id, so a future shape change is visible rather than silent.
@@ -116,7 +118,7 @@ func (s *Store) Raise(f Finding) (Finding, bool) {
 		f.ID = ID(f.Kind, f.Source, f.Town)
 	}
 	if f.OpenedAt.IsZero() {
-		f.OpenedAt = time.Now().UTC()
+		f.OpenedAt = clock.Now()
 	}
 	for i := range s.file.Findings {
 		if s.file.Findings[i].ID != f.ID {

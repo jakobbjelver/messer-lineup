@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/findings"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 )
@@ -56,7 +57,7 @@ func TestAWarningBecomesOneFinding(t *testing.T) {
 
 func TestACleanRunRaisesNothing(t *testing.T) {
 	store, _ := findings.Open(filepath.Join(t.TempDir(), "findings.json"))
-	clean := mine.Report{FinishedAt: time.Now().UTC(), Towns: []mine.TownReport{{Slug: "malmo", Sources: []mine.SourceReport{{ID: "tickster", Candidates: 250, Rows: 70}}}}}
+	clean := mine.Report{FinishedAt: clock.Now(), Towns: []mine.TownReport{{Slug: "malmo", Sources: []mine.SourceReport{{ID: "tickster", Candidates: 250, Rows: 70}}}}}
 	if raised := recordMineFindings(store, clean); raised != 0 || store.Count() != 0 {
 		t.Fatalf("a clean run raised %d findings", raised)
 	}

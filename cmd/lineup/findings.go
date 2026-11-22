@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/findings"
 	"github.com/jakobbjelver/messer-lineup/internal/mine"
 )
@@ -81,7 +81,7 @@ func recordPublishFinding(store *findings.Store, indexDir string, cause error, p
 	store.Raise(findings.Finding{
 		Kind:     findings.KindRefused,
 		Evidence: evidence,
-		OpenedAt: time.Now().UTC(),
+		OpenedAt: clock.Now(),
 	})
 	_ = store.Save()
 }
