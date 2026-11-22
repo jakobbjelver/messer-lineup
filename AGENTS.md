@@ -20,6 +20,7 @@ instead of one document.
   crawl).
 - `docs/artists.md` — the rule that turns a platform's title into an artist name, and what it measured.
 - `docs/genres.md` — the sixteen words, the tag mapping, and the artifact both the board and the feed read.
+- `docs/findings.md` — what a run writes when it should be looked at, and why a run never closes one.
 - `docs/decisions/` — the ADRs; the index hosting and row contract is the one to read first.
 - Skill `messer-lineup` (agent-side, not in this tree) — live state, diagnosis ladders and traps.
 - The full build plan is kept outside the public tree; `docs/coverage.md` is the record that ships.
@@ -64,6 +65,7 @@ make web       # build the board into web/dist (then `make serve --web web/dist`
 make worker-dev # the Worker at 127.0.0.1:8788 (stub board until P4), then `make contract` to diff the two
 make publish   # verify, then upload to the bucket; ARGS="--dry-run" to list
 make doctor    # report the install: version, go, clock, index state, registry
+make findings  # the ledger: ARGS="list --open" (also `list --json`, `show <id>`, `close <id> --note …`)
 make dev       # the local pair (lands in P3 with `lineup serve`)
 make keycheck  # the identity contract: the TS twin against testdata/keys.json
 make geocheck  # the distance contract: radius, formatter, and the position pairs a source actually emits

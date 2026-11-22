@@ -69,6 +69,7 @@ func commands() []command {
 		{"serve", "serve the index (and the board, once it is built) locally", runServe},
 		{"portraits", "resolve artist portraits (MusicBrainz → Wikimedia Commons) into the index", runPortraits},
 		{"genres", "map the published artists to genres (Last.fm tags) into the index", runGenres},
+		{"findings", "the ledger of what a run noticed and a person should look at", runFindings},
 		{"version", "print the build stamp", runVersion},
 	}
 }
@@ -289,6 +290,7 @@ func runPublish(args []string, stdout, stderr io.Writer) int {
 	dryRun := fs.Bool("dry-run", false, "list what would be uploaded; touch nothing")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	force := fs.Bool("force", false, "publish even when the guards refuse: the operator has looked at the numbers")
+	findingsPathFlag := fs.String("findings", "", "the ledger a refusal is written to (default .lineup-state/findings.json)")
 	nowFlag := fs.String("now", "", "pin the clock: RFC 3339 or YYYY-MM-DD")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
@@ -309,6 +311,12 @@ func runPublish(args []string, stdout, stderr io.Writer) int {
 		for _, problem := range report.Problems {
 			fmt.Fprintf(stderr, "  %s\n", problem)
 		}
+		problems := make([]string, 0, len(report.Problems))
+		for _, problem := range report.Problems {
+			problems = append(problems, problem.String())
+		}
+		recordPublishFinding(openFindings(findingsPath(*findingsPathFlag, "")), *indexDir,
+			fmt.Errorf("the index does not verify"), problems)
 		return exitRefused
 	}
 
@@ -325,6 +333,7 @@ func runPublish(args []string, stdout, stderr io.Writer) int {
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "lineup publish: %v\n", err)
+		recordPublishFinding(openFindings(findingsPath(*findingsPathFlag, "")), *indexDir, err, nil)
 		return exitRefused
 	}
 	if *asJSON {
@@ -563,6 +572,7 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 	noResolve := fs.Bool("no-resolve", false, "skip artist-name resolution")
 	resolveLimit := fs.Int("resolve-limit", 120, "resolve at most N new names this run (0 = all)")
 	artistState := fs.String("artist-state", "", "where name decisions are remembered (default beside --state)")
+	findingsPathFlag := fs.String("findings", "", "the ledger a collapsing run writes to (default beside --state)")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
@@ -653,6 +663,17 @@ func runMine(args []string, stdout, stderr io.Writer) int {
 		_ = report.WriteFile(*reportPath)
 		fmt.Fprintf(stderr, "lineup mine: %v\n", err)
 		return exitRefused
+	}
+
+	// The ledger: a run that warned, or gave up on a target, leaves a row a person can read at 09:00 without the log.
+	// A failure to write it is reported and never fails the mine — the index is the product, the ledger is the record.
+	if store := openFindings(findingsPath(*findingsPathFlag, *statePath)); store != nil {
+		raised := recordMineFindings(store, report)
+		if err := store.Save(); err != nil {
+			fmt.Fprintf(stderr, "lineup mine: findings: %v\n", err)
+		} else if raised > 0 || store.Count() > 0 {
+			fmt.Fprintf(stderr, "findings %d raised · %d open · %s\n", raised, store.Count(), store.Path())
+		}
 	}
 
 	if code := writeMineOutputs(stdout, stderr, report, *reportPath, *coveragePath, *asJSON); code != exitOK {

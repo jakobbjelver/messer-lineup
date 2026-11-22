@@ -152,7 +152,7 @@ number: two real taste lists matched zero rows, because the rooms they play are 
 read yet. `docs/artists.md` is how a title becomes an artist name, and `docs/genres.md` is how a tag
 becomes one of sixteen genres the board can be filtered by. A board is a link: `?town`, `?a` for artists,
 `?g` for genres — and subscribing to it is one control in the head row. `docs/state.md` is what a board is
-a function of.
+a function of. `docs/findings.md` is the ledger the nightly writes when a run should be looked at.
 
 **v1.0.0 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and
 files a failure report rather than failing quietly. There is no account, no session and no third-party

@@ -43,10 +43,14 @@ write_status() {
   python3 - "$STATUS_FILE" "$state" "$detail" "$rows" "$TOWNS" "$LOG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" <<'PY'
 import json, os, sys
 path, state, detail, rows, towns, log, at = sys.argv[1:8]
+# The open-finding count travels with the run: the check that reads this file is what decides whether a night needs a
+# human, and "published" alone cannot say that.
+findings_open = int(os.environ.get("FINDINGS_OPEN", "0") or 0)
 tmp = path + ".tmp"
 with open(tmp, "w") as handle:
     json.dump(
-        {"state": state, "detail": detail, "rows": int(rows or 0), "towns": towns, "log": log, "at": at},
+        {"state": state, "detail": detail, "rows": int(rows or 0), "towns": towns, "log": log, "at": at,
+         "findings_open": findings_open},
         handle,
     )
     handle.flush()
@@ -117,6 +121,19 @@ else
   RESULT="refused (the published index is unchanged)"
 fi
 
+# The ledger the run just wrote: how many things a person should look at, in one number. A failure to read it is not a
+# reason to fail the night — it prints 0 and the check still sees the run's state.
+findings_open() {
+  ./bin/lineup findings list --open --json --state "$STATE/state.json" 2>/dev/null |
+    python3 -c 'import json, sys
+try:
+    print(len(json.load(sys.stdin)))
+except Exception:
+    print(0)'
+}
+FINDINGS=$(findings_open)
+export FINDINGS_OPEN="$FINDINGS"
+
 read -r TOWN_COUNT ROWS BYTES SHA <<<"$(python3 - "$INDEX/manifest.json" "$INDEX" <<'PY'
 import json, os, sys
 manifest_path, index_dir = sys.argv[1], sys.argv[2]
@@ -136,8 +153,13 @@ fi
 printf '| %s | %s | %s towns · %s rows · %s bytes · %s | %ss | %s |\n' \
   "$(stamp)" "$TOWNS" "$TOWN_COUNT" "$ROWS" "$BYTES" "$SHA" "$TOOK" "$RESULT" >>"$LEDGER"
 
-write_status "$([ "$RESULT" = "published" ] && echo published || echo refused)" \
-  "$RESULT · $TOWN_COUNT towns, $ROWS rows, ${BYTES} bytes, ${TOOK}s" "$ROWS"
+# A night with a finding is still a published night — the board is fine — but it is not a night that needs nothing. The
+# count rides in the detail (and in last-run.json) so the check can say "look at the mine" without reading a log.
+FINDINGS_NOTE=""
+if [ "$FINDINGS" -gt 0 ]; then FINDINGS_NOTE=" · $FINDINGS open"; fi
 
-printf 'lineup nightly %s · %s · %s rows · %s bytes · %ss · log %s\n' \
-  "$(stamp)" "$RESULT" "$ROWS" "$BYTES" "$TOOK" "$LOG" >&3
+write_status "$([ "$RESULT" = "published" ] && echo published || echo refused)" \
+  "$RESULT · $TOWN_COUNT towns, $ROWS rows, ${BYTES} bytes, ${TOOK}s$FINDINGS_NOTE" "$ROWS"
+
+printf 'lineup nightly %s · %s · %s rows · %s bytes · %ss · %s findings · log %s\n' \
+  "$(stamp)" "$RESULT" "$ROWS" "$BYTES" "$TOOK" "$FINDINGS" "$LOG" >&3

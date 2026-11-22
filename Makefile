@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: probe-board csp og all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
+.PHONY: probe-board csp og findings all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
 
 all: build
 
@@ -27,6 +27,10 @@ verify: build
 # A sweep. ARGS names the towns: make mine ARGS="--town berlin,london --dry-run --report r.json"
 mine: build
 	@./bin/$(BINARY) mine $(ARGS)
+
+# The ledger of what a run noticed: make findings ARGS="list --open"
+findings: build
+	@./bin/$(BINARY) findings $(ARGS)
 
 # Serve the built index (and the board, once web/dist exists). ARGS for --addr/--web/--now.
 serve: build
