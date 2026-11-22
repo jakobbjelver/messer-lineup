@@ -72,7 +72,8 @@ geocheck:
 	@node web/scripts/geocheck.mjs
 
 # The design gates, against a generated fixture index (the probe needs a known board, and a board is a window).
-probe-board: build
+# `web` first: the probe serves the same-origin bundle, and `web-edge` (what deploys) asks the bucket for its index.
+probe-board: build web
 	@go run ./scripts/fixture -dir testdata/index
 	@./bin/lineup serve --index testdata/index --web web/dist --addr 127.0.0.1:8016 >/tmp/lineup-probe.log 2>&1 & pid=$$!; \
 	trap "kill $$pid 2>/dev/null" EXIT; \
