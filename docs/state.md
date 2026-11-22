@@ -1,7 +1,7 @@
 # The board's state: two places, and nothing server-side
 
-A board is a function of two things a person chose — a scope (a town, or everywhere) and a taste list — plus one
-thing they did not: what was here last time. The choices go in the URL, because a board should be a link. The memory
+A board is a function of two things a person chose — a scope (a town, or everywhere) and a taste (an artist list, a
+set of genres, or both) — plus one thing they did not: what was here last time. The choices go in the URL, because a board should be a link. The memory
 stays in the browser, because it is about the visitor and not about the board.
 
 ## In the URL
@@ -16,6 +16,7 @@ https://lineup.messer.wtf/?town=anywhere&a=opeth&view=calendar
 | `town` | a town id from the manifest, or `anywhere` | the first published town |
 | `a` | the taste list, as identity keys | no taste: the full board, no `yours` filter |
 | `n` | `key:Name` for names a key cannot spell | every name is read back from its key |
+| `g` | genre ids, comma-separated, at most six | no genre: `yours` is the artist list alone |
 | `view` | `calendar` | the list |
 | `panel` | `taste` or `town` | no sheet |
 
@@ -67,6 +68,7 @@ without one prints its venue — and, on `anywhere`, its town.
 | `lineup.onboarded` | the two-step gate has been seen | until cleared |
 | `lineup.calendar` | the feed token the subscribe control last issued | until cleared |
 | `lineup.reminder` | the reader asked their calendar for a day-before alarm | until cleared |
+| `lineup.genres` | the genre ids the reader chose, in order (max six) | until cleared |
 
 `lineup.taste.import` is the provenance that lets a feed *follow* a handle, and it is dropped the moment the list no
 longer equals what the import produced: one edit and the list is the reader's, not a provider's.

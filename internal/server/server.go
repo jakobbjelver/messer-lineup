@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jakobbjelver/messer-lineup/internal/index"
@@ -92,6 +93,11 @@ type server struct {
 	faces    *faceIndex
 	taste    *tasteResolver
 	lastfm   *lastfmResolver
+
+	// The genre artifact, cached once per published (content-addressed) name.
+	genreMu    sync.Mutex
+	genreName  string
+	genreCache map[string][]string
 }
 
 // health is liveness only: the process answers. It says nothing about the index, which is /readyz's job.

@@ -103,6 +103,12 @@ if ! ./bin/lineup portraits --index "$INDEX" --state "$STATE/portraits.json" --l
   echo "nightly: portraits failed; publishing without a portrait refresh"
 fi
 
+# Genres follow the same rule as portraits: a provider lookup must never hold the rows back, and a build with no genre
+# artifact is supported (the board falls back to artists alone). 120 names a night compounds without stretching the run.
+if ! ./bin/lineup genres --index "$INDEX" --state "$STATE/genres.json" --limit 120; then
+  echo "nightly: genres failed; publishing without a genre refresh"
+fi
+
 # Publish only what verifies and only what the guards allow. A refusal is a result, not an incident: the published
 # index stays, which is the whole point of content-addressed shards.
 if ./bin/lineup publish; then

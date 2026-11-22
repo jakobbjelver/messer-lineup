@@ -19,6 +19,7 @@ base64url of a small JSON object:
 | `a` | artist identity keys; absent means the whole town |
 | `s` | a live artist list to follow (`{k:"listenbrainz",u:<handle>}`), with `a` as the fallback |
 | `r` | `1` asks the client for a day-before alarm. Only a `v:2` token may carry it |
+| `g` | genre ids (max six). The feed's artist set is `a ∪ ⋃ genres[g]`; an unknown id contributes nothing, so a genre token that matches nothing is an empty calendar, never the town |
 
 **It is not signed.** Plan §7.1 called for an HMAC, and that was written before the reason was clear: a signature proves
 *we* issued the parameters, which matters only when the parameters grant something. These grant nothing — the feed is

@@ -19,6 +19,7 @@ instead of one document.
 - `docs/coverage.md` — what each event source actually measures, per country (lands with the first
   crawl).
 - `docs/artists.md` — the rule that turns a platform's title into an artist name, and what it measured.
+- `docs/genres.md` — the sixteen words, the tag mapping, and the artifact both the board and the feed read.
 - `docs/decisions/` — the ADRs; the index hosting and row contract is the one to read first.
 - Skill `messer-lineup` (agent-side, not in this tree) — live state, diagnosis ladders and traps.
 - The full build plan is kept outside the public tree; `docs/coverage.md` is the record that ships.

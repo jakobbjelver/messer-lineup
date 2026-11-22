@@ -41,6 +41,13 @@ const windowlessToken = Buffer.from(JSON.stringify({ v: 1, t: "copenhagen-dk" })
   .replace(/\//g, "_")
   .replace(/=+$/, "");
 
+/** A genre board: the feed's artist set is the genre's artists, unioned with any explicit list. */
+const genreToken = Buffer.from(JSON.stringify({ v: 2, t: "copenhagen-dk", g: ["experimental"] }), "utf8")
+  .toString("base64")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/, "");
+
 /** The reserved scope: every published town, each event labelled with its own. */
 const anywhereToken = Buffer.from(JSON.stringify({ v: 1, t: "anywhere" }), "utf8")
   .toString("base64")
@@ -107,6 +114,8 @@ const REQUESTS = [
   // label each event with its own town (`LOCATION:` is checked per event by the comparator).
   { method: "GET", path: `/calendar/${windowlessToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: `/calendar/${anywhereToken}.ics`, compare: { kind: "ics" } },
+  // A genre filter is a v2 token; both runtimes must answer it with a feed (possibly empty) rather than a 400.
+  { method: "GET", path: `/calendar/${genreToken}.ics`, compare: { kind: "ics" } },
   { method: "GET", path: "/calendar/not-a-token.ics", compare: { kind: "error", code: "invalid_calendar", status: 400 } },
   // Half a window is refused, not completed: that rule is the one a client-side encoder must not violate either.
   { method: "GET", path: `/calendar/${halfWindowToken}.ics`, compare: { kind: "error", code: "invalid_calendar", status: 400 } },

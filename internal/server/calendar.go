@@ -31,6 +31,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/jakobbjelver/messer-lineup/internal/genres"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
@@ -54,11 +55,13 @@ type calendarSpec struct {
 	S *calendarSource `json:"s,omitempty"`
 	// R asks the client for a day-before alarm. A v2 field, and `1` is the only value: a switch, not a setting.
 	R int `json:"r,omitempty"`
+	// G is a genre filter. A v2 field: the feed's artist set is A ∪ ⋃ genres[G].
+	G []string `json:"g,omitempty"`
 }
 
 // calendarFields is the whole vocabulary of a token this build serves. See decodeCalendarSpec for why the set is
 // enforced rather than trusted.
-var calendarFields = map[string]bool{"v": true, "t": true, "f": true, "o": true, "a": true, "s": true, "r": true}
+var calendarFields = map[string]bool{"v": true, "t": true, "f": true, "o": true, "a": true, "s": true, "r": true, "g": true}
 
 // calendarSource says where a live artist list comes from. The snapshot in `a` stays the fallback: a provider that
 // is down, a handle that was deleted or an account whose statistics are not computed yet must degrade to the list
@@ -104,9 +107,10 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 		from, to = spec.F, spec.O
 	}
 
-	// The filter: an explicit list, or a live source that falls back to it.
+	// The filter: an explicit list, a live source that falls back to it, and the genres unioned in. A genre-only token
+	// is a board — and a genre that resolves to nothing is an empty feed, never the whole town.
 	artists := spec.A
-	filtered := len(spec.A) > 0
+	filtered := len(spec.A) > 0 || len(spec.G) > 0
 	if spec.S != nil && spec.S.K == "listenbrainz" {
 		filtered = true
 		if keys, answered := s.taste.keys(spec.S.U); answered {
@@ -116,6 +120,16 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 	wanted := make(map[string]bool, len(artists))
 	for _, key := range artists {
 		wanted[key] = true
+	}
+	if len(spec.G) > 0 {
+		fromGenres, err := s.genreArtists(spec.G)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "genres_unreadable", err.Error())
+			return
+		}
+		for key := range fromGenres {
+			wanted[key] = true
+		}
 	}
 
 	labels := s.townLabels()
@@ -155,7 +169,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 		return kept[i].Row.K < kept[j].Row.K
 	})
 
-	name, description := s.feedTitle(spec.T, labels, filtered, len(artists))
+	name, description := s.feedTitle(spec.T, labels, filtered, len(wanted), spec.G)
 	builtAt := s.manifest.BuiltAt
 	if builtAt.IsZero() {
 		builtAt = s.opts.Now()
@@ -175,7 +189,7 @@ func (s *server) calendar(w http.ResponseWriter, r *http.Request) {
 
 // feedTitle is what a calendar client shows in its sidebar, and the sentence under it. Both name the contents,
 // because "which artists is this calendar?" should be answerable in the client and not only on the board.
-func (s *server) feedTitle(scope string, labels map[string]string, filtered bool, artists int) (string, string) {
+func (s *server) feedTitle(scope string, labels map[string]string, filtered bool, artists int, genreIDs []string) (string, string) {
 	word := "artists"
 	if artists == 1 {
 		word = "artist"
@@ -190,6 +204,19 @@ func (s *server) feedTitle(scope string, labels map[string]string, filtered bool
 	label := labels[scope]
 	if label == "" {
 		label = scope
+	}
+	if len(genreIDs) > 0 {
+		named := make([]string, len(genreIDs))
+		for index, id := range genreIDs {
+			named[index] = genres.Label(id)
+		}
+		list := strings.Join(named, ", ")
+		if scope == calendarAnywhere {
+			return "Messer Lineup — Anywhere",
+				fmt.Sprintf("Shows in %s, anywhere, from the Messer Lineup index.", list)
+		}
+		return "Messer Lineup — " + label,
+			fmt.Sprintf("Shows in %s in %s, from the Messer Lineup index.", list, label)
 	}
 	if filtered {
 		return "Messer Lineup — " + label,
@@ -309,6 +336,17 @@ func decodeCalendarSpec(token string) (calendarSpec, bool) {
 	// understand the version it claimed, and guessing would put an alarm on somebody's phone unasked.
 	if spec.R != 0 && (spec.V != 2 || spec.R != 1) {
 		return calendarSpec{}, false
+	}
+	if len(spec.G) > 0 {
+		// Six is the picker's cap, and the id grammar is what keeps a token from carrying a path or a quote.
+		if spec.V != 2 || len(spec.G) > 6 {
+			return calendarSpec{}, false
+		}
+		for _, id := range spec.G {
+			if len(id) == 0 || len(id) > 24 || !validGenreID(id) {
+				return calendarSpec{}, false
+			}
+		}
 	}
 	return spec, true
 }

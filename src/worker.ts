@@ -16,6 +16,7 @@
 import { Hono } from "hono";
 import { buildIcs, type CalendarRow } from "./calendar/ics";
 import { decodeSpec, ANYWHERE } from "./calendar/spec";
+import { genreLabel } from "./calendar/genres";
 // The identity key is the client's own implementation, imported rather than re-implemented: a third copy of a
 // normalisation rule is a third place for it to drift, and `make keycheck` already proves this one against
 // `internal/model/testdata/keys.json`.
@@ -383,6 +384,7 @@ app.get("/calendar/:file", async (c) => {
       built_at: string;
       window: { from: string; to: string };
       towns: { town: string; shard: string }[];
+      files?: Record<string, string>;
     };
 
     const entries = spec.t === ANYWHERE ? manifest.towns : manifest.towns.filter((town) => town.town === spec.t);
@@ -395,12 +397,30 @@ app.get("/calendar/:file", async (c) => {
     const from = spec.f ?? manifest.window.from.slice(0, 10);
     const to = spec.o ?? manifest.window.to.slice(0, 10);
 
-    // The filter: an explicit list, or a live source that falls back to it. A source that resolves to nothing is an
-    // empty feed, never the whole town — the subscriber asked for artists.
-    let artists = spec.a && spec.a.length > 0 ? new Set(spec.a) : null;
+    // The filter: an explicit list, a live source that falls back to it, and the genres unioned in. A source that
+    // resolves to nothing is an empty feed, never the whole town — the subscriber asked for artists.
+    const genreIDs = spec.g ?? [];
+    let artists: Set<string> | null = null;
     if (spec.s) {
       const live = await listenBrainzKeys(spec.s.u);
       artists = new Set(live ?? spec.a ?? []);
+    } else if (spec.a && spec.a.length > 0) {
+      artists = new Set(spec.a);
+    }
+    if (genreIDs.length > 0) {
+      // A genre-only token is a board. The artifact is named by the manifest; a build that has not published one yet
+      // contributes nothing, which makes the feed empty rather than the whole town.
+      const name = manifest.files?.genres;
+      artists ??= new Set();
+      if (name) {
+        const fromGenres = await genreKeys(new URL(`/${name}`, base));
+        if (fromGenres === null) {
+          return c.json(errorBody("index_unavailable", "genres"), 503);
+        }
+        for (const id of genreIDs) {
+          for (const key of fromGenres[id] ?? []) artists.add(key);
+        }
+      }
     }
 
     const labels = await townLabels(new URL("/towns.json", base));
@@ -451,11 +471,14 @@ app.get("/calendar/:file", async (c) => {
       origin: new URL(c.req.url).origin,
       reminder: spec.r === 1,
       calName: `Messer Lineup — ${place}`,
-      calDesc: filtered
-        ? `Shows for ${count} ${word}${anywhere ? ", anywhere" : ` in ${place}`}, from the Messer Lineup index.`
-        : anywhere
-          ? "Every show, in every published town, from the Messer Lineup index."
-          : `Shows in ${place}, from the Messer Lineup index.`,
+      calDesc:
+        genreIDs.length > 0
+          ? `Shows in ${genreIDs.map((id) => genreLabel(id)).join(", ")}${anywhere ? ", anywhere" : ` in ${place}`}, from the Messer Lineup index.`
+          : filtered
+            ? `Shows for ${count} ${word}${anywhere ? ", anywhere" : ` in ${place}`}, from the Messer Lineup index.`
+            : anywhere
+              ? "Every show, in every published town, from the Messer Lineup index."
+              : `Shows in ${place}, from the Messer Lineup index.`,
     });
 
     return c.body(ics, 200, {
@@ -477,6 +500,32 @@ app.get("/calendar/:file", async (c) => {
  * it answered with nothing (ListenBrainz replies `204` until an account's statistics have been computed), which is a
  * fact and not a failure. Six hours at the edge is four upstream calls a day for a subscriber that polls hourly.
  */
+/** The published genre artifact, cached by its content-addressed name. `null` means it could not be read. */
+const genreCache = new Map<string, Promise<Record<string, string[]> | null>>();
+
+function genreKeys(url: URL): Promise<Record<string, string[]> | null> {
+  const key = url.toString();
+  const cached = genreCache.get(key);
+  if (cached) return cached;
+  const pending = (async (): Promise<Record<string, string[]> | null> => {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { format?: string; genres?: Record<string, string[]> };
+      if (body.format !== "lineup-genres/1" || !body.genres) return null;
+      return body.genres;
+    } catch {
+      return null;
+    }
+  })();
+  genreCache.set(key, pending);
+  pending.then((value) => {
+    // A missing artifact is retried: the next request may find the one a publish just named.
+    if (value === null) genreCache.delete(key);
+  });
+  return pending;
+}
+
 async function listenBrainzKeys(handle: string): Promise<string[] | null> {
   const user = handle.trim();
   if (!user) return null;

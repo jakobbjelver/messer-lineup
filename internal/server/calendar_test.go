@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/artifact"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
@@ -82,6 +83,39 @@ func TestCalendarReminderWrapsEveryEvent(t *testing.T) {
 	}
 	if !strings.Contains(body, "TRIGGER:-P1D") {
 		t.Fatalf("the alarm is not a day before:\n%s", body)
+	}
+}
+
+func TestCalendarGenreFilter(t *testing.T) {
+	dir := buildIndex(t)
+	payload := []byte(`{"format":"lineup-genres/1","built_at":"2026-11-17T06:00:00Z",` +
+		`"artist":{"anna-von-hausswolff":["experimental"]},"genres":{"experimental":["anna-von-hausswolff"]}}`)
+	if _, err := artifact.Write(dir, "genres", payload); err != nil {
+		t.Fatal(err)
+	}
+	handler := newServer(t, dir)
+
+	token := calendarToken(t, calendarSpec{V: 2, T: "copenhagen-dk", G: []string{"experimental"}})
+	rec := get(t, handler, "/calendar/"+token+".ics")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if got := strings.Count(body, "BEGIN:VEVENT"); got != 1 {
+		t.Fatalf("events = %d, want the one experimental artist:\n%s", got, body)
+	}
+	if !strings.Contains(body, "SUMMARY:Anna von Hausswolff @ Vega") {
+		t.Fatalf("the wrong row survived the genre filter:\n%s", body)
+	}
+	if !strings.Contains(body, "X-WR-CALDESC:Shows in Experimental in København") {
+		t.Fatalf("the description does not name the genre:\n%s", body)
+	}
+
+	// An unknown genre is a filter that matches nothing: an empty calendar, never the whole town.
+	empty := calendarToken(t, calendarSpec{V: 2, T: "copenhagen-dk", G: []string{"polka"}})
+	rec = get(t, handler, "/calendar/"+empty+".ics")
+	if rec.Code != http.StatusOK || strings.Count(rec.Body.String(), "BEGIN:VEVENT") != 0 {
+		t.Fatalf("unknown genre answered %d with %d events", rec.Code, strings.Count(rec.Body.String(), "BEGIN:VEVENT"))
 	}
 }
 
