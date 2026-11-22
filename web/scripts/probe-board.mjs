@@ -17,10 +17,14 @@
  *   square     every border-radius in the DOM (only `avatar` may be 50 %, plus `pick__dot` in the town panel)
  *   hue        every chromatic value's HSL hue, read through a canvas pixel (Chrome keeps oklch as a string)
  *   floor      the page is at least a viewport tall, so the footer is never a line across the middle
+ *   rowGenre   a row carries its artist's genre as a tag, beside the venue
+ *   artistHead the artist page's control: one, on the name's line, at the right end (stacked on a phone), plus its genres
+ *   artistFloor the artist page has the same floor, so its footer cannot land mid-viewport
  *   tabs       the two tab items are the same width
  *   field      a focused search field: neutral border, no outline (read after the transition)
  *   locate     the town control in both states: label ink in both, one accent per state, tag off/on
  *   reopen     closing and reopening the town panel does not move the town (a mount effect would)
+ *   noEmptyFlash a `?g=` board whose genre artifact is slow never prints an empty state over the shows
  *
  * Playwright lives in `~/Repos/messer-ui/node_modules/playwright` on this host. Point `PLAYWRIGHT` at another
  * install (or put `playwright` on the module path) when that moves.
@@ -244,9 +248,78 @@ check(
   { pageHeight: geometry.page.h, viewport: geometry.viewport, bar: geometry.bar.h, footTop: geometry.footTop, doc: geometry.doc },
 );
 
+/* ── genres ─────────────────────────────────────────────────────────────────────────────────── */
+
+// A row answers "what kind of act is this" before it answers "where": one tag on the meta line, and the venue still
+// there. The fixture tags Opeth `metal`, so the identity is checkable, not just the presence of a chip.
+const rowGenre = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll(".show")].slice(0, 8).map((row) => ({
+    artist: row.querySelector(".show__artist")?.textContent?.trim() ?? "",
+    genre: row.querySelector(".show__meta .genre")?.textContent?.trim() ?? null,
+    venue: row.querySelector(".show__meta .venue")?.textContent?.trim() ?? "",
+    genreColour: row.querySelector(".show__meta .genre")
+      ? getComputedStyle(row.querySelector(".show__meta .genre")).color
+      : null,
+  }));
+  const opeth = rows.find((row) => row.artist === "Opeth");
+  return { rows, opeth, tagged: rows.filter((row) => row.genre).length };
+});
+check(
+  "rowGenre",
+  Boolean(rowGenre.opeth?.genre === "Metal" && rowGenre.opeth?.venue) && rowGenre.tagged >= 3,
+  rowGenre,
+);
+
+/* ── the artist page: one control at the row's right end, and a page with a floor ───────────── */
+
+await page.goto(new URL("/a/opeth", URL_UNDER_TEST).toString(), { waitUntil: "networkidle" });
+await page.waitForSelector(".artist__h1", { timeout: 25000 });
+const artistPage = await page.evaluate(() => {
+  const box = (sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), right: Math.round(r.right) };
+  };
+  return {
+    page: box("main.page"),
+    viewport: innerHeight,
+    bar: box(".bar"),
+    h1: box(".artist__h1"),
+    sub: box(".subbtn"),
+    subs: document.querySelectorAll(".subbtn").length,
+    genres: [...document.querySelectorAll(".artist__genres .genre")].map((el) => el.textContent.trim()),
+    foot: box(".foot"),
+    rows: document.querySelectorAll(".show").length,
+  };
+});
+// The desktop arrangement is the board's: the control sits at the right end of the name's line. A phone stacks it under
+// the identity block at the page's left edge, which is where the board puts it too.
+const artistOneLine =
+  Boolean(artistPage.h1 && artistPage.sub) &&
+  Math.abs(artistPage.h1.y + artistPage.h1.h / 2 - (artistPage.sub.y + artistPage.sub.h / 2)) <= 2 &&
+  Math.abs(artistPage.sub.right - artistPage.page.right) <= 40;
+const artistStacked =
+  Boolean(artistPage.h1 && artistPage.sub) &&
+  artistPage.sub.y >= artistPage.h1.y + artistPage.h1.h - 2 &&
+  Math.abs(artistPage.sub.x - (artistPage.page.x + 24)) <= 2;
+check(
+  "artistHead",
+  artistPage.subs === 1 && (artistOneLine || artistStacked) && artistPage.genres.includes("Metal"),
+  { ...artistPage, artistOneLine, artistStacked },
+);
+check(
+  "artistFloor",
+  artistPage.page.h >= artistPage.viewport - artistPage.bar.h - 2 &&
+    (artistPage.foot === null || artistPage.foot.y + artistPage.foot.h >= artistPage.viewport - 140),
+  { pageHeight: artistPage.page.h, viewport: artistPage.viewport, foot: artistPage.foot, rows: artistPage.rows },
+);
+
 /* ── the settings panel ─────────────────────────────────────────────────────────────────────── */
 
 if (PANEL) {
+  await page.goto(URL_UNDER_TEST, { waitUntil: "networkidle" });
+  await page.waitForSelector(".show", { timeout: 25000 });
   await page.click('button[aria-label="Artists and town"]');
   await page.waitForTimeout(400);
 
@@ -340,6 +413,37 @@ check(
   "headRowList",
   listed.tasteTab === true && listed.x === listed.expectedX && listed.sameH && listed.sameLine,
   listed,
+);
+
+/* ── the empty state waits for the data it is about ─────────────────────────────────────────── */
+
+// A `?g=` board is the case: the genre artifact is a second request, and `yours` is 0 matches until it lands. The
+// measured bug painted "None of these genres play here." at 304 ms over an empty list, with the rows arriving at
+// 352 ms. An empty state is a statement about the data, so it may not be drawn while the map that decides it is in
+// flight — this gate delays that file 1.2 s and forbids the sentence.
+await page.addInitScript(() => {
+  window.__paint = [];
+  const t0 = performance.now();
+  const sample = () => {
+    window.__paint.push([
+      document.querySelector("#board .state h2")?.textContent ?? null,
+      document.querySelectorAll("#board .show").length,
+      Boolean(document.querySelector("#board .loading")),
+    ]);
+    if (performance.now() - t0 < 6000) requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+});
+await page.route("**/artists/genres-*.json", async (route) => {
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  await route.continue();
+});
+await page.goto(`${URL_UNDER_TEST}${URL_UNDER_TEST.includes("?") ? "&" : "?"}g=metal`, { waitUntil: "networkidle" });
+const paint = await page.evaluate(() => window.__paint);
+check(
+  "noEmptyFlash",
+  !paint.some(([title]) => title !== null) && (paint.at(-1)?.[1] ?? 0) > 0,
+  { emptySeen: paint.some(([title]) => title !== null), transitions: paint.filter((f, i) => i === 0 || f.join() !== paint[i - 1].join()) },
 );
 
 await browser.close();

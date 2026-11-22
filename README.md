@@ -59,8 +59,17 @@ a provider outage. The music policy travels with the binary: `sources/venues/<ma
 | **Rooms near a point you choose** | distance in kilometres on the row, not a map you have to read |
 | **A music board** | concerts and music festivals only — theatre, dinner shows and workshops never reach the index |
 | **A published season** | the next 120 days, day by day, with the same rows as a month calendar |
+| **A calendar you subscribe to** | one link puts this board in Apple or Google Calendar, and it refills nightly |
 | **Ticket link** | every row links out to the seller; the board never pretends to sell |
 | **No account** | the board is public; the taste is local |
+
+**Subscribing is the part nobody expects.** A season board is not a page you check — it is a calendar. The one
+control at the right of the town's name turns *this* board into a `webcal:` feed (the town, the artists you
+picked, the genres you picked), and a calendar app polls it forever after. Nothing is copied: the feed renders
+from the published index on every fetch, so a subscription that holds nothing today gains dates the night one of
+those acts announces, and each row behind it still goes out to the seller. No account, no per-show invites, no
+second app — a subscription is a URL that keeps working, and it is the only way to follow an artist you can't
+see yet.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/brand/screen-dark.png">

@@ -11,6 +11,8 @@ type Props = {
   mine?: Set<string>;
   markMine?: boolean;
   distanceFor?: (row: Row) => number | null;
+  /** A row's artist genres, for the tag on its meta line. */
+  genresFor?: (row: Row) => string[] | undefined;
   /** The visitor's today, for the one day that gets a lit rule. */
   today: string;
   /** A page that spans towns says which town each row is in. */
@@ -45,6 +47,7 @@ export default function Board({
   mine,
   markMine = false,
   distanceFor,
+  genresFor,
   today,
   townOf,
   linkArtist = true,
@@ -100,6 +103,7 @@ export default function Board({
                 mine={markMine && mine?.has(row.k)}
                 linkArtist={linkArtist}
                 distance={distanceFor?.(row) ?? null}
+                genres={genresFor?.(row)}
                 town={townOf?.(row)}
               />
             ))}

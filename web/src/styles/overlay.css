@@ -662,8 +662,10 @@
 }
 
 /* ── the subscription ────────────────────────────────────────────────────────────────────────────
-   One split control in the board head row: the label is the action, the mark beside it is the explanation. Square like
-   everything else, and the accent is not spent here — a subscription is an offer, not a state. */
+   One split control in the head row: the label is the action, the mark beside it is the explanation. Square like
+   everything else. It is **lit at rest** — three layers of coloured light, not a shadow — because subscribing is the
+   one thing on this page a visitor has never seen a season board do, and an unlit control was read as a footnote. The
+   accent is still not spent on the label: the light says "this is the unusual offer", the ink says what it does. */
 
 .subbtn {
   display: inline-flex;
@@ -671,6 +673,11 @@
   height: 40px;
   border: 1px solid var(--border-strong);
   background: var(--surface);
+  box-shadow: var(--glow-1), var(--glow-2), var(--glow-3);
+  transition: box-shadow 0.2s linear, border-color 0.12s linear;
+}
+.subbtn:hover {
+  border-color: var(--primary-line);
 }
 .subbtn__go {
   display: inline-flex;

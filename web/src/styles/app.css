@@ -346,6 +346,20 @@ a.show__artist:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A genre is a label, so it is set like one: caps, 600, tracked, in the dimmest ink — it sits before the venue because
+   "what kind of act" is the question the artist name raises, and never takes a colour (that is the marker's job). */
+.genre {
+  font: 600 9.5px/1.55 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.show__meta .genre {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* On a board that spans towns the town is the one part that must never be cut: it is one word, and a truncated
    "Stock…" beside an already-truncated venue is two ellipses around a dot. The venue yields; the town and the
    distance do not. */
@@ -546,9 +560,12 @@ a.show__artist:hover {
   border-color: var(--primary);
 }
 
-/* The artist page offers the same control as the board head row: one subscription, one label. */
+/* The artist page offers the same control as the board head row: one subscription, one label, on the row's right end.
+   It is a sibling of the identity block, not a child of it — a button under the name reads as a second paragraph,
+   and the row has an end that is doing nothing. */
 .artist__acts {
-  margin-top: 12px;
+  flex: none;
+  margin-left: auto;
 }
 
 /* ── the artist page ──────────────────────────────────────────────────────────────────────────── */
@@ -582,9 +599,34 @@ a.show__artist:hover {
   gap: 16px;
   padding: 24px 0 10px;
 }
+/* The identity block takes the slack, and the name shares its line with the subscription — the board's own title row,
+   one layer down. The page's facts (count, genres, credit) read underneath. */
+.artist__id {
+  flex: 1;
+  min-width: 0;
+}
+.artist__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
 .artist__h1 {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+/* The genre tags, in the same voice as the row's: caps, small, no colour — a genre is a name, not a state. */
+.artist__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 7px;
+}
+.artist__genres .genre {
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  color: var(--text-2);
 }
 .artist__credit {
   margin-top: 6px;
@@ -611,6 +653,20 @@ a.show__artist:hover {
 }
 .foot__credit {
   color: var(--text-3);
+}
+
+/* Phones: the artist head stacks the way the board's title row does — the name reads first, the subscription takes its
+   own line at the left edge, which is the same place the board puts it. Declared here, after the desktop rules, because
+   a media block earlier in the file loses to a later single-class rule that sets the same property. */
+@media (max-width: 720px) {
+  .artist__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .artist__acts {
+    margin-left: 0;
+  }
 }
 
 @media (min-width: 721px) {

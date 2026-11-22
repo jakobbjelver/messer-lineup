@@ -15,6 +15,8 @@ type Props = {
   linkArtist?: boolean;
   /** How far the show is from the reader, when both ends are known. */
   distance?: number | null;
+  /** The artist's genres, from the published map. A tag on the meta line, never a filter. */
+  genres?: string[];
   /** The town, for a page that spans towns (the artist route). */
   town?: string;
 };
@@ -26,7 +28,7 @@ type Props = {
  * artist name goes to that artist's dates, the arrow repeats the ticket link for a keyboard. There is
  * no third control: a row that offers three things chooses none of them.
  */
-export default function ShowRow({ row, portraits, mine, linkArtist = true, distance, town }: Props) {
+export default function ShowRow({ row, portraits, mine, linkArtist = true, distance, genres, town }: Props) {
   const day = dayOf(row.d);
   const status = statusLabel(row.st);
   const place = town ?? "";
@@ -49,6 +51,16 @@ export default function ShowRow({ row, portraits, mine, linkArtist = true, dista
           <span className="show__artist">{row.a}</span>
         )}
         <span className="show__meta">
+          {/* The genre answers "what kind of act" before the line answers "where" — two at most, because a row's meta
+              line is a caption and three tags push the venue into an ellipsis. */}
+          {genres && genres.length ? (
+            <>
+              <span className="genre">{genres.slice(0, 2).join(" · ")}</span>
+              <span className="dot" aria-hidden="true">
+                ·
+              </span>
+            </>
+          ) : null}
           <span className="venue">{row.v}</span>
           {/* A row on a board that spans towns says which town it is in, before it says how far — the place is the
               identity and the distance is the detail. */}

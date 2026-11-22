@@ -11,6 +11,7 @@ type SheetProps = {
   day: string | null;
   rows: Row[];
   portraits?: PortraitMap;
+  genresFor?: (row: Row) => string[] | undefined;
   onClose: () => void;
 };
 
@@ -20,7 +21,7 @@ type SheetProps = {
  * The calendar is an index; this is the page. On a phone it is the answer to "text in a tiny cell" —
  * and because it reuses `ShowRow`, a day looks exactly like the list it came from.
  */
-export function DaySheet({ day, rows, portraits, onClose }: SheetProps) {
+export function DaySheet({ day, rows, portraits, genresFor, onClose }: SheetProps) {
   return (
     <ResponsiveDialog
       open={day !== null}
@@ -36,7 +37,7 @@ export function DaySheet({ day, rows, portraits, onClose }: SheetProps) {
         </h2>
         <div className="daysheet__body">
           {rows.map((row) => (
-            <ShowRow key={row.k} row={row} portraits={portraits} />
+            <ShowRow key={row.k} row={row} portraits={portraits} genres={genresFor?.(row)} />
           ))}
         </div>
       </div>

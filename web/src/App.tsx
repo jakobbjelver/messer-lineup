@@ -12,6 +12,7 @@ import { filterMine, groupByDay, localDay, mineKeys as computeMine, monthOf, nea
 import {
   EMPTY_GENRE_MAP,
   GENRE_CAP,
+  genreLabel,
   isGenre,
   keysForGenres,
   loadGenres,
@@ -101,6 +102,13 @@ export default function App() {
   const [taste, setTaste] = useState<TasteEntry[]>(startTaste);
   const [genres, setGenres] = useState<GenreId[]>(startGenres);
   const [genreMap, setGenreMap] = useState<GenreMap>(EMPTY_GENRE_MAP);
+  /**
+   * Whether the genre artifact has answered. The map is a second request, so a board that renders as soon as the
+   * shard lands has an empty genre→artist map for one round trip: with a `?g=` link that is `yours` at 0 matches, and
+   * the board printed "None of these genres play here." over an empty list, then the shows appeared. An empty state is
+   * a statement about the data; it may not be drawn while the data that decides it is still in flight.
+   */
+  const [genreLoaded, setGenreLoaded] = useState(startGenres.length === 0);
   const [wantedTown, setWantedTown] = useState<string | null>(() => urlTown ?? readTown());
   const [view, setView] = useState<View>(() => (params.get("view") === "calendar" ? "calendar" : readView()));
   const [panel, setPanel] = useState<Panel | null>(() => {
@@ -142,7 +150,9 @@ export default function App() {
         // The manifest names the derived files; a build from before content addressing has no `files` map, and the
         // portraits loader falls back to the legacy name. Genres are an enhancement: a miss is an empty map.
         void loadGenres(next.manifest.files?.genres).then((map) => {
-          if (live) setGenreMap(map);
+          if (!live) return;
+          setGenreMap(map);
+          setGenreLoaded(true);
         });
         return loadPortraits(next.manifest.files?.portraits);
       })
@@ -335,6 +345,18 @@ export default function App() {
   const tasteKeys = useMemo(() => new Set(taste.map((entry) => entry.key)), [taste]);
   // A genre is a set of artist keys, so the board's membership test stays one set lookup per row.
   const genreKeys = useMemo(() => keysForGenres(genreMap, genres), [genreMap, genres]);
+  /**
+   * A row's own genre, from the published map. The row carries no genre — the nine-key contract has no field for one —
+   * so this is a lookup by the artist's identity, the same `Key(row.a)` the artist link uses. It is a tag, not a
+   * filter: `undefined` for an artist the provider has never tagged, which is most of a headline-shaped artist field.
+   */
+  const genresFor = useCallback(
+    (row: Row): string[] | undefined => {
+      const ids = genreMap.artist.get(Key(row.a));
+      return ids && ids.length ? ids.map(genreLabel) : undefined;
+    },
+    [genreMap],
+  );
   /** The reader's artists, by identity: what the consolation line searches every town for. */
   const artistKeys = useMemo(() => new Set([...tasteKeys, ...genreKeys]), [tasteKeys, genreKeys]);
   const hasTaste = taste.length > 0;
@@ -487,7 +509,7 @@ export default function App() {
         />
       );
     }
-    if (!loaded || !town || !rows) {
+    if (!loaded || !town || !rows || (hasGenres && !genreLoaded)) {
       return (
         <div className="loading">
           <Loader size={46} label="Reading the board" />
@@ -555,6 +577,7 @@ export default function App() {
             day={daySheet}
             rows={sheetRows}
             portraits={portraits}
+            genresFor={genresFor}
             onClose={() => setDaySheet(null)}
           />
         </>
@@ -567,6 +590,7 @@ export default function App() {
         mine={mine}
         markMine={!mineMode && (hasTaste || hasGenres)}
         distanceFor={distanceFor}
+        genresFor={genresFor}
         today={today}
         townOf={anywhere ? (row) => townLabel({ town: row.c }, loaded.towns) : undefined}
       />

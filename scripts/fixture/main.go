@@ -7,12 +7,15 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/artifact"
 	"github.com/jakobbjelver/messer-lineup/internal/clock"
+	"github.com/jakobbjelver/messer-lineup/internal/genres"
 	"github.com/jakobbjelver/messer-lineup/internal/index"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
@@ -87,4 +90,29 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Fprintf(os.Stdout, "fixture: %s · %d towns · %d rows · %d bytes\n", *dir, len(manifest.Towns), stats.Published, stats.Bytes)
+
+	// A genre artifact, so the probe can assert that a row carries its artist's genre and that the artist page prints
+	// them. The real artifact is built from Last.fm tags; this is the same document shape with hand-written tags, which
+	// is what makes the design testable without the network.
+	artist := map[string][]string{
+		"opeth":               {"metal"},
+		"katatonia":           {"metal"},
+		"viagra-boys":         {"punk", "rock"},
+		"anna-von-hausswolff": {"experimental"},
+		"efterklang":          {"pop", "electronic"},
+		"thastrom":            {"rock"},
+	}
+	byGenre := map[string][]string{}
+	for key, ids := range artist {
+		byGenre[ids[0]] = append(byGenre[ids[0]], key)
+	}
+	payload, err := json.Marshal(genres.Artifact{Format: genres.Format, BuiltAt: built, Artist: artist, Genres: byGenre})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fixture: %v\n", err)
+		os.Exit(1)
+	}
+	if _, err := artifact.Write(*dir, "genres", payload); err != nil {
+		fmt.Fprintf(os.Stderr, "fixture: %v\n", err)
+		os.Exit(1)
+	}
 }

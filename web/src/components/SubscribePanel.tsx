@@ -69,9 +69,7 @@ export default function SubscribePanel({
   return (
     <div className="subpop__in">
       <p className="subpop__title">Subscribe</p>
-      <p className="subpop__lead">
-        A calendar you subscribe to once. It fills itself when one of your artists announces a date.
-      </p>
+      <p className="subpop__lead">Fills itself as your shows are announced.</p>
 
       <dl className="subpop__facts">
         <div>
@@ -85,9 +83,7 @@ export default function SubscribePanel({
         {source ? (
           <div>
             <dt>Follows</dt>
-            <dd>
-              {source.u} on ListenBrainz — re-read every six hours, with the artists in this link as the fallback.
-            </dd>
+            <dd>ListenBrainz · {source.u}</dd>
           </div>
         ) : null}
       </dl>
@@ -106,12 +102,7 @@ export default function SubscribePanel({
         Remind me the day before
       </label>
 
-      {issued ? (
-        <p className="subpop__note">
-          This device already follows an earlier board. Opening the link replaces that calendar rather than adding a
-          second one.
-        </p>
-      ) : null}
+      {issued ? <p className="subpop__note">Replaces the board this device already follows.</p> : null}
     </div>
   );
 }
