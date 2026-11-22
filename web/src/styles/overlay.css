@@ -135,6 +135,10 @@
 
 /* ── the artist picker: a combobox that never becomes a wall ───────────────────────────────────── */
 
+/* Two pickers in one panel are two questions: a gap says so, so the second field never touches the first's list. */
+.picker + .picker {
+  margin-top: 14px;
+}
 .picker {
   display: flex;
   flex-direction: column;
