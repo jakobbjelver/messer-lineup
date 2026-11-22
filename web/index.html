@@ -42,5 +42,13 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Cloudflare Web Analytics: cookieless page counts, no consent banner, no cross-site tracking. The token is
+         public by design (it is in the page source); it only names the site in the dashboard. The CSP allows exactly
+         this origin — see web/public/_headers. -->
+    <script
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "557613ec5e954680ab77f2172bc901b4"}'
+    ></script>
   </body>
 </html>
