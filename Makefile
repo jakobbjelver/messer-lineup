@@ -8,7 +8,7 @@ LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
 	-X $(PKG)/internal/version.BuildDate=$(DATE)
 
-.PHONY: probe-board csp all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
+.PHONY: probe-board csp og all build dev test race fmt fmt-check vet lint check public-scan clock-check tidy clean doctor verify mine serve smoke probe web web-edge web-dev worker-dev worker-check keycheck geocheck contract
 
 all: build
 
@@ -44,6 +44,10 @@ web-edge:
 # The CSP's inline-script hash is a copy of the built page: rewrite it after any edit to index.html's theme bootstrap.
 csp:
 	@node web/scripts/cspcheck.mjs --write
+
+# The social card. The sentence is baked into pixels, so nothing else in the tree notices when the copy changes.
+og:
+	@cd web && node scripts/og.mjs
 
 web-dev:
 	@cd web && npm run dev

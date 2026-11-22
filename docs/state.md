@@ -1,8 +1,9 @@
 # The board's state: two places, and nothing server-side
 
-A board is a function of two things a person chose — a scope (a town, or everywhere) and a taste (an artist list, a
-set of genres, or both) — plus one thing they did not: what was here last time. The choices go in the URL, because a board should be a link. The memory
-stays in the browser, because it is about the visitor and not about the board.
+A board is a function of **where** — a scope (a town, or everywhere) — and, when the reader wants it, of **what they go
+see**: an artist list, a set of genres, or both. The scope is the front door; the taste is a lens on it. The choices go
+in the URL, because a board should be a link. The memory stays in the browser, because it is about the visitor and not
+about the board.
 
 ## In the URL
 

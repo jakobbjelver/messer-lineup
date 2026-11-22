@@ -1,6 +1,6 @@
 # Messer Lineup
 
-> A season board for the artists you actually listen to: music shows in the towns you pick, from the
+> A season board for the live scene near you: music shows in the towns you pick, from the
 > published 120-day window, with the distance in kilometres and the ticket link on the row.
 
 Read this before changing anything. `AGENTS.md` is the contract; `docs/coverage.md` is the measured
