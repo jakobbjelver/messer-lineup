@@ -60,10 +60,12 @@ no line over 75 octets. The *contents* differ by design, because each runtime re
 
 ## Verified
 
-- `make contract` — **10/10** agree, including the feed and an invalid token (both `400 invalid_calendar`).
+- `make contract` — **14/14** agree, including the feed and an invalid token (both `400 invalid_calendar`).
 - Go unit tests: the fixture's two Copenhagen shows render two events with UTC times and an escaped `LOCATION`; the
   artist filter keeps one; an empty window is a valid empty calendar; five kinds of garbage are refused; a 60-character
   rune-heavy summary folds without splitting a character and reassembles intact.
+- A `v:2` feed with `r:1` was fetched from **both runtimes** and diffed: 273 978 bytes, **byte-identical**, one
+  `VALARM` nested in each of the 521 events; the same token on `v:1` is a `400` on both.
 - An **independent parser** (`icalendar` 6.3.2, not our code) parsed the live feed: 37 events, unique UIDs, all UTC,
   every `DTEND` after its `DTSTART`, every event with `LOCATION` and `URL`, `X-WR-CALNAME: Messer Lineup — København`.
 - In a browser: the panel's token decodes to the board on screen, and the feed it points at answers 200 `text/calendar`.
