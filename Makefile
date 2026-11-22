@@ -89,6 +89,7 @@ contract:
 # renders its error state on a perfectly healthy origin. Deploying is a `main` action: the tree that ships is the
 # tree that was committed.
 deploy: web-edge dist-edge-check
+	@node web/scripts/cspcheck.mjs
 	@npx wrangler deploy
 
 # The wrong build is silent: the same-origin bundle answers 200 from the SPA fallback for /manifest.json, so the

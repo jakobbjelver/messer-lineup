@@ -1,5 +1,9 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-DE6eYKGcTvR/78l21FxSLBbQcSeBtDVXN3QqkUyolsA=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://lineup-data.messer.wtf https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  # connect-src is exactly what the tab talks to: the bucket (the board's own two requests), ListenBrainz (the
+  # picker's import fetches the provider directly — it needs no key of ours) and the RUM beacon. An origin missing
+  # here fails as "NetworkError when attempting to fetch resource" in the tab, on a page that renders perfectly;
+  # web/scripts/cspcheck.mjs now refuses a build whose bundle fetches an origin this list does not name.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-DE6eYKGcTvR/78l21FxSLBbQcSeBtDVXN3QqkUyolsA=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://lineup-data.messer.wtf https://api.listenbrainz.org https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   Permissions-Policy: geolocation=(self)
