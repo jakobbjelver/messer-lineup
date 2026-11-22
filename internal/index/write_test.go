@@ -1,6 +1,7 @@
 package index
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,6 +45,37 @@ func newShow(artist, venue, town string, start time.Time, src string) model.Show
 		Status:    model.OnSale,
 		URL:       "https://example.test/" + model.Key(venue) + "/" + start.Format("2006-01-02"),
 		Sources:   []string{src},
+	}
+}
+
+// The manifest's first town is the fallback a first visit opens on, so it must be the one with the most on — a scene
+// board that opens on the thinnest town is the wrong first impression. Id breaks ties, which keeps the order stable.
+func TestRichestTownIsFirst(t *testing.T) {
+	dir := t.TempDir()
+	shows := []model.Show{
+		newShow("Anna von Hausswolff", "Vega", "copenhagen-dk", time.Date(2026, 12, 2, 20, 0, 0, 0, time.UTC), "tickster"),
+		newShow("Opeth", "Debaser", "stockholm-se", time.Date(2026, 12, 3, 20, 0, 0, 0, time.UTC), "tickster"),
+		newShow("Viagra Boys", "Fasching", "stockholm-se", time.Date(2026, 12, 4, 20, 0, 0, 0, time.UTC), "nortic"),
+		newShow("Makthaverskan", "Plan B", "malmo-se", time.Date(2026, 12, 5, 20, 0, 0, 0, time.UTC), "nortic"),
+	}
+	manifest, _ := build(t, dir, shows, false)
+	if len(manifest.Towns) != 3 {
+		t.Fatalf("towns = %d, want 3", len(manifest.Towns))
+	}
+	if manifest.Towns[0].Town != "stockholm-se" {
+		t.Fatalf("first town = %q (count %d), want stockholm-se", manifest.Towns[0].Town, manifest.Towns[0].Count)
+	}
+	towns, err := os.ReadFile(filepath.Join(dir, "towns.json"))
+	if err != nil {
+		t.Fatalf("towns.json: %v", err)
+	}
+	var set model.Towns
+	if err := json.Unmarshal(towns, &set); err != nil {
+		t.Fatalf("towns.json: %v", err)
+	}
+	// The picker carries the same order, so the fallback and the list agree.
+	if len(set.Towns) == 0 || set.Towns[0].ID != "stockholm-se" {
+		t.Fatalf("picker order = %v, want stockholm-se first", set.Towns)
 	}
 }
 

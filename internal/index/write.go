@@ -96,7 +96,15 @@ func Write(dir string, shows []model.Show, opts WriteOptions) (model.Manifest, S
 	for id := range byTown {
 		townIDs = append(townIDs, id)
 	}
-	sort.Strings(townIDs)
+	// Richest first, then id: the manifest's first town is the fallback a first visit opens on (`manifest.towns[0]`), and
+	// a scene board that opens on the thinnest town is a worse first impression than a deterministic one. Id keeps the
+	// order stable and byte-identical for equal counts, which the digest tests depend on.
+	sort.Slice(townIDs, func(i, j int) bool {
+		if len(byTown[townIDs[i]]) != len(byTown[townIDs[j]]) {
+			return len(byTown[townIDs[i]]) > len(byTown[townIDs[j]])
+		}
+		return townIDs[i] < townIDs[j]
+	})
 
 	referenced := map[string]bool{}
 	for _, townID := range townIDs {
@@ -251,7 +259,8 @@ func sourcesOf(rows []model.Row) []string {
 	return out
 }
 
-// publishedTowns keeps the picker entries for towns that actually have rows, in id order.
+// publishedTowns keeps the picker entries for towns that actually have rows, richest first (the same order the manifest
+// carries, so the picker and the fallback agree), id as the tiebreak.
 func publishedTowns(towns []model.Town, byTown map[string][]model.Row) []model.Town {
 	out := make([]model.Town, 0, len(towns))
 	for _, town := range towns {
@@ -260,7 +269,12 @@ func publishedTowns(towns []model.Town, byTown map[string][]model.Row) []model.T
 		}
 		out = append(out, town)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	sort.Slice(out, func(i, j int) bool {
+		if len(byTown[out[i].ID]) != len(byTown[out[j].ID]) {
+			return len(byTown[out[i].ID]) > len(byTown[out[j].ID])
+		}
+		return out[i].ID < out[j].ID
+	})
 	return out
 }
 
