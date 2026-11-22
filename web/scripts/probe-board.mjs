@@ -41,11 +41,9 @@ const TOWN = flag("town", "stockholm-se");
 const PANEL = !has("no-panel");
 
 async function loadPlaywright() {
-  const candidates = [
-    process.env.PLAYWRIGHT,
-    "playwright",
-    "/Users/jakob/Repos/messer-ui/node_modules/playwright/index.mjs",
-  ].filter(Boolean);
+  // `playwright` resolves from `web/node_modules` (it is a dev dependency); `PLAYWRIGHT` points at another install.
+  // No absolute host path here: this tree is public, and `make public-scan` is right to refuse one.
+  const candidates = [process.env.PLAYWRIGHT, "playwright"].filter(Boolean);
   for (const candidate of candidates) {
     try {
       return await import(candidate);
