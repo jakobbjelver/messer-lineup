@@ -68,6 +68,8 @@ a provider outage. The music policy travels with the binary: `sources/venues/<ma
   <img src="docs/brand/screen-light.png" alt="The board: Copenhagen, one day at a time, with the artist, the room and the ticket link" width="1200">
 </picture>
 
+<img src="docs/brand/demo.gif" alt="The board in motion: the first visit becomes a town, then a week of shows" width="1200">
+
 ## API
 
 The board is served from the same origin as its data. Every route is a `GET`; nothing here needs a key.
