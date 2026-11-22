@@ -616,17 +616,24 @@ a.show__artist:hover {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-/* The genre tags, in the same voice as the row's: caps, small, no colour — a genre is a name, not a state. */
+/* The genre tags, in the same voice as the row's: caps, small, no colour — a genre is a name, not a state. The
+   separator is drawn rather than written, so the list is still a list of names and not a sentence. */
 .artist__genres {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  align-items: center;
+  gap: 4px 10px;
   margin-top: 7px;
 }
 .artist__genres .genre {
   font-size: 10px;
   letter-spacing: 0.11em;
   color: var(--text-2);
+}
+.artist__genres .genre + .genre::before {
+  content: "·";
+  margin-right: 10px;
+  color: var(--text-3);
 }
 .artist__credit {
   margin-top: 6px;
