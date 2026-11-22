@@ -106,25 +106,23 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_nortic, tickster · measured · 2026-11-21T18:00:13Z_
+_nortic, tickster · measured · 2026-11-22T03:10:02Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 48 | 24 | 11 | 0 | 0 | 34 |
-| gothenburg | nortic | 2226 | 8 | 1087 | 0 | 16 | 0 |
-| gothenburg | tickster | 679 | 258 | 252 | 0 | 0 | 371 |
-| malmo | nortic | 2226 | 77 | 1088 | 0 | 16 | 0 |
-| malmo | tickster | 263 | 157 | 54 | 0 | 0 | 146 |
-| stockholm | nortic | 2226 | 239 | 1097 | 0 | 16 | 1131 |
-| stockholm | tickster | 949 | 314 | 434 | 0 | 0 | 553 |
-| **total** | | **8617** | **1077** | **4023** | **0** | **48** | |
+| copenhagen | tickster | 48 | 24 | 11 | 0 | 0 | 27 |
+| gothenburg | nortic | 2182 | 8 | 6 | 0 | 0 | 0 |
+| gothenburg | tickster | 666 | 249 | 248 | 0 | 0 | 363 |
+| malmo | nortic | 2182 | 73 | 7 | 0 | 0 | 0 |
+| malmo | tickster | 257 | 152 | 53 | 0 | 0 | 145 |
+| stockholm | nortic | 2182 | 236 | 1086 | 0 | 0 | 1107 |
+| stockholm | tickster | 936 | 310 | 425 | 0 | 0 | 509 |
+| **total** | | **8453** | **1052** | **1836** | **0** | **0** | |
 
-Music policy: **4023** rows dropped (category 3243, form:allsang 3, form:bingo 1, form:brunch 1, form:dinner 2, form:forestallning 1, form:fotboll 2, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 16, form:musical 2, form:musikal 2, form:provning 36, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 2, venue 681).
+Music policy: **1836** rows dropped (category 1071, form:allsang 3, form:bingo 1, form:brunch 1, form:dinner 2, form:forestallning 1, form:fotboll 2, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 15, form:musical 2, form:musikal 2, form:provning 36, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 2, venue 667).
 
-Merged: **1077** rows → **1041** shows, duplicate rate **3.3 %**. Towns discovered: **4**.
-Index: **4** shard(s), 1041 rows published, 0 outside the window, 0 refused, 57 643 bytes.
-
-Why pages were lost: other: nortic: https://tickets.nortic.se/ticket/event/78806: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/79922: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/80512: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/80775: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/82725: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/83405: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/85664: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/85768: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/85786: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/86326: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/86411: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/86414: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/87227: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/87255: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/87279: the page carries no application/ld+json ×3; other: nortic: https://tickets.nortic.se/ticket/event/88667: the page carries no application/ld+json ×3;
+Merged: **1052** rows → **1017** shows, duplicate rate **3.3 %**. Towns discovered: **4**.
+Index: **4** shard(s), 1017 rows published, 0 outside the window, 0 refused, 56 338 bytes.
 <!-- mine:end -->
 
 ## The hit rate, measured after three towns
