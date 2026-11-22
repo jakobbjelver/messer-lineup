@@ -90,11 +90,11 @@ file rather than to prose.
 ## Status
 
 The board is live at `lineup.messer.wtf` with four towns (Copenhagen, Stockholm, Gothenburg, Malmö), a nightly
-miner and a published index at `lineup-data.messer.wtf` — 719 shows from one platform. Taste is a list you pick,
-paste or import (ListenBrainz, or a Last.fm handle through our own origin). `docs/coverage.md` is the measured
-state of every source — including the hit rate, which is the honest number: two real taste lists matched zero
-rows, because the rooms they play are not on the platform we read yet. `docs/state.md` is what a board is a
-function of.
+miner and a published index at `lineup-data.messer.wtf` — about a thousand shows from two ticketing platforms.
+Taste is a list you pick, paste or import (ListenBrainz, or a Last.fm handle through our own origin).
+`docs/coverage.md` is the measured state of every source — including the hit rate, which is the honest number: two
+real taste lists matched zero rows, because the rooms they play are not on the platforms we read yet.
+`docs/artists.md` is how a title becomes an artist name. `docs/state.md` is what a board is a function of.
 
 **v1 is complete and frozen (2026-11-21).** It publishes itself nightly, verifies its own record and files a
 failure report rather than failing quietly. There is no account, no session and no third-party provider beyond

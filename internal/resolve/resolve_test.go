@@ -11,6 +11,8 @@ import (
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
+var fixedNow = time.Date(2026, 11, 22, 10, 0, 0, 0, time.UTC)
+
 type fakeMatcher struct {
 	names map[string]bool
 	fail  map[string]bool
@@ -34,6 +36,7 @@ func TestCandidates(t *testing.T) {
 		{"När det lider mot jul - Lisa Nilsson kl 19.00", []string{"När det lider mot jul", "Lisa Nilsson"}},
 		{"FUNERAL | THE CRYPT", []string{"FUNERAL", "THE CRYPT"}},
 		{"Aural Onsdag: Roberto N Peyre", []string{"Aural Onsdag", "Roberto N Peyre"}},
+		{"Celtic Christmas - En julkonsert med West of Eden", []string{"Celtic Christmas", "En julkonsert med West of Eden", "Celtic Christmas - En julkonsert", "West of Eden"}},
 		{"Jonas Lundqvist*", []string{"Jonas Lundqvist"}},
 		{"a - b", nil}, // fragments shorter than two runes are not names
 	}
@@ -69,7 +72,7 @@ func TestDecideRules(t *testing.T) {
 	ctx := context.Background()
 	// Exactly one fragment is an artist → the artist.
 	matcher := &fakeMatcher{names: map[string]bool{"amanda-ginsburg": true}}
-	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: time.Now()}
+	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: fixedNow}
 	decision, err := resolver.decide(ctx, "Amanda Ginsburg - Det är jul nu igen")
 	if err != nil || decision.To != "Amanda Ginsburg" || decision.Why != "split" {
 		t.Fatalf("decision = %+v, err %v", decision, err)
@@ -97,7 +100,7 @@ func TestResolveCachesAndRespectsTheLimit(t *testing.T) {
 		"amanda-ginsburg": true,
 		"lisa-nilsson":    true,
 	}}
-	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: time.Now()}
+	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: fixedNow}
 	names := []string{
 		"Amanda Ginsburg - Det är jul nu igen",
 		"När det lider mot jul - Lisa Nilsson kl 19.00",
@@ -131,7 +134,7 @@ func TestResolveCachesAndRespectsTheLimit(t *testing.T) {
 
 func TestProviderFailureIsNotADecision(t *testing.T) {
 	matcher := &fakeMatcher{names: map[string]bool{}, fail: map[string]bool{"broken-show": true}}
-	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: time.Now()}
+	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}, Now: fixedNow}
 	report, err := resolver.Resolve(context.Background(), []string{"Broken Show - Artist"}, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +148,7 @@ func TestProviderFailureIsNotADecision(t *testing.T) {
 }
 
 func TestNegativeDecisionExpiresAndPositiveDoesNot(t *testing.T) {
-	now := time.Now()
+	now := fixedNow
 	resolver := &Resolver{
 		Matcher: &fakeMatcher{names: map[string]bool{}},
 		State: &State{Format: Format, Map: map[string]Decision{
@@ -183,10 +186,24 @@ func TestApplyRewritesBeforeTheMerge(t *testing.T) {
 	}
 }
 
+func TestATitleThatIsAlsoANameIsRefused(t *testing.T) {
+	// Both halves resolve: the title ("Celtic Christmas") and the act ("West of Eden"). Choosing the title would put the
+	// gig under an artist that is not playing, so the row stays undecided.
+	matcher := &fakeMatcher{names: map[string]bool{"celtic-christmas": true, "west-of-eden": true}}
+	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}}
+	decision, err := resolver.decide(context.Background(), "Celtic Christmas - En julkonsert med West of Eden")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decision.To != "" || decision.Why != "undecided" {
+		t.Fatalf("decision = %+v, want undecided", decision)
+	}
+}
+
 func TestStateRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "artists.json")
 	state := &State{Format: Format, Map: map[string]Decision{
-		"amanda-ginsburg-det-ar-jul-nu-igen": {To: "Amanda Ginsburg", Why: "split", At: time.Now().UTC().Truncate(time.Second)},
+		"amanda-ginsburg-det-ar-jul-nu-igen": {To: "Amanda Ginsburg", Why: "split", At: time.Date(2026, 11, 22, 10, 0, 0, 0, time.UTC)},
 	}}
 	if err := state.Save(path); err != nil {
 		t.Fatal(err)

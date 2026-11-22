@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
@@ -70,7 +71,7 @@ func (d *Deezer) Matches(ctx context.Context, name string) (bool, error) {
 		case <-timer.C:
 		}
 	}
-	d.last = time.Now()
+	d.last = clock.Now()
 
 	target := base + "?q=" + url.QueryEscape(name) + "&limit=5"
 	for attempt := 0; ; attempt++ {

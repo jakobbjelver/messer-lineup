@@ -33,6 +33,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jakobbjelver/messer-lineup/internal/clock"
 	"github.com/jakobbjelver/messer-lineup/internal/model"
 )
 
@@ -128,7 +129,7 @@ type Report struct {
 func Ambiguous(name string) bool {
 	lower := strings.ToLower(name)
 	if strings.Contains(name, "|") || strings.Contains(name, ": ") ||
-		strings.Contains(lower, " kl ") {
+		strings.Contains(lower, " kl ") || strings.Contains(lower, " med ") || strings.Contains(lower, " with ") {
 		return true
 	}
 	for _, separator := range []string{" - ", " – ", " — "} {
@@ -186,6 +187,16 @@ func Candidates(raw string) []string {
 		add(name[:at])
 		add(name[at+2:])
 	}
+	// `X - En julkonsert med West of Eden`: the second half names the act. Adding the tail after "med"/"with" as a
+	// candidate is what turns a title that happens to be a known name (`Celtic Christmas`) into an undecided row instead
+	// of a wrong artist — the title resolves too, so "exactly one" refuses.
+	for _, conjunction := range []string{" med ", " with "} {
+		if at := strings.Index(strings.ToLower(name), conjunction); at > 0 {
+			split = true
+			add(name[:at])
+			add(name[at+len(conjunction):])
+		}
+	}
 	// No separator: the only noise was a trailing star or a set time, so the cleaned whole string is the candidate.
 	// When a separator was found, the whole string is exactly what must not be tested — it would make "exactly one
 	// resolved" impossible.
@@ -206,7 +217,7 @@ func (r *Resolver) Resolve(ctx context.Context, names []string, limit int) (Repo
 	}
 	now := r.Now
 	if now.IsZero() {
-		now = time.Now()
+		now = clock.Now()
 	}
 	missTTL := r.MissTTL
 	if missTTL == 0 {
