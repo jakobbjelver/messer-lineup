@@ -106,25 +106,24 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_nortic, tickster · measured · 2026-11-22T10:24:29Z_
+_nortic, tickster · measured · 2026-11-23T03:10:01Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 48 | 24 | 11 | 0 | 0 | 34 |
-| gothenburg | nortic | 2178 | 8 | 6 | 0 | 0 | 0 |
-| gothenburg | tickster | 666 | 249 | 248 | 0 | 0 | 363 |
-| malmo | nortic | 2178 | 73 | 7 | 0 | 0 | 0 |
-| malmo | tickster | 257 | 152 | 53 | 0 | 0 | 141 |
-| stockholm | nortic | 2178 | 236 | 1082 | 0 | 1 | 1102 |
-| stockholm | tickster | 936 | 310 | 425 | 0 | 0 | 518 |
-| **total** | | **8441** | **1052** | **1832** | **0** | **1** | |
+| copenhagen | tickster | 48 | 24 | 11 | 0 | 0 | 32 |
+| gothenburg | nortic | 2153 | 8 | 6 | 0 | 0 | 0 |
+| gothenburg | tickster | 660 | 247 | 247 | 0 | 0 | 392 |
+| malmo | nortic | 2153 | 73 | 7 | 0 | 0 | 0 |
+| malmo | tickster | 257 | 152 | 53 | 0 | 0 | 151 |
+| stockholm | nortic | 2153 | 231 | 1065 | 0 | 0 | 1091 |
+| stockholm | tickster | 935 | 311 | 421 | 0 | 0 | 519 |
+| **total** | | **8359** | **1046** | **1810** | **0** | **0** | |
 
-Music policy: **1832** rows dropped (category 1067, form:allsang 3, form:bingo 1, form:brunch 1, form:dinner 2, form:forestallning 1, form:fotboll 2, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 15, form:musical 2, form:musikal 2, form:provning 36, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 2, venue 667).
+Music policy: **1810** rows dropped (category 1051, form:allsang 3, form:bingo 1, form:dinner 2, form:forestallning 1, form:fotboll 2, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 15, form:musikal 2, form:provning 36, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 2, venue 664).
+7 rows at 2 unclassified room(s): Brygghuset, Odenplan, Göteborgs Centralstation. Published, and the next pass in `sources/venues` classifies them.
 
-Merged: **1052** rows → **1009** shows, duplicate rate **4.1 %**. Towns discovered: **4**.
-Index: **4** shard(s), 1009 rows published, 0 outside the window, 0 refused, 54 637 bytes.
-
-Why pages were lost: other: nortic: https://tickets.nortic.se/ticket/event/89182: the page carries no application/ld+json ×1;
+Merged: **1046** rows → **1004** shows, duplicate rate **4.0 %**. Towns discovered: **4**.
+Index: **4** shard(s), 1004 rows published, 0 outside the window, 0 refused, 54 477 bytes.
 <!-- mine:end -->
 
 ## The hit rate, measured after three towns
