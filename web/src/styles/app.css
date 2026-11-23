@@ -334,7 +334,7 @@ a.show__artist:hover {
 }
 .show__meta {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   margin-top: 3px;
   overflow: hidden;
@@ -346,19 +346,34 @@ a.show__artist:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* A genre is a label, so it is set like one: caps, 600, tracked, in the dimmest ink — it sits before the venue because
-   "what kind of act" is the question the artist name raises, and never takes a colour (that is the marker's job). */
-.genre {
-  font: 600 9.5px/1.55 var(--font);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.show__meta .genre {
+/* A badge is a square label: one hairline, the dimmest ink, no colour and no radius — the accent marks the reader's
+   own rows, and a genre is an identity rather than a state. It sits before the venue because "what kind of act" is the
+   question the artist name raises. */
+.badge {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  max-width: 40%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: color-mix(in oklch, var(--surface-2) 42%, transparent);
+  font: 600 9.5px/1 var(--font);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.show__genres {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+/* The venue is the part that must survive: on a phone the row keeps one badge, on a desktop two. */
+@media (max-width: 720px) {
+  .show__genres .badge:nth-child(n + 2) {
+    display: none;
+  }
 }
 /* On a board that spans towns the town is the one part that must never be cut: it is one word, and a truncated
    "Stock…" beside an already-truncated venue is two ellipses around a dot. The venue yields; the town and the
@@ -616,24 +631,19 @@ a.show__artist:hover {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-/* The genre tags, in the same voice as the row's: caps, small, no colour — a genre is a name, not a state. The
-   separator is drawn rather than written, so the list is still a list of names and not a sentence. */
+/* The genre badges, in the row's own voice: square, hairlined, no colour — a genre is a name, not a state. */
 .artist__genres {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
-  margin-top: 7px;
+  gap: 6px;
+  margin-top: 9px;
 }
-.artist__genres .genre {
+.artist__genres .badge {
+  height: 20px;
+  padding: 0 7px;
   font-size: 10px;
-  letter-spacing: 0.11em;
-  color: var(--text-2);
-}
-.artist__genres .genre + .genre::before {
-  content: "·";
-  margin-right: 10px;
-  color: var(--text-3);
+  letter-spacing: 0.1em;
 }
 .artist__credit {
   margin-top: 6px;

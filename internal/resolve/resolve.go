@@ -16,9 +16,11 @@
 //
 //  1. If the whole string is a real artist (exact name, folded), keep it. Never split a name that exists.
 //  2. Otherwise split it into candidates and ask the provider about each.
-//  3. Accept a candidate only when **exactly one** of them is a real artist. Two real names is a co-bill, and
+//  3. A candidate that names an event's form is not a candidate (`Generic`): a fragment like `Gäster` or `Julkonsert`
+//     is the show, not the act, and a provider answering yes to it is answering about a namesake.
+//  4. Accept a candidate only when **exactly one** of them is a real artist. Two real names is a co-bill, and
 //     choosing one of them would silently drop the other.
-//  4. Anything else is undecided: stored as a decision (so the nightly does not re-ask), never guessed.
+//  5. Anything else is undecided: stored as a decision (so the nightly does not re-ask), never guessed.
 //
 // A decision is cached in `.lineup-state/artists.json`, positive for ever and negative for thirty days. The resolver
 // runs inside `lineup mine` before the merge, so a cleaned key is the key that dedupes and publishes.
@@ -121,6 +123,32 @@ type Report struct {
 	Applied   int `json:"applied"`
 	Failures  int `json:"failures,omitempty"`
 	Skipped   int `json:"skipped,omitempty"` // ambiguous names left for a later run (the limit)
+}
+
+// genericNames are words that name an event's form, never an act. A fragment that folds to one of these is refused
+// even when the provider answers yes: measured on the live index 2026-11-23, three rows were published as `gäster`
+// (from *Johan Johanssons trio med gäster*) and ten as `Julkonsert`/`Luciakonsert`/`Adventskonsert`/`Nyårskonsert` —
+// Deezer has namesakes for those words, and a row an artist can never own is worse than an uncleaned one. The list is
+// matched on `model.Key` and on the **whole** candidate, so `Bo Kaspers Orkester` (`bo-kaspers-orkester`) and
+// `The Band` (`the-band`) are untouched; `band`, `trio`, `duo` and `live` are deliberately absent because a real act
+// can be named one.
+var genericNames = map[string]bool{
+	"gaster": true, "gasterna": true,
+	"kvartett": true, "kvartetten": true,
+	"orkester": true, "orkestern": true,
+	"ensemble": true, "ensemblen": true,
+	"koren":   true,
+	"konsert": true, "konserten": true,
+	"julkonsert": true, "julkonserten": true,
+	"luciakonsert": true, "luciakonserten": true,
+	"adventskonsert": true, "adventskonserten": true,
+	"nyarskonsert": true, "nyarskonserten": true,
+	"luciahogtid": true,
+}
+
+// Generic reports whether a name is an event's form rather than an act's name.
+func Generic(name string) bool {
+	return genericNames[model.Key(name)]
 }
 
 // Ambiguous reports whether a name carries a shape worth asking about: a separator, a set time, or a trailing star.
@@ -274,7 +302,7 @@ func (r *Resolver) decide(ctx context.Context, raw string) (Decision, error) {
 	}
 	var resolved []string
 	for _, candidate := range Candidates(raw) {
-		if model.Key(candidate) == model.Key(raw) {
+		if model.Key(candidate) == model.Key(raw) || Generic(candidate) {
 			continue
 		}
 		ok, err := r.Matcher.Matches(ctx, candidate)
@@ -306,7 +334,7 @@ func (r *Resolver) Apply(shows []model.Show) int {
 			continue
 		}
 		key := model.Key(decision.To)
-		if key == "" || key == shows[index].VenueKey {
+		if key == "" || key == shows[index].VenueKey || Generic(decision.To) {
 			continue
 		}
 		shows[index].Artist = decision.To

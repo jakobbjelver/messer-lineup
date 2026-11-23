@@ -200,6 +200,48 @@ func TestATitleThatIsAlsoANameIsRefused(t *testing.T) {
 	}
 }
 
+func TestGenericNames(t *testing.T) {
+	generic := []string{"gäster", "Gäster", "Julkonsert", "Luciakonsert", "Adventskonsert", "Nyårskonsert", "Kvartett", "Orkestern", "Ensemble", "Kören", "Luciahögtid"}
+	for _, name := range generic {
+		if !Generic(name) {
+			t.Fatalf("%q should be an event form", name)
+		}
+	}
+	// A whole name that contains one of the words is not the word: the match is on the folded candidate.
+	named := []string{"Bo Kaspers Orkester", "The Band", "Trio", "Duo", "Live", "Opeth", "Julkonsert med Sanna Nielsen"}
+	for _, name := range named {
+		if Generic(name) {
+			t.Fatalf("%q is a name, not an event form", name)
+		}
+	}
+}
+
+func TestAGenericFragmentIsNotAnArtist(t *testing.T) {
+	// The live defect: the source title is `Johan Johanssons trio med gäster`, the provider knows a namesake called
+	// `Gäster`, and the row was published as `gäster` — an act that no listener can ever own.
+	matcher := &fakeMatcher{names: map[string]bool{"gaster": true, "johan-johanssons-trio": false}}
+	resolver := &Resolver{Matcher: matcher, State: &State{Format: Format, Map: map[string]Decision{}}}
+	decision, err := resolver.decide(context.Background(), "Johan Johanssons trio med gäster")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decision.To != "" || decision.Why != "undecided" {
+		t.Fatalf("decision = %+v, want undecided: a form word is not an artist", decision)
+	}
+
+	// A stored decision from before the rule is refused by Apply too, so an old state file cannot re-publish one.
+	stored := &Resolver{State: &State{Format: Format, Map: map[string]Decision{
+		model.Key("Johan Johanssons trio med gäster"): {To: "gäster", Why: "split"},
+	}}}
+	shows := []model.Show{{Artist: "Johan Johanssons trio med gäster", ArtistKey: model.Key("Johan Johanssons trio med gäster"), Venue: "Musikens Hus", VenueKey: "musikens-hus"}}
+	if changed := stored.Apply(shows); changed != 0 {
+		t.Fatalf("changed = %d, want 0", changed)
+	}
+	if shows[0].Artist != "Johan Johanssons trio med gäster" {
+		t.Fatalf("a generic name was applied: %+v", shows[0])
+	}
+}
+
 func TestStateRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "artists.json")
 	state := &State{Format: Format, Map: map[string]Decision{

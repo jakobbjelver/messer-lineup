@@ -256,23 +256,24 @@ check(
 const rowGenre = await page.evaluate(() => {
   const rows = [...document.querySelectorAll(".show")].slice(0, 10).map((row) => ({
     artist: row.querySelector(".show__artist")?.textContent?.trim() ?? "",
-    genre: row.querySelector(".show__meta .genre")?.textContent?.trim() ?? null,
+    genre: row.querySelector(".show__meta .badge")?.textContent?.trim() ?? null,
     venue: row.querySelector(".show__meta .venue")?.textContent?.trim() ?? "",
-    genreColour: row.querySelector(".show__meta .genre")
-      ? getComputedStyle(row.querySelector(".show__meta .genre")).color
+    badges: row.querySelectorAll(".show__meta .badge").length,
+    radius: row.querySelector(".show__meta .badge")
+      ? getComputedStyle(row.querySelector(".show__meta .badge")).borderTopLeftRadius
       : null,
     tagBeforeVenue: (() => {
       const meta = row.querySelector(".show__meta");
-      if (!meta) return null;
-      const first = meta.firstElementChild?.className ?? "";
-      return first === "genre";
+      const first = meta?.firstElementChild;
+      return Boolean(first && first.classList.contains("show__genres") && first.querySelector(".badge"));
     })(),
   }));
   return { rows, tagged: rows.filter((row) => row.genre).length };
 });
 check(
   "rowGenre",
-  rowGenre.tagged >= 1 && rowGenre.rows.filter((row) => row.genre).every((row) => row.venue && row.tagBeforeVenue),
+  rowGenre.tagged >= 1 &&
+    rowGenre.rows.filter((row) => row.genre).every((row) => row.venue && row.tagBeforeVenue && row.radius === "0px"),
   rowGenre,
 );
 
@@ -281,7 +282,7 @@ check(
 // The artist page is read for the artist of the first row that carries a genre, so the page's own genre line has
 // something to print on the fixture and on the live index alike.
 const pick = await page.evaluate(() => {
-  const row = [...document.querySelectorAll(".show")].find((el) => el.querySelector(".show__meta .genre"));
+  const row = [...document.querySelectorAll(".show")].find((el) => el.querySelector(".show__meta .badge"));
   const link = row?.querySelector("a.show__artist");
   return link ? { href: link.getAttribute("href"), name: link.textContent.trim() } : null;
 });
@@ -303,7 +304,7 @@ const artistPage = await page.evaluate(() => {
     h1: box(".artist__h1"),
     sub: box(".subbtn"),
     subs: document.querySelectorAll(".subbtn").length,
-    genres: [...document.querySelectorAll(".artist__genres .genre")].map((el) => el.textContent.trim()),
+    genres: [...document.querySelectorAll(".artist__genres .badge")].map((el) => el.textContent.trim()),
     foot: box(".foot"),
     rows: document.querySelectorAll(".show").length,
   };

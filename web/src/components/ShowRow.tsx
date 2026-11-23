@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { ArrowUpRight } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
+import Badge from "./Badge";
 import { Key } from "../lib/key";
 import { dayNumber, dayOf, monthShort, statusLabel, weekdayOf, type Row } from "../lib/indexData";
 import { formatKm } from "../lib/geo";
@@ -51,11 +52,15 @@ export default function ShowRow({ row, portraits, mine, linkArtist = true, dista
           <span className="show__artist">{row.a}</span>
         )}
         <span className="show__meta">
-          {/* The genre answers "what kind of act" before the line answers "where" — two at most, because a row's meta
-              line is a caption and three tags push the venue into an ellipsis. */}
+          {/* The genre answers "what kind of act" before the line answers "where" — two badges at most on a desktop and
+              one on a phone, because the venue is the part that must still be readable. */}
           {genres && genres.length ? (
             <>
-              <span className="genre">{genres.slice(0, 2).join(" · ")}</span>
+              <span className="show__genres">
+                {genres.slice(0, 2).map((genre) => (
+                  <Badge key={genre}>{genre}</Badge>
+                ))}
+              </span>
               <span className="dot" aria-hidden="true">
                 ·
               </span>

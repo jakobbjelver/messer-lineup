@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
+import Badge from "./Badge";
 import Board from "./Board";
 import Chrome from "./Chrome";
 import Loader from "./Loader";
@@ -110,9 +111,7 @@ export default function ArtistRoute({ artistKey }: { artistKey: string }) {
               {genres.length ? (
                 <p className="artist__genres">
                   {genres.map((genre) => (
-                    <span className="genre" key={genre}>
-                      {genre}
-                    </span>
+                    <Badge key={genre}>{genre}</Badge>
                   ))}
                 </p>
               ) : null}
