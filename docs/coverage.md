@@ -106,24 +106,24 @@ itself ran for ~11 minutes and its table should not be a second measurement). Th
 hand-written on purpose; the numbers inside it are a command's output.
 
 <!-- mine:begin -->
-_nortic, tickster · measured · 2026-11-25T03:10:02Z_
+_nortic, tickster · measured · 2026-11-26T03:10:03Z_
 
 | Town | Source | Candidates | Rows | Not music | Filtered | Failures | Seconds |
 |---|---|---:|---:|---:|---:|---:|---:|
-| copenhagen | tickster | 51 | 25 | 12 | 0 | 0 | 33 |
-| gothenburg | nortic | 2190 | 8 | 6 | 0 | 0 | 0 |
-| gothenburg | tickster | 679 | 252 | 254 | 0 | 0 | 402 |
-| malmo | nortic | 2190 | 73 | 6 | 0 | 0 | 0 |
-| malmo | tickster | 261 | 150 | 53 | 0 | 0 | 160 |
-| stockholm | nortic | 2190 | 231 | 1084 | 0 | 0 | 1103 |
-| stockholm | tickster | 963 | 324 | 421 | 0 | 0 | 541 |
-| **total** | | **8524** | **1063** | **1836** | **0** | **0** | |
+| copenhagen | tickster | 49 | 25 | 11 | 0 | 0 | 30 |
+| gothenburg | nortic | 2202 | 8 | 6 | 0 | 0 | 0 |
+| gothenburg | tickster | 679 | 249 | 261 | 0 | 0 | 371 |
+| malmo | nortic | 2202 | 72 | 7 | 0 | 0 | 0 |
+| malmo | tickster | 265 | 149 | 57 | 0 | 0 | 148 |
+| stockholm | nortic | 2202 | 231 | 1089 | 0 | 0 | 1121 |
+| stockholm | tickster | 955 | 322 | 413 | 0 | 0 | 519 |
+| **total** | | **8554** | **1056** | **1844** | **0** | **0** | |
 
-Music policy: **1836** rows dropped (category 1069, form:allsang 3, form:bingo 1, form:dating 1, form:dinner 2, form:forelasning 1, form:forestallning 1, form:fotboll 1, form:frukost 1, form:humor 2, form:julbord 9, form:kidz 1, form:loppis 2, form:marknad 1, form:middag 15, form:musikal 2, form:provning 42, form:pyssel 1, form:quiz 3, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 3, venue 664).
-13 rows at 7 unclassified room(s): Brygghuset, Odenplan, Ekonomiska museet - Stockholm, A house Ark, Gästabudet, Kulturhuset Hartwig, Göteborgs Centralstation, Pub Anchor, Quality Hotel 11 & Eriksbergshallen. Published, and the next pass in `sources/venues` classifies them.
+Music policy: **1844** rows dropped (category 1074, form:allsang 3, form:bingo 1, form:dating 1, form:dinner 3, form:forelasning 1, form:forestallning 1, form:fotboll 1, form:frukost 1, form:humor 2, form:julbord 8, form:kidz 1, form:loppis 2, form:marknad 3, form:middag 15, form:musikal 2, form:provning 43, form:pyssel 1, form:quiz 2, form:stand-up 3, form:standup 4, form:tasting 3, form:vendors 1, form:wrestling 3, venue 665).
+14 rows at 9 unclassified room(s): Brygghuset, Odenplan, A house Ark, Ekonomiska museet - Stockholm, Färgfabriken, Glasklart, Malmö, Gästabudet, Kulturhuset Hartwig, Göteborgs Centralstation, Pub Anchor and 1 more. Published, and the next pass in `sources/venues` classifies them.
 
-Merged: **1063** rows → **1021** shows, duplicate rate **4.0 %**. Towns discovered: **4**.
-Index: **4** shard(s), 1021 rows published, 0 outside the window, 0 refused, 55 466 bytes.
+Merged: **1056** rows → **1013** shows, duplicate rate **4.1 %**. Towns discovered: **4**.
+Index: **4** shard(s), 1013 rows published, 0 outside the window, 0 refused, 54 848 bytes.
 <!-- mine:end -->
 
 ## The hit rate, measured after three towns
