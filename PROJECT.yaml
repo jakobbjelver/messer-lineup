@@ -25,10 +25,11 @@ deploy:
   kind: "cloudflare-worker"       # one Worker: assets.directory + main for /api/v1/* and /calendar/*
   domain: "lineup.messer.wtf"     # the board
   data_domain: "lineup-data.messer.wtf"   # R2 bucket behind a custom domain (immutable shards)
+  dev_domain: "lineup-dev.messer.wtf"
 
 dev:
   command: "make dev"
-  ports: [3000, 8016]
+  ports: [3016, 8016]
   pm2: "messer-lineup-dev"
   action: "actions/actions.json"  # local only: a public repo does not ship Portal actions
 
