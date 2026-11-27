@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Self-hosted: not billed, and immune to the monthly hosted-job cutoff.
+    runs-on: [self-hosted, ci-light]
     steps:
       - uses: actions/checkout@v4
 
@@ -57,7 +58,8 @@ jobs:
   # a header row that no longer closes on the right — is what this catches. The index is generated at run time because
   # a board is a window: a committed one would expire and fail for a reason that is not a regression.
   probe:
-    runs-on: ubuntu-latest
+    # Self-hosted: not billed, and immune to the monthly hosted-job cutoff.
+    runs-on: [self-hosted, ci-light]
     needs: check
     steps:
       - uses: actions/checkout@v4
