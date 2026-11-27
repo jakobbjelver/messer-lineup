@@ -29,6 +29,7 @@ deploy:
 
 dev:
   command: "make dev"
+  runner: "~/Scripts/run-lineup-dev.sh"
   ports: [3016, 8016]
   pm2: "messer-lineup-dev"
   action: "actions/actions.json"  # local only: a public repo does not ship Portal actions
