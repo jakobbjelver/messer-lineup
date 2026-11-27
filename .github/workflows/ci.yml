@@ -43,6 +43,16 @@ jobs:
       - name: Build
         run: make build
 
+      # messer-ui conformance, source pass: colours, radii, icon set, type scale and fonts.
+      # No browser, no running app. It rides in this job because a job has a one-minute
+      # billing floor: as its own workflow a twelve-second check cost a full minute per push.
+      # The block-copy canary (a slower, drift-shaped check) is the weekly messer-ui workflow.
+      - uses: actions/checkout@v4
+        with:
+          repository: jakobbjelver/messer-ui
+          path: .messer-ui
+      - name: messer check (static)
+        run: node .messer-ui/scripts/check.mjs --app . --static
   # The design gates. A UI regression that the type system cannot see — a rounded corner, a second subscribe control,
   # a header row that no longer closes on the right — is what this catches. The index is generated at run time because
   # a board is a window: a committed one would expire and fail for a reason that is not a regression.
